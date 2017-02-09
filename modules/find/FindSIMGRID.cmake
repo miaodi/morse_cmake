@@ -124,37 +124,46 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
 
   # Try to find the simgrid header in the given paths
   # -------------------------------------------------
+  set(SIMGRID_hdrs_to_find "simgrid.h;simgrid_config.h")
+
   # call cmake macro to find the header path
   if(SIMGRID_INCDIR)
-    set(SIMGRID_simgrid.h_DIRS "SIMGRID_simgrid.h_DIRS-NOTFOUND")
-    find_path(SIMGRID_simgrid.h_DIRS
-      NAMES simgrid.h
-      HINTS ${SIMGRID_INCDIR})
+    foreach(simgrid_hdr ${SIMGRID_hdrs_to_find})
+      set(SIMGRID_${simgrid_hdr}_DIRS "SIMGRID_${simgrid_hdr}_DIRS-NOTFOUND")
+      find_path(SIMGRID_${simgrid_hdr}_DIRS
+        NAMES ${simgrid_hdr}
+        HINTS ${SIMGRID_INCDIR})
+        mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
+    endforeach()
   else()
     if(SIMGRID_DIR)
-      set(SIMGRID_simgrid.h_DIRS "SIMGRID_simgrid.h_DIRS-NOTFOUND")
-      find_path(SIMGRID_simgrid.h_DIRS
-	NAMES simgrid.h
-	HINTS ${SIMGRID_DIR}
-	PATH_SUFFIXES "include" "include/simgrid")
+      foreach(simgrid_hdr ${SIMGRID_hdrs_to_find})
+        set(SIMGRID_${simgrid_hdr}_DIRS "SIMGRID_${simgrid_hdr}_DIRS-NOTFOUND")
+        find_path(SIMGRID_${simgrid_hdr}_DIRS
+          NAMES ${simgrid_hdr}
+          HINTS ${SIMGRID_DIR}
+          PATH_SUFFIXES "include" "include/simgrid")
+          mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
+      endforeach()
     else()
-      set(SIMGRID_simgrid.h_DIRS "SIMGRID_simgrid.h_DIRS-NOTFOUND")
-      find_path(SIMGRID_simgrid.h_DIRS
-	NAMES simgrid.h
-	HINTS ${_inc_env}
-	PATH_SUFFIXES "simgrid")
-    endif()
+      set(SIMGRID_${simgrid_hdr}_DIRS "SIMGRID_${simgrid_hdr}_DIRS-NOTFOUND")
+        find_path(SIMGRID_${simgrid_hdr}_DIRS
+          NAMES ${simgrid_hdr}
+          HINTS ${_inc_env}
+          PATH_SUFFIXES "simgrid")
+          mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
+      endif()
+    endforeach()
   endif()
-  mark_as_advanced(SIMGRID_simgrid.h_DIRS)
 
   # Add path to cmake variable
   # ------------------------------------
-  if (SIMGRID_simgrid.h_DIRS)
-    set(SIMGRID_INCLUDE_DIRS "${SIMGRID_simgrid.h_DIRS}")
+  if (SIMGRID_simgrid_config.h_DIRS)
+    set(SIMGRID_INCLUDE_DIRS "${SIMGRID_simgrid_config.h_DIRS}")
   else ()
     set(SIMGRID_INCLUDE_DIRS "SIMGRID_INCLUDE_DIRS-NOTFOUND")
     if(NOT SIMGRID_FIND_QUIETLY)
-      message(STATUS "Looking for simgrid -- simgrid.h not found")
+      message(STATUS "Looking for simgrid -- simgrid_config.h not found")
     endif()
   endif ()
 

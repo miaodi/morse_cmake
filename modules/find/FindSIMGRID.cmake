@@ -153,8 +153,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
           HINTS ${_inc_env}
           PATH_SUFFIXES "simgrid")
           mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
-      endif()
-    endforeach()
+      endforeach()
+    endif()
   endif()
 
   # Add path to cmake variable

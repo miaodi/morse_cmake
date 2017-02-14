@@ -146,7 +146,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
           mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
       endforeach()
     else()
-      set(SIMGRID_${simgrid_hdr}_DIRS "SIMGRID_${simgrid_hdr}_DIRS-NOTFOUND")
+      foreach(simgrid_hdr ${SIMGRID_hdrs_to_find})
+        set(SIMGRID_${simgrid_hdr}_DIRS "SIMGRID_${simgrid_hdr}_DIRS-NOTFOUND")
         find_path(SIMGRID_${simgrid_hdr}_DIRS
           NAMES ${simgrid_hdr}
           HINTS ${_inc_env}

@@ -157,6 +157,10 @@ endif()
 # the target receives a -DPRECISION_p in its cflags.
 #
 include(ParseArguments)
+
+# Add a hint to help Cmake to find the correct python version:
+# (see https://cmake.org/cmake/help/v3.0/module/FindPythonInterp.html)
+set(Python_ADDITIONAL_VERSIONS 2)
 find_package(PythonInterp REQUIRED)
 
 MACRO(precisions_rules_py)

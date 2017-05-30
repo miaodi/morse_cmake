@@ -372,9 +372,7 @@ mark_as_advanced(PTSCOTCH_DIR_FOUND)
 
 # Check the size of SCOTCH_Num
 # ---------------------------------
-set(CMAKE_REQUIRED_INCLUDES ${PTSCOTCH_INCLUDE_DIRS})
-# Add ptscotch dependencies incdirs (mainly MPI) to required includes for the examples
-list(APPEND CMAKE_REQUIRED_INCLUDES ${PTSCOTCH_INCLUDE_DIRS_DEP})
+set(CMAKE_REQUIRED_INCLUDES ${PTSCOTCH_INCLUDE_DIRS_DEP})
 include(CheckCSourceRuns)
 #stdio.h and stdint.h should be included by scotch.h directly
 #mpi.h not included into ptscotch.h => MPI_comm undefined

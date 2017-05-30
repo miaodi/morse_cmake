@@ -285,7 +285,7 @@ if(PTSCOTCH_LIBRARIES)
   # MPI
   if (MPI_FOUND)
     if (MPI_C_INCLUDE_PATH)
-      list(APPEND CMAKE_REQUIRED_INCLUDES "${MPI_C_INCLUDE_PATH}")
+      list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
     endif()
     if (MPI_C_LINK_FLAGS)
       if (${MPI_C_LINK_FLAGS} MATCHES "  -")
@@ -373,12 +373,15 @@ mark_as_advanced(PTSCOTCH_DIR_FOUND)
 # Check the size of SCOTCH_Num
 # ---------------------------------
 set(CMAKE_REQUIRED_INCLUDES ${PTSCOTCH_INCLUDE_DIRS})
-
+# Add ptscotch dependencies incdirs (mainly MPI) to required includes for the examples
+list(APPEND CMAKE_REQUIRED_INCLUDES ${PTSCOTCH_INCLUDE_DIRS_DEP})
 include(CheckCSourceRuns)
 #stdio.h and stdint.h should be included by scotch.h directly
+#mpi.h not included into ptscotch.h => MPI_comm undefined
 set(PTSCOTCH_C_TEST_SCOTCH_Num_4 "
 #include <stdio.h>
 #include <stdint.h>
+#include <mpi.h>
 #include <ptscotch.h>
 int main(int argc, char **argv) {
   if (sizeof(SCOTCH_Num) == 4)
@@ -391,6 +394,7 @@ int main(int argc, char **argv) {
 set(PTSCOTCH_C_TEST_SCOTCH_Num_8 "
 #include <stdio.h>
 #include <stdint.h>
+#include <mpi.h>
 #include <ptscotch.h>
 int main(int argc, char **argv) {
   if (sizeof(SCOTCH_Num) == 8)

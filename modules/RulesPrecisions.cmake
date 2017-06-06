@@ -240,10 +240,9 @@ MACRO(precisions_rules_py)
 	    COMMAND ${CMAKE_COMMAND} -E remove -f ${_dependency_OUTPUT} && ${pythoncmd} && chmod a-w ${_dependency_OUTPUT}
 	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY})
 
-	  set_SOURCE_FILES_PROPERTIES(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 1 IS_IN_BINARY_DIR 1 )
-
+          set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 1 IS_IN_BINARY_DIR 1 )
 	else( generate_out )
-	  set_SOURCE_FILES_PROPERTIES(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 0 )
+          set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 0 )
 	endif( generate_out )
 
 	list(APPEND ${OUTPUTLIST} ${_dependency_OUTPUT})

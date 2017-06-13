@@ -16,6 +16,7 @@
 # This module finds headers and simgrid library.
 # Results are reported in variables:
 #  SIMGRID_FOUND           - True if headers and requested libraries were found
+#  SIMGRID_C_FLAGS         - list of required compilation flags (excluding -I)
 #  SIMGRID_INCLUDE_DIRS    - simgrid include directories
 #  SIMGRID_LIBRARY_DIRS    - Link directories for simgrid libraries
 #  SIMGRID_LIBRARIES       - simgrid component libraries to be linked
@@ -81,6 +82,8 @@ if(PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_GIVEN_BY_USER)
 	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
+
+  set(SIMGRID_C_FLAGS "${SIMGRID_CFLAGS_OTHER}")
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_GIVEN_BY_USER)
 

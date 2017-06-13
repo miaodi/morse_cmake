@@ -16,6 +16,7 @@
 # This module finds headers and gtg library.
 # Results are reported in variables:
 #  GTG_FOUND           - True if headers and requested libraries were found
+#  GTG_C_FLAGS         - list of required compilation flags (excluding -I)
 #  GTG_INCLUDE_DIRS    - gtg include directories
 #  GTG_LIBRARY_DIRS    - Link directories for gtg libraries
 #  GTG_LIBRARIES       - gtg component libraries to be linked
@@ -81,6 +82,8 @@ if(PKG_CONFIG_EXECUTABLE AND NOT GTG_GIVEN_BY_USER)
 	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
+
+  set(GTG_C_FLAGS "${GTG_CFLAGS_OTHER}")
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT GTG_GIVEN_BY_USER)
 

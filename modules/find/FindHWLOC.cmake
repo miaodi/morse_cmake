@@ -16,6 +16,7 @@
 # This module finds headers and hwloc library.
 # Results are reported in variables:
 #  HWLOC_FOUND           - True if headers and requested libraries were found
+#  HWLOC_C_FLAGS         - list of required compilation flags (excluding -I)
 #  HWLOC_INCLUDE_DIRS    - hwloc include directories
 #  HWLOC_LIBRARY_DIRS    - Link directories for hwloc libraries
 #  HWLOC_LIBRARIES       - hwloc component libraries to be linked
@@ -84,6 +85,8 @@ if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 	"\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
+
+  set(HWLOC_C_FLAGS "${HWLOC_CFLAGS_OTHER}")
 
 endif( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 

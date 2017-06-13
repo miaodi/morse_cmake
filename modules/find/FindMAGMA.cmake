@@ -27,6 +27,7 @@
 #
 # Results are reported in variables:
 #  MAGMA_FOUND            - True if headers and requested libraries were found
+#  MAGMA_C_FLAGS          - list of required compilation flags (excluding -I)
 #  MAGMA_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  MAGMA_INCLUDE_DIRS     - magma include directories
 #  MAGMA_LIBRARY_DIRS     - Link directories for magma libraries
@@ -162,6 +163,7 @@ if(PKG_CONFIG_EXECUTABLE AND NOT MAGMA_GIVEN_BY_USER)
   set(MAGMA_INCLUDE_DIRS_DEP "${MAGMA_STATIC_INCLUDE_DIRS}")
   set(MAGMA_LIBRARY_DIRS_DEP "${MAGMA_STATIC_LIBRARY_DIRS}")
   set(MAGMA_LIBRARIES_DEP "${MAGMA_STATIC_LIBRARIES}")
+  set(MAGMA_C_FLAGS "${MAGMA_CFLAGS_OTHER}")
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT MAGMA_GIVEN_BY_USER)
 

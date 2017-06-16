@@ -21,43 +21,268 @@ subs = {
   ],
 
   # ------------------------------------------------------------
+  # replacements applied to mixed precision files.
+  'mixed' : [
+    # ----- Special line indicating column types
+    ['ds',                        'zc'                               ],
+
+    # ----- Mixed precisions
+    ('DS',                        'ZC'                               ),
+    ('ds',                        'zc'                               ),
+
+    # ----- Preprocessor
+    ('#define PRECISION_d',       '#define PRECISION_z'              ),
+    ('#define PRECISION_s',       '#define PRECISION_c'              ),
+    ('#undef PRECISION_d',        '#undef PRECISION_z'               ),
+    ('#undef PRECISION_s',        '#undef PRECISION_c'               ),
+
+    # ----- Fortran Types
+    ('real\(kind=c_double\)',     'complex\(kind=c_double_complex\)' ),
+    ('real\(kind=c_float\)',      'real\(kind=c_float_complex\)'     ),
+
+    # ----- Data types
+    ('double',                    'double2'                          ),
+    ('float',                     'float2'                           ),
+    ('double',                    'cuDoubleComplex'                  ),
+    ('float',                     'cuFloatComplex'                   ),
+    ('DOUBLE PRECISION',          'COMPLEX_16'                       ),
+    ('SINGLE PRECISION',          'COMPLEX'                          ),
+    ('real',                      'complex'                          ),
+    ('float',                     'MORSE_Complex32_t'                ),
+    ('double',                    'MORSE_Complex64_t'                ),
+    ('float',                     'MORSE_voidComplex32_t'            ),
+    ('double',                    'MORSE_voidComplex64_t'            ),
+    ('MorseRealFloat',            'MorseComplexFloat'                ),
+    ('MorseRealDouble',           'MorseComplexDouble'               ),
+
+    # ----- CBLAS
+    ('',                          'CBLAS_SADDR'                      ),
+
+    # ----- Prefixes
+    ('blasf77_d',                 'blasf77_z'                        ),
+    ('blasf77_s',                 'blasf77_c'                        ),
+    ('cublasIdamax',              'cublasIzamax'                     ),
+    ('cublasD',                   'cublasZ'                          ),
+    ('cublasS',                   'cublasC'                          ),
+    ('lapackf77_d',               'lapackf77_z'                      ),
+    ('lapackf77_s',               'lapackf77_c'                      ),
+    ('MAGMA_D',                   'MAGMA_Z'                          ),
+    ('MAGMA_S',                   'MAGMA_C'                          ),
+    ('magmablas_d',               'magmablas_z'                      ),
+    ('magmablas_s',               'magmablas_c'                      ),
+    ('magma_d',                   'magma_z'                          ),
+    ('magma_s',                   'magma_c'                          ),
+    ('magma_get_d',               'magma_get_z'                      ),
+    ('magma_get_s',               'magma_get_c'                      ),
+
+    # ----- Prefixes MORSE
+    ('MORSE_D',                   'MORSE_Z'                          ),
+    ('MORSE_S',                   'MORSE_C'                          ),
+    ('morse_get_d',               'morse_get_z'                      ),
+    ('morse_get_s',               'morse_get_c'                      ),
+    ('TASK_S',                    'TASK_C'                           ),
+    ('TASK_D',                    'TASK_Z'                           ),
+    ('RUNTIME_S',                 'RUNTIME_C'                        ),
+    ('RUNTIME_D',                 'RUNTIME_Z'                        ),
+
+    # ----- Complex numbers
+    ('(double)',                  'cuComplexFloatToDouble'           ),
+    ('(float)',                   'cuComplexDoubleToFloat'           ),
+    ('',                          'cuCrealf'                         ),
+    ('',                          'cuCimagf'                         ),
+    ('',                          'cuCreal'                          ),
+    ('',                          'cuCimag'                          ),
+    ('',                          'cuConj'                           ),
+    ('abs',                       'cuCabs'                           ),
+    ('absf',                      'cuCabsf'                          ),
+
+    # ----- PLASMA / MAGMA
+    ('magma_sdgetrs',             'magma_czgetrs'                    ),
+
+    # ----- MORSE
+    ('morse_sdgetrs',             'morse_czgetrs'                    ),
+
+    # ----- Constants
+    ('CblasTrans',                'CblasConjTrans'                   ),
+    ('MagmaTrans',                'MagmaConjTrans'                   ),
+    ('MorseTrans',                'MorseConjTrans'                   ),
+
+    # ----- BLAS and LAPACK, lowercase, alphabetic order
+    # copy & paste these to uppercase below and fix case.
+    # mixed precision
+    ('dsaxpy',                    'zcaxpy'                           ),
+    ('dslaswp',                   'zclaswp'                          ),
+
+    # regular
+    ('daxpy',                     'zaxpy'                            ),
+    ('dgemm',                     'zgemm'                            ),
+    ('dgesv',                     'zgesv'                            ),
+    ('dlacpy',                    'zlacpy'                           ),
+    ('dlange',                    'zlange'                           ),
+    ('dlansy',                    'zlansy'                           ),
+    ('dlarnv',                    'zlarnv'                           ),
+    ('dpotrf',                    'zpotrf'                           ),
+    ('dsytrf',                    'zsytrf'                           ),
+    ('dtrmm',                     'ztrmm'                            ),
+    ('dtrsm',                     'ztrsm'                            ),
+    ('dtrsv',                     'ztrsv'                            ),
+    ('idamax',                    'izamax'                           ),
+    ('spotrf',                    'cpotrf'                           ),
+    ('ssytrf',                    'csytrf'                           ),
+    ('strmm',                     'ctrmm'                            ),
+    ('strsm',                     'ctrsm'                            ),
+    ('strsv',                     'ctrsv'                            ),
+
+    # ----- BLAS and LAPACK, where complex base name != real base name
+    # with precision
+    ('dlag2s',                    'zlag2c'                           ),
+    ('dlagsy',                    'zlaghe'                           ),
+    ('dlansy',                    'zlanhe'                           ),
+    ('dlat2s',                    'zlat2c'                           ),
+    ('dormqr',                    'zunmqr'                           ),
+    ('dsymm',                     'zhemm'                            ),
+    ('dsymv',                     'zhemv'                            ),
+    ('dsyrk',                     'zherk'                            ),
+    ('slag2d',                    'clag2z'                           ),
+    ('slansy',                    'clanhe'                           ),
+    ('slat2d',                    'clat2z'                           ),
+
+    # without precision
+    ('lag2s',                     'lag2c'                            ),
+    ('lagsy',                     'laghe'                            ),
+    ('lansy',                     'lanhe'                            ),
+    ('lat2s',                     'lat2c'                            ),
+    ('ormqr',                     'unmqr'                            ),
+    ('symm',                      'hemm'                             ),
+    ('symv',                      'hemv'                             ),
+    ('syrk',                      'herk'                             ),
+    ('lag2d',                     'lag2z'                            ),
+    ('lansy',                     'lanhe'                            ),
+    ('lat2d',                     'lat2z'                            ),
+
+    # QUARK codelets protection (to prevent conversion with LAPACK WITH PRECISION)
+    ('DAG_CORE_L-AG2C',           'DAG_CORE_LAG2C'                   ),
+
+    # ----- BLAS AND LAPACK, UPPERCASE, ALPHABETIC ORDER
+    # COPY & PASTE THESE TO UPPERCASE BELOW AND FIX CASE.
+    # MIXED PRECISION
+    ('DSAXPY',                    'ZCAXPY'                           ),
+    ('DSLASWP',                   'ZCLASWP'                          ),
+
+    # REGULAR
+    ('DAXPY',                     'ZAXPY'                            ),
+    ('DGEMM',                     'ZGEMM'                            ),
+    ('DGESV',                     'ZGESV'                            ),
+    ('DLACPY',                    'ZLACPY'                           ),
+    ('DLANGE',                    'ZLANGE'                           ),
+    ('DLANSY',                    'ZLANSY'                           ),
+    ('DLARNV',                    'ZLARNV'                           ),
+    ('DPOTRF',                    'ZPOTRF'                           ),
+    ('DSYTRF',                    'ZSYTRF'                           ),
+    ('DTRMM',                     'ZTRMM'                            ),
+    ('DTRSM',                     'ZTRSM'                            ),
+    ('DTRSV',                     'ZTRSV'                            ),
+    ('IDAMAX',                    'IZAMAX'                           ),
+    ('SPOTRF',                    'CPOTRF'                           ),
+    ('SSYTRF',                    'CSYTRF'                           ),
+    ('STRMM',                     'CTRMM'                            ),
+    ('STRSM',                     'CTRSM'                            ),
+    ('STRSV',                     'CTRSV'                            ),
+
+    # ----- BLAS AND LAPACK, WHERE COMPLEX BASE NAME != REAL BASE NAME
+    # WITH PRECISION
+    ('DLAG2S',                    'ZLAG2C'                           ),
+    ('DLAGSY',                    'ZLAGHE'                           ),
+    ('DLANSY',                    'ZLANHE'                           ),
+    ('DLAT2S',                    'ZLAT2C'                           ),
+    ('DORMQR',                    'ZUNMQR'                           ),
+    ('DSYMM',                     'ZHEMM'                            ),
+    ('DSYMV',                     'ZHEMV'                            ),
+    ('DSYRK',                     'ZHERK'                            ),
+    ('SLAG2D',                    'CLAG2Z'                           ),
+    ('SLANSY',                    'CLANHE'                           ),
+    ('SLAT2D',                    'CLAT2Z'                           ),
+
+    # WITHOUT PRECISION
+    ('LAG2S',                     'LAG2C'                            ),
+    ('LAGSY',                     'LAGHE'                            ),
+    ('LANSY',                     'LANHE'                            ),
+    ('LAT2S',                     'LAT2C'                            ),
+    ('ORMQR',                     'UNMQR'                            ),
+    ('SYMM',                      'HEMM'                             ),
+    ('SYMV',                      'HEMV'                             ),
+    ('SYRK',                      'HERK'                             ),
+    ('LAG2D',                     'LAG2Z'                            ),
+    ('LANSY',                     'LANHE'                            ),
+    ('LAT2D',                     'LAT2Z'                            ),
+
+    # QUARK codelets protection (to prevent conversion with LAPACK WITH PRECISION)
+    ('DAG_CORE_LAG2C',            'DAG_CORE_L-AG2C'                  ),
+],
+
+  # ------------------------------------------------------------
   # replacements applied to most files.
   'normal' : [
     # ----- Special line indicating column types
     # old python (2.4) requires this line to be list [] rather than tuple () to use index() function.
     ['p',            's',              'd',              'c',              'z'               ],
 
+    # TODO clean; shouldn't be added this way
+    ('', 'cblas_sscal',   ' cblas_dscal',    'cblas_csscal',   'cblas_zdscal'),
+    ('', 'stsmqr_hetra1',  'dtsmqr_hetra1',  'ctsmqr_hetra1',  'ztsmqr_hetra1'),
+    ('', 'stsmlq_hetra1',  'dtsmlq_hetra1',  'ctsmlq_hetra1',  'ztsmlq_hetra1'),
+    ('', 'codelet_ssyrfb', 'codelet_dsyrfb', 'codelet_cherfb', 'codelet_zherfb'),
+    ('', 'cl_ssyrfb',      'cl_dsyrfb',      'cl_cherfb',      'cl_zherfb'),
+    ('', 'she2ge',         'dhe2ge',         'che2ge',         'zhe2ge'),
+    ('', 'sgbcpy',         'dgbcpy',         'cgbcpy',         'zgbcpy'),
+
+
+    # ----- Preprocessor
+    ('', '#define PRECISION_s',  '#define PRECISION_d',   '#define PRECISION_c',              '#\s*define PRECISION_z'              ),
+    ('', '#undef PRECISION_s',   '#undef PRECISION_d',    '#undef PRECISION_c',               '#undef PRECISION_z'               ),
+    ('', '#define REAL',         '#define REAL',          '#define COMPLEX',                  '#define COMPLEX'                  ),
+    ('', '#undef COMPLEX',       '#undef COMPLEX',        '#undef REAL',                      '#undef REAL'                      ),
+    ('', '#define SINGLE',       '#define DOUBLE',        '#define SINGLE',                   '#define DOUBLE'                   ),
+    ('', '#undef DOUBLE',        '#undef SINGLE',         '#undef DOUBLE',                    '#undef SINGLE'                    ),
+
     # ----- Fortran Types
-    ('', 'real\(kind=c_float\)', 'real\(kind=c_double\)', 'complex\(kind=c_float_complex\)', 'complex\(kind=c_double_complex\)' ),
-    ('', 'real(kind=c_float\)',  'real\(kind=c_double\)', 'real\(kind=c_float\)',            'real\(kind=c_double\)'            ),
-    ('', 'real',                 'double precision',      'complex',                         'complex\(kind=wp\)'               ),
-    ('', 'real',                 'double precision',      'real',                            r'\bdouble precision'              ),  # before double
+    ('', 'real\(kind=c_float\)', 'real\(kind=c_double\)', 'complex\(kind=c_float_complex\)',  'complex\(kind=c_double_complex\)' ),
+    ('', 'real(kind=c_float\)',  'real\(kind=c_double\)', 'real\(kind=c_float\)',             'real\(kind=c_double\)'            ),
+    ('', 'real',                 'double precision',      'complex',                          'complex\(kind=wp\)'               ),
+    ('', 'real',                 'double precision',      'real',                            r'\bdouble precision'               ),  # before double
+    ('', 'real',                 'double precision',      'complex',                         r'\bcomplex\*16'                    ),
+    ('', 'REAL',                 'DOUBLE_PRECISION',      'COMPLEX',                         r'\bCOMPLEX_16'                     ),
+    ('', 'REAL',                 'DOUBLE PRECISION',      'COMPLEX',                         r'\bDOUBLE COMPLEX'                 ),
+    ('', 'REAL',                 'DOUBLE PRECISION',      'REAL',                            r'\bDOUBLE PRECISION'               ),
 
     # ----- Data types
+    # C++
     ('', 'float',                'double',                'float _Complex',                  r'\bdouble _Complex'                  ),
+    # CUDA
     ('', 'float',                'double',                'cuFloatComplex',                  r'\bcuDoubleComplex'                  ),
-    ('', 'float',                'double',                'make_cuFloatComplex',             'make_cuDoubleComplex'                ),
+    ('', 'float',                'double',                'make_cuFloatComplex',              'make_cuDoubleComplex'               ),
+    # Magma
     ('', 'float',                'double',                'magmaFloatComplex',               r'\bmagmaDoubleComplex'               ),
+    # Plasma
     ('', 'float',                'double',                'PLASMA_Complex32_t',              r'\bPLASMA_Complex64_t'               ),
     ('', 'float',                'double',                'PLASMA_voidComplex32_t',          r'\bPLASMA_voidComplex64_t'           ),
     ('', 'PlasmaRealFloat',      'PlasmaRealDouble',      'PlasmaComplexFloat',              r'\bPlasmaComplexDouble'              ),
-    ('', 'real',                 'double precision',      'complex',                         r'\bcomplex\*16'                      ),
-    ('', 'REAL',                 'DOUBLE_PRECISION',      'COMPLEX',                         r'\bCOMPLEX_16'                       ),
-    ('', 'REAL',                 'DOUBLE PRECISION',      'COMPLEX',                         r'\bDOUBLE COMPLEX'                   ),
-    ('', 'REAL',                 'DOUBLE PRECISION',      'REAL',                            r'\bDOUBLE PRECISION'                 ),
-    ('', 'sizeof_real',          'sizeof_double',         'sizeof_complex',                  r'\bsizeof_complex_16'                ),  # before complex
-    ('', 'real',                 'real',                  'complex',                         r'\bcomplex'                          ),
-    ('', 'float',                'double',                'float2',                          r'\bdouble2'                          ),
-
+    # MORSE
+    ('', 'float',                'double',                'MORSE_Complex32_t',               r'\bMORSE_Complex64_t'                ),
+    ('', 'float',                'double',                'MORSE_voidComplex32_t',           r'\bMORSE_voidComplex64_t'            ),
+    ('', 'MorseRealFloat',       'MorseRealDouble',       'MorseComplexFloat',               r'\bMorseComplexDouble'               ),
+    # Pastix
     ('int',             'float',           'double',          'pastix_complex32_t', r'\bpastix_complex64_t'),
     ('int',             'float',           'double',          'float',              r'\bdouble'            ),
     ('PastixPattern',   'PastixFloat',     'PastixDouble',    'PastixComplex32',    r'\bPastixComplex64'   ),
     ('PastixPattern',   'PastixFloat',     'PastixDouble',    'PastixFloat',        r'\bPastixDouble'      ),
-    ('PastixSymmetric', 'PastixSymmetric', 'PastixSymmetric', 'PastixHermitian',    r'\bPastixHermitian'   ),
-    ('PastixTrans',     'PastixTrans',     'PastixTrans',     'PastixConjTrans',    r'\bPastixConjTrans'   ),
+    ('', 'sizeof_real',          'sizeof_double',         'sizeof_complex',                  r'\bsizeof_complex_16'                ),  # before complex
+    ('', 'real',                 'real',                  'complex',                         r'\bcomplex'                          ),
+    ('', 'float',                'double',                'float2',                          r'\bdouble2'                          ),
+    ('', 'float',                'double',                'float',                           r'\bdouble'                           ),
 
     # ----- Text
-    ('', 'symmetric',      'symmetric',      'Hermitian',      'Hermitian'       ),
+    ('Symmetric', 'Symmetric',      'Symmetric',      'Hermitian',      'Hermitian'       ),
     ('', '\*\*T',          '\*\*T',          '\*\*H',          '\*\*H'           ),
     ('', '%f',             '%lf',            '%f',             '%lf'             ),  # for scanf
     ('', '%g',             '%lg',            '%g',             '%lg'             ),  # for scanf
@@ -104,6 +329,8 @@ subs = {
     ('', 'CORE_s',         'CORE_d',         'CORE_s',         'CORE_d'          ),
     ('', 'cpu_gpu_s',      'cpu_gpu_d',      'cpu_gpu_c',      'cpu_gpu_z'       ),
     ('', 'cublasS',        'cublasD',        'cublasC',        'cublasZ'         ),
+    ('', 'CUDA_S',         'CUDA_D',         'CUDA_C',         'CUDA_Z'          ),
+    ('', 'CUDA_s',         'CUDA_d',         'CUDA_c',         'CUDA_z'          ),
     ('', 'example_s',      'example_d',      'example_c',      'example_z'       ),
     ('', 'ipt_s',          'ipt_d',          'ipt_c',          'ipt_z'           ),
     ('', 'LAPACKE_s',      'LAPACKE_d',      'LAPACKE_c',      'LAPACKE_z'       ),
@@ -141,6 +368,28 @@ subs = {
     ('', 'Workspace_s',    'Workspace_d',    'Workspace_c',    'Workspace_z'     ),
     ('', 'workspace_s',    'workspace_d',    'workspace_c',    'workspace_z'     ),
 
+    # ----- Prefixes MORSE
+    ('', 'MORSE_S',        'MORSE_D',        'MORSE_C',        'MORSE_Z'         ),
+    ('', 'MORSE_sor',      'MORSE_dor',      'MORSE_cun',      'MORSE_zun'       ),
+    ('', 'MORSE_s',        'MORSE_d',        'MORSE_c',        'MORSE_z'         ),
+    ('', 'morse_get_s',    'morse_get_d',    'morse_get_c',    'morse_get_z'     ),
+    ('', 'morse_ps',       'morse_pd',       'morse_pc',       'morse_pz'        ),
+    ('', 'morse_s',        'morse_d',        'morse_c',        'morse_z'         ),
+    ('', 'morse_sdesc',    'morse_ddesc',    'morse_sdesc',    'morse_ddesc'     ),
+    ('', 'TASK_sasum',     'TASK_dasum',     'TASK_scasum',    'TASK_dzasum'     ),
+    ('', 'TASK_ssyrfb',    'TASK_dsyrfb',    'TASK_cherfb',    'TASK_zherfb'     ),
+    ('', 'TASK_stsmlq_sy', 'TASK_dtsmlq_sy', 'TASK_ctsmlq_he', 'TASK_ztsmlq_he'  ),
+    ('', 'TASK_stsmqr_sy', 'TASK_dtsmqr_sy', 'TASK_ctsmqr_he', 'TASK_ztsmqr_he'  ),
+    ('', 'TASK_sor',       'TASK_dor',       'TASK_cun',       'TASK_zun'        ),
+    ('', 'TASK_s',         'TASK_d',         'TASK_c',         'TASK_z'          ),
+    ('', 'TASK_slan',      'TASK_dlan',      'TASK_slan',      'TASK_dlan'       ),
+    ('', 'RUNTIME_S',      'RUNTIME_D',      'RUNTIME_C',      'RUNTIME_Z'       ),
+    ('', 'RUNTIME_s',      'RUNTIME_d',      'RUNTIME_c',      'RUNTIME_z'       ),
+
+    ('', 'TASK_s',         'TASK_d',         'TASK_s',         'TASK_d'          ),
+    ('', 'dataflush',      'dataflush',      'dataflush',      'sataflush'       ), # Correct previous line
+
+    # ----- Prefixes PaStiX
     ('p_spm',  's_spm',  'd_spm',  'c_spm',  'z_spm'  ),
     ('p_bcsc', 's_bcsc', 'd_bcsc', 'c_bcsc', 'z_bcsc' ),
     ('', 'csc_s',          'csc_d',          'csc_c',          'csc_z'           ),
@@ -150,9 +399,9 @@ subs = {
     ('', 'thread_ps',      'thread_pd',      'thread_pc',      'thread_pz'       ),
 
     # ----- Complex numbers
-    # \b regexp here avoids conjugate -> conjfugate => replaced by a double rule as \b was not working
+    # \b regexp here avoids conjugate -> conjfugate,
     # assuming we always translate from z, not to z.
-    ('', '',               '',               'conjf',          'conj'            ),
+    ('', '',               '',               'conjf',         r'conj\b'          ),
     ('', 'fabsf',          'fabs',           'cabsf',          'cabs'            ),
     ('', '',               '',               'cuCrealf',       'cuCreal'         ),
     ('', '',               '',               'cuCimagf',       'cuCimag'         ),
@@ -160,7 +409,6 @@ subs = {
     ('', 'fabsf',          'fabs',           'cuCabsf',        'cuCabs'          ),
     ('', '',               '',               'crealf',         'creal'           ),
     ('', 'sqrtf',          'sqrt',           'csqrtf',         'csqrt'           ),
-    ('', '',               '',               'conjugate',      'conjfugate'      ),
 
     # ----- CUDA
     ('', 'cublasIsamax',   'cublasIdamax',   'cublasIcamax',   'cublasIzamax'    ),
@@ -200,10 +448,11 @@ subs = {
     ('', 'sy2sb',          'sy2sb',          'he2hb',          'he2hb'           ),
 
     # ----- Constants
-    ('', 'CblasTrans',     'CblasTrans',     'CblasConjTrans', 'CblasConjTrans'  ),
-    ('', 'MagmaTrans',     'MagmaTrans',     'MagmaConjTrans', 'MagmaConjTrans'  ),
-    ('', 'PlasmaTrans',    'PlasmaTrans',    'PlasmaConjTrans','PlasmaConjTrans' ),
-    ('', 'symmetric',      'symmetric',      'Hermitian',      'Hermitian'       ),
+    ('CblasTrans',  'CblasTrans',  'CblasTrans',  'CblasConjTrans',  r'\bCblasConjTrans'  ),
+    ('MagmaTrans',  'MagmaTrans',  'MagmaTrans',  'MagmaConjTrans',  r'\bMagmaConjTrans'  ),
+    ('MorseTrans',  'MorseTrans',  'MorseTrans',  'MorseConjTrans',  r'\bMorseConjTrans'  ),
+    ('PlasmaTrans', 'PlasmaTrans', 'PlasmaTrans', 'PlasmaConjTrans', r'\bPlasmaConjTrans' ),
+    ('PastixTrans', 'PastixTrans', 'PastixTrans', 'PastixConjTrans', r'\bPastixConjTrans' ),
 
     # ----- BLAS and LAPACK, lowercase, alphabetic order
     # copy & paste these to uppercase below and fix case.
@@ -213,26 +462,28 @@ subs = {
     ('', 'saxpy',          'daxpy',          'caxpy',          'zaxpy'           ),
     ('', 'scopy',          'dcopy',          'ccopy',          'zcopy'           ),
     ('', 'sdiag',          'ddiag',          'cdiag',          'zdiag'           ),
+    ('', 'sgeadd',         'dgeadd',         'cgeadd',         'zgeadd'          ),
     ('', 'sgecfi',         'dgecfi',         'cgecfi',         'zgecfi'          ),
-    ('', 'sgemm',          'dgemm',          'cgemm',          'zgemm'           ),
     ('', 'sgemdm',         'dgemdm',         'cgemdm',         'zgemdm'          ),
-    ('', 'SGEMDM',         'DGEMDM',         'CGEMDM',         'ZGEMDM'          ),
+    ('', 'sgemm',          'dgemm',          'cgemm',          'zgemm'           ),
     ('', 'sgemv',          'dgemv',          'cgemv',          'zgemv'           ),
     ('', 'sscal',          'dscal',          'cscal',          'zscal'           ),
     ('', 'sscal',          'dscal',          'csscal',         'zdscal'          ),
     ('', 'sscal',          'dscal',          'sscal',          'dscal'           ),  # zdscal -> csscal
+    ('', 'slascal',        'dlascal',        'clascal',        'zlascal'         ),
+    ('', 'slascal',        'dlascal',        'slascal',        'dlascal'         ),
     ('', 'sswap',          'dswap',          'cswap',          'zswap'           ),
     ('', 'ssymm',          'dsymm',          'csymm',          'zsymm'           ),
     ('', 'ssymv',          'dsymv',          'csymv',          'zsymv'           ),
     ('', 'ssyr2k',         'dsyr2k',         'csyr2k',         'zsyr2k'          ),
     ('', 'ssyrk',          'dsyrk',          'csyrk',          'zsyrk'           ),
+    ('', 'stradd',         'dtradd',         'ctradd',         'ztradd'          ),
     ('', 'strmm',          'dtrmm',          'ctrmm',          'ztrmm'           ),
     ('', 'strmv',          'dtrmv',          'ctrmv',          'ztrmv'           ),
     ('', 'strsm',          'dtrsm',          'ctrsm',          'ztrsm'           ),
     ('', 'strsv',          'dtrsv',          'ctrsv',          'ztrsv'           ),
 
 # ADD FOR NEW VERSION OF CHAMELEON
-    ('', 'sgeadd',         'dgeadd',         'cgeadd',         'zgeadd'          ),
     ('', 'shbcpy',         'dhbcpy',         'chbcpy',         'zhbcpy'          ),
     ('', 'ssyrbt',         'dsyrbt',         'cherbt',         'zherbt'          ),
     ('', 'ssygv',          'dsygv',          'chegv',          'zhegv'           ),
@@ -303,6 +554,7 @@ subs = {
     ('', 'slascl',         'dlascl',         'clascl',         'zlascl'          ),
     ('', 'slaset',         'dlaset',         'claset',         'zlaset'          ),
     ('', 'slaswp',         'dlaswp',         'claswp',         'zlaswp'          ),
+    ('', 'slatro',         'dlatro',         'clatro',         'zlatro'          ),
     ('', 'slatrd',         'dlatrd',         'clatrd',         'zlatrd'          ),
     ('', 'slauum',         'dlauum',         'clauum',         'zlauum'          ),
     ('', 'spack',          'dpack',          'cpack',          'zpack'           ),
@@ -342,6 +594,9 @@ subs = {
     ('', 'stsmqr',         'dtsmqr',         'ctsmqr',         'ztsmqr'          ),
     ('', 'stsmlq',         'dtsmlq',         'ctsmlq',         'ztsmlq'          ),
     ('', 'stsqrt',         'dtsqrt',         'ctsqrt',         'ztsqrt'          ),
+    ('', 'stpgqrt',        'dtpgqrt',        'ctpgqrt',        'ztpgqrt'         ),
+    ('', 'stpqrt',         'dtpqrt',         'ctpqrt',         'ztpqrt'          ),
+    ('', 'stpmqrt',        'dtpmqrt',        'ctpmqrt',        'ztpmqrt'         ),
     ('', 'stslqt',         'dtslqt',         'ctslqt',         'ztslqt'          ),
     ('', 'ststrf',         'dtstrf',         'ctstrf',         'ztstrf'          ),
     ('', 'sttlqt',         'dttlqt',         'cttlqt',         'zttlqt'          ),
@@ -352,10 +607,17 @@ subs = {
     ('', 'sstegr',         'dstegr',         'cstegr',         'zstegr'          ),
     ('', 'ssyssq',         'dsyssq',         'csyssq',         'zsyssq'          ),
 
+    # ----- LAPACK Eigenvalues
+    ('', 'slatms',         'dlatms',         'slatms',         'dlatms'          ),
+    ('', 'slasrt',         'dlasrt',         'slasrt',         'dlasrt'          ),
+
     # ----- BLAS and LAPACK, where complex base name != real base name
     # BLAS, with precision
     ('', 'sasum',          'dasum',          'scasum',         'dzasum'          ),
     ('', 'sasum',          'dasum',          'casum',          'zasum'           ),
+    ('', 'sdot',           'ddot',           'cdotc',          'zdotc'           ),
+    ('', 'sdot_sub',       'ddot_sub',       'cdotc_sub',      'zdotc_sub'       ),
+    ('', 'sdot_sub',       'ddot_sub',       'cdotu_sub',      'zdotu_sub'       ),
     ('', 'sger',           'dger',           'cgerc',          'zgerc'           ),
     ('', 'sger',           'dger',           'cgeru',          'zgeru'           ),
     ('', 'snrm2',          'dnrm2',          'scnrm2',         'dznrm2'          ),
@@ -402,6 +664,10 @@ subs = {
     ('', 'ssytd2',         'dsytd2',         'chetd2',         'zhetd2'          ),
     ('', 'ssytrd',         'dsytrd',         'chetrd',         'zhetrd'          ),
     ('', 'ssytrf',         'dsytrf',         'chetrf',         'zhetrf'          ),
+
+    # ----- Auxiliary routines with precision
+    ('', 'sgemerge',       'dgemerge',       'cgemerge',       'zgemerge'        ),
+    ('', 'sparfb',         'dparfb',         'cparfb',         'zparfb'          ),
 
     # BLAS, without precision
     # must be after BLAS with precision
@@ -456,14 +722,28 @@ subs = {
     ('', 'sytd2',          'sytd2',          'hetd2',          'hetd2'           ),
     ('', 'sytrd',          'sytrd',          'hetrd',          'hetrd'           ),
     ('', 'sytrf',          'sytrf',          'hetrf',          'hetrf'           ),
+    ('', 'syrfb',          'syrfb',          'herfb',          'herfb'           ),
 
     # ----- For norms: compute result in Real or Double
-    ('', 'sgeadd',         'dgeadd',         'sgeadd',         'dgeadd'          ),
     ('', 'slange',         'dlange',         'slange',         'dlange'          ),
     ('', 'slaset',         'dlaset',         'slaset',         'dlaset'          ),
     ('', 'splssq',         'dplssq',         'splssq',         'dplssq'          ),
     ('', 'slacpy',         'dlacpy',         'slacpy',         'dlacpy'          ),
     ('', 'saxpy',          'daxpy',          'saxpy',          'daxpy'           ),
+
+    # QUARK codelets protection (to prevent conversion with LAPACK WITH PRECISION)
+    ('', 'DAG_CORE_U-NG2R', 'DAG_CORE_U-NG2R', 'DAG_CORE_UNG2R', 'DAG_CORE_UNG2R' ),
+    ('', 'DAG_CORE_U-NGBR', 'DAG_CORE_U-NGBR', 'DAG_CORE_UNGBR', 'DAG_CORE_UNGBR' ),
+    ('', 'DAG_CORE_U-NGHR', 'DAG_CORE_U-NGHR', 'DAG_CORE_UNGHR', 'DAG_CORE_UNGHR' ),
+    ('', 'DAG_CORE_U-NGLQ', 'DAG_CORE_U-NGLQ', 'DAG_CORE_UNGLQ', 'DAG_CORE_UNGLQ' ),
+    ('', 'DAG_CORE_U-NGQL', 'DAG_CORE_U-NGQL', 'DAG_CORE_UNGQL', 'DAG_CORE_UNGQL' ),
+    ('', 'DAG_CORE_U-NGQR', 'DAG_CORE_U-NGQR', 'DAG_CORE_UNGQR', 'DAG_CORE_UNGQR' ),
+    ('', 'DAG_CORE_U-NGTR', 'DAG_CORE_U-NGTR', 'DAG_CORE_UNGTR', 'DAG_CORE_UNGTR' ),
+    ('', 'DAG_CORE_U-NM2R', 'DAG_CORE_U-NM2R', 'DAG_CORE_UNM2R', 'DAG_CORE_UNM2R' ),
+    ('', 'DAG_CORE_U-NMBR', 'DAG_CORE_U-NMBR', 'DAG_CORE_UNMBR', 'DAG_CORE_UNMBR' ),
+    ('', 'DAG_CORE_U-NMLQ', 'DAG_CORE_U-NMLQ', 'DAG_CORE_UNMLQ', 'DAG_CORE_UNMLQ' ),
+    ('', 'DAG_CORE_U-NMQL', 'DAG_CORE_U-NMQL', 'DAG_CORE_UNMQL', 'DAG_CORE_UNMQL' ),
+    ('', 'DAG_CORE_U-NMQR', 'DAG_CORE_U-NMQR', 'DAG_CORE_UNMQR', 'DAG_CORE_UNMQR' ),
 
     # ----- BLAS AND LAPACK, UPPERCASE, ALPHABETIC ORDER
     # COPY & PASTE THESE TO UPPERCASE BELOW AND FIX CASE.
@@ -472,6 +752,10 @@ subs = {
     ('', 'ISAMAX',         'IDAMAX',         'ISAMAX',         'IDAMAX'          ),
     ('', 'SAXPY',          'DAXPY',          'CAXPY',          'ZAXPY'           ),
     ('', 'SCOPY',          'DCOPY',          'CCOPY',          'ZCOPY'           ),
+    ('', 'SGEADD',         'DGEADD',         'CGEADD',         'ZGEADD'          ),
+    ('', 'SGECFI',         'DGECFI',         'CGECFI',         'ZGECFI'          ),
+    ('', 'SGEMDM',         'DGEMDM',         'CGEMDM',         'ZGEMDM'          ),
+    ('', 'SGEMM',          'DGEMM',          'CGEMM',          'ZGEMM'           ),
     ('', 'SGEMV',          'DGEMV',          'CGEMV',          'ZGEMV'           ),
     ('', 'SSCAL',          'DSCAL',          'CSCAL',          'ZSCAL'           ),
     ('', 'SSCAL',          'DSCAL',          'CSSCAL',         'ZDSCAL'          ),
@@ -481,6 +765,7 @@ subs = {
     ('', 'SSYMV',          'DSYMV',          'CSYMV',          'ZSYMV'           ),
     ('', 'SSYR2K',         'DSYR2K',         'CSYR2K',         'ZSYR2K'          ),
     ('', 'SSYRK',          'DSYRK',          'CSYRK',          'ZSYRK'           ),
+    ('', 'STRADD',         'DTRADD',         'CTRADD',         'ZTRADD'          ),
     ('', 'STRMM',          'DTRMM',          'CTRMM',          'ZTRMM'           ),
     ('', 'STRMV',          'DTRMV',          'CTRMV',          'ZTRMV'           ),
     ('', 'STRSM',          'DTRSM',          'CTRSM',          'ZTRSM'           ),
@@ -501,7 +786,6 @@ subs = {
     ('', 'SGELQF',         'DGELQF',         'CGELQF',         'ZGELQF'          ),
     ('', 'SGELQS',         'DGELQS',         'CGELQS',         'ZGELQS'          ),
     ('', 'SGELS',          'DGELS',          'CGELS',          'ZGELS'           ),
-    ('', 'SGEMM',          'DGEMM',          'CGEMM',          'ZGEMM'           ),
     ('', 'SGEQLF',         'DGEQLF',         'CGEQLF',         'ZGEQLF'          ),
     ('', 'SGEQP3',         'DGEQP3',         'CGEQP3',         'ZGEQP3'          ),
     ('', 'SGEQR2',         'DGEQR2',         'CGEQR2',         'ZGEQR2'          ),
@@ -570,7 +854,6 @@ subs = {
     ('', 'SSTERM',         'DSTERM',         'CSTERM',         'ZSTERM'          ),
     ('', 'SSTT21',         'DSTT21',         'CSTT21',         'ZSTT21'          ),
     ('', 'STREVC',         'DTREVC',         'CTREVC',         'ZTREVC'          ),
-    ('', 'STRSMPL',        'DTRSMPL',        'CTRSMPL',        'ZTRSMPL'         ),
     ('', 'STRTRI',         'DTRTRI',         'CTRTRI',         'ZTRTRI'          ),
     ('', 'STSQRT',         'DTSQRT',         'CTSQRT',         'ZTSQRT'          ),
     ('', 'STSTRF',         'DTSTRF',         'CTSTRF',         'ZTSTRF'          ),
@@ -579,6 +862,8 @@ subs = {
 
     # ----- BLAS AND LAPACK, WHERE COMPLEX BASE NAME != REAL BASE NAME
     # BLAS, WITH PRECISION
+    ('', 'SDOT',           'DDOT',           'CDOTC',          'ZDOTC'           ),
+    ('', 'SDOT',           'DDOT',           'CDOTU',          'ZDOTU'           ),
     ('', 'SGER',           'DGER',           'CGERC',          'ZGERC'           ),
     ('', 'SGER',           'DGER',           'CGERU',          'ZGERU'           ),
     ('', 'SNRM2',          'DNRM2',          'SCNRM2',         'DZNRM2'          ),
@@ -675,6 +960,20 @@ subs = {
     ('', 'SYTRD',          'SYTRD',          'HETRD',          'HETRD'           ),
     ('', 'SYTRF',          'SYTRF',          'HETRF',          'HETRF'           ),
 
+    # QUARK codelets protection (to prevent conversion with LAPACK WITH PRECISION)
+    ('', 'DAG_CORE_UNG2R', 'DAG_CORE_UNG2R', 'DAG_CORE_UNG2R', 'DAG_CORE_U-NG2R' ),
+    ('', 'DAG_CORE_UNGBR', 'DAG_CORE_UNGBR', 'DAG_CORE_UNGBR', 'DAG_CORE_U-NGBR' ),
+    ('', 'DAG_CORE_UNGHR', 'DAG_CORE_UNGHR', 'DAG_CORE_UNGHR', 'DAG_CORE_U-NGHR' ),
+    ('', 'DAG_CORE_UNGLQ', 'DAG_CORE_UNGLQ', 'DAG_CORE_UNGLQ', 'DAG_CORE_U-NGLQ' ),
+    ('', 'DAG_CORE_UNGQL', 'DAG_CORE_UNGQL', 'DAG_CORE_UNGQL', 'DAG_CORE_U-NGQL' ),
+    ('', 'DAG_CORE_UNGQR', 'DAG_CORE_UNGQR', 'DAG_CORE_UNGQR', 'DAG_CORE_U-NGQR' ),
+    ('', 'DAG_CORE_UNGTR', 'DAG_CORE_UNGTR', 'DAG_CORE_UNGTR', 'DAG_CORE_U-NGTR' ),
+    ('', 'DAG_CORE_UNM2R', 'DAG_CORE_UNM2R', 'DAG_CORE_UNM2R', 'DAG_CORE_U-NM2R' ),
+    ('', 'DAG_CORE_UNMBR', 'DAG_CORE_UNMBR', 'DAG_CORE_UNMBR', 'DAG_CORE_U-NMBR' ),
+    ('', 'DAG_CORE_UNMLQ', 'DAG_CORE_UNMLQ', 'DAG_CORE_UNMLQ', 'DAG_CORE_U-NMLQ' ),
+    ('', 'DAG_CORE_UNMQL', 'DAG_CORE_UNMQL', 'DAG_CORE_UNMQL', 'DAG_CORE_U-NMQL' ),
+    ('', 'DAG_CORE_UNMQR', 'DAG_CORE_UNMQR', 'DAG_CORE_UNMQR', 'DAG_CORE_U-NMQR' ),
+
     # PaStiX
     ('', 'sutils.h',       'dutils.h',       'cutils.h',       'zutils.h'        ),
     ('', 'SMURGE_',        'DMURGE_',        'CMURGE_',        'ZMURGE_'         ),
@@ -697,8 +996,11 @@ subs = {
     # ----- unused?
     ('', 's_check',        'd_check',        'c_check',        'z_check'         ),
     ('', 's_get_idparm',   'd_get_idparm',   's_get_idparm',   'd_get_idparm',   ),
-    #('stesting',       'dtesting',       'ctesting',       'ztesting'        ),
-    #('SAUXILIARY',     'DAUXILIARY',     'CAUXILIARY',     'ZAUXILIARY'      ),
+    #('', 'stesting',       'dtesting',       'ctesting',       'ztesting'        ),
+    #('', 'SAUXILIARY',     'DAUXILIARY',     'CAUXILIARY',     'ZAUXILIARY'      ),
+    # BUILD
+    ('', 'sbuild',         'dbuild',         'cbuild',         'zbuild'          ),
+
   ],
 
   # ------------------------------------------------------------

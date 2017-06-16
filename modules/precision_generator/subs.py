@@ -150,9 +150,9 @@ subs = {
     ('', 'thread_ps',      'thread_pd',      'thread_pc',      'thread_pz'       ),
 
     # ----- Complex numbers
-    # \b regexp here avoids conjugate -> conjfugate,
+    # \b regexp here avoids conjugate -> conjfugate => replaced by a double rule as \b was not working
     # assuming we always translate from z, not to z.
-    ('', '',               '',               'conjf',          'conj\b'          ),
+    ('', '',               '',               'conjf',          'conj'            ),
     ('', 'fabsf',          'fabs',           'cabsf',          'cabs'            ),
     ('', '',               '',               'cuCrealf',       'cuCreal'         ),
     ('', '',               '',               'cuCimagf',       'cuCimag'         ),
@@ -160,6 +160,7 @@ subs = {
     ('', 'fabsf',          'fabs',           'cuCabsf',        'cuCabs'          ),
     ('', '',               '',               'crealf',         'creal'           ),
     ('', 'sqrtf',          'sqrt',           'csqrtf',         'csqrt'           ),
+    ('', '',               '',               'conjugate',      'conjfugate'      ),
 
     # ----- CUDA
     ('', 'cublasIsamax',   'cublasIdamax',   'cublasIcamax',   'cublasIzamax'    ),

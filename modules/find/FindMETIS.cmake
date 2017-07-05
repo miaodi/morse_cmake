@@ -283,9 +283,11 @@ int main(int argc, char **argv) {
     return 1;
 }
 ")
+unset(METIS_Idx_4 CACHE)
+unset(METIS_Idx_8 CACHE)
 check_c_source_runs("${METIS_C_TEST_METIS_Idx_4}" METIS_Idx_4)
+check_c_source_runs("${METIS_C_TEST_METIS_Idx_8}" METIS_Idx_8)
 if(NOT METIS_Idx_4)
-  check_c_source_runs("${METIS_C_TEST_METIS_Idx_8}" METIS_Idx_8)
   if(NOT METIS_Idx_8)
     set(METIS_INTSIZE -1)
   else()

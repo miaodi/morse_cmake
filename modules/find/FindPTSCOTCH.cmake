@@ -401,9 +401,12 @@ int main(int argc, char **argv) {
     return 1;
 }
 ")
+
+unset(PTSCOTCH_Num_4 CACHE)
+unset(PTSCOTCH_Num_8 CACHE)
 check_c_source_runs("${PTSCOTCH_C_TEST_SCOTCH_Num_4}" PTSCOTCH_Num_4)
+check_c_source_runs("${PTSCOTCH_C_TEST_SCOTCH_Num_8}" PTSCOTCH_Num_8)
 if(NOT PTSCOTCH_Num_4)
-  check_c_source_runs("${PTSCOTCH_C_TEST_SCOTCH_Num_8}" PTSCOTCH_Num_8)
   if(NOT PTSCOTCH_Num_8)
     set(PTSCOTCH_INTSIZE -1)
   else()

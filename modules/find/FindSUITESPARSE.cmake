@@ -180,7 +180,7 @@ list(APPEND SUITESPARSE_hdrs_to_find
   "cs.h"
   "klu.h"
   "ldl.h"
-  "RBio.h"
+  #"RBio.h"
   "spqr.hpp"
   "SuiteSparse_config.h"
   "umfpack.h")
@@ -249,7 +249,7 @@ set(SUITESPARSE_libs_to_find
   "camd"
   "ccolamd"
   "colamd"
-  "rbio"
+  #"rbio"
   "suitesparseconfig"
   )
 

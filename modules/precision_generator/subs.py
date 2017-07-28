@@ -82,6 +82,8 @@ subs = {
     ('morse_get_s',               'morse_get_c'                      ),
     ('TASK_S',                    'TASK_C'                           ),
     ('TASK_D',                    'TASK_Z'                           ),
+    ('TASKS_S',                   'TASKS_C'                          ),
+    ('TASKS_D',                   'TASKS_Z'                          ),
     ('RUNTIME_S',                 'RUNTIME_C'                        ),
     ('RUNTIME_D',                 'RUNTIME_Z'                        ),
 
@@ -382,6 +384,8 @@ subs = {
     ('', 'TASK_stsmqr_sy', 'TASK_dtsmqr_sy', 'TASK_ctsmqr_he', 'TASK_ztsmqr_he'  ),
     ('', 'TASK_sor',       'TASK_dor',       'TASK_cun',       'TASK_zun'        ),
     ('', 'TASK_s',         'TASK_d',         'TASK_c',         'TASK_z'          ),
+    ('', 'TASKS_s',        'TASKS_d',        'TASKS_c',        'TASKS_z'         ),
+    ('', 'tasks_s',        'tasks_d',        'tasks_c',        'tasks_z'         ),
     ('', 'TASK_slan',      'TASK_dlan',      'TASK_slan',      'TASK_dlan'       ),
     ('', 'RUNTIME_S',      'RUNTIME_D',      'RUNTIME_C',      'RUNTIME_Z'       ),
     ('', 'RUNTIME_s',      'RUNTIME_d',      'RUNTIME_c',      'RUNTIME_z'       ),

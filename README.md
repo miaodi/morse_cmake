@@ -18,7 +18,7 @@ master branch:
 Documentation
 ---------------------
 
-TODO
+See the file [morse_cmakefind_doc.org](modules/find/morse_cmakefind_doc.org).
 
 Installation
 ---------------------

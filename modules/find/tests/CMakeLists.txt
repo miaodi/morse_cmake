@@ -7,11 +7,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../")
 # main variable: control the list of libraries to find thanks to find_package
 # pay attention that package names must be given with capital letters
 set(PACKAGES_TO_FIND "" CACHE STRING "List of packages to find, ex: BLAS;STARPU;PASTIX")
-
-# if the list is empty: simple test with hwloc
-if (NOT PACKAGES_TO_FIND)
-  list(APPEND PACKAGES_TO_FIND "HWLOC")
-endif()
+option(ENABLE_CTEST "Enable Testing: will test all supported packages" OFF)
 
 foreach(_library ${PACKAGES_TO_FIND})
 
@@ -37,6 +33,54 @@ foreach(_library ${PACKAGES_TO_FIND})
   endif()
 
 endforeach()
+
+# Add CTest rules
+if (ENABLE_CTEST)
+
+  enable_testing()
+  include(CTest)
+
+  set(CTEST_PACKAGES_LIST
+      BLAS
+      BLASEXT
+      CBLAS
+      CHAMELEON
+      CPPCHECK
+      EZTRACE
+      FABULOUS
+      FFTW
+      FXT
+      GTG
+      HQR
+      HWLOC
+      HYPRE
+      LAPACK
+      LAPACKE
+      LAPACKEXT
+      MAGMA
+      METIS
+      MPIEXT
+      MUMPS
+      PAMPA
+      PAPI
+      PARMETIS
+      PARSEC
+      PASTIX
+      PETSc
+      PTSCOTCH
+      QUARK
+      SCALAPACK
+      SCOTCH
+      SIMGRID
+      STARPU
+      SUITESPARSE
+      TMG)
+
+  foreach(_package ${CTEST_PACKAGES_LIST})
+    add_test(FIND${_package} cmake ${CMAKE_SOURCE_DIR} -DPACKAGES_TO_FIND=${_package})
+  endforeach()
+
+endif()
 
 ###
 ### END CMakeLists.txt

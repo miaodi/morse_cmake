@@ -1354,11 +1354,17 @@ if(BLA_F95)
 
   set(BLAS_FOUND TRUE)
   set(BLAS_LIBRARIES "${BLAS95_LIBRARIES}")
+  if (NOT BLAS_LIBRARIES_DEP)
+    set(BLAS_LIBRARIES_DEP "${BLAS95_LIBRARIES}")
+  endif()
 
 else(BLA_F95)
 
   if(BLAS_LIBRARIES)
     set(BLAS_FOUND TRUE)
+    if (NOT BLAS_LIBRARIES_DEP)
+      set(BLAS_LIBRARIES_DEP "${BLAS_LIBRARIES}")
+    endif()
   else()
     set(BLAS_FOUND FALSE)
   endif()

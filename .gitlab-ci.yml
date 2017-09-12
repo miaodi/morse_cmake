@@ -2,7 +2,7 @@ image: hpclib/hiepacs
 
 Find:
   script:
-    - cd modules/find
+    - cd modules/find/tests
     - mkdir -p build
     - cd build
     - cmake .. -DENABLE_CTEST=ON

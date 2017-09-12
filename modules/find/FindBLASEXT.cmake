@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2017 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -18,17 +18,21 @@
 #
 # The following variables have been added to manage links with sequential or multithreaded
 # versions:
-#  BLAS_INCLUDE_DIRS  - BLAS include directories
-#  BLAS_LIBRARY_DIRS  - Link directories for BLAS libraries
-#  BLAS_SEQ_LIBRARIES - BLAS component libraries to be linked (sequential)
-#  BLAS_PAR_LIBRARIES - BLAS component libraries to be linked (multithreaded)
+#  BLAS_INCLUDE_DIRS    - BLAS include directories
+#  BLAS_LIBRARY_DIRS    - Link directories for BLAS libraries
+#  BLAS_SEQ_LIBRARIES   - BLAS component libraries to be linked (sequential)
+#  BLAS_PAR_LIBRARIES   - BLAS component libraries to be linked (multithreaded)
+#  BLASEXT_FOUND        - if a BLAS has been found
+#  BLASEXT_LIBRARIES    - Idem BLAS_LIBRARIES
+#  BLASEXT_INCLUDE_DIRS - Idem BLAS_INCLUDE_DIRS
+#  BLASEXT_LIBRARY_DIRS - Idem BLAS_LIBRARY_DIRS
 
 #=============================================================================
 # Copyright 2012-2013 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2016 Florent Pruvost
+# Copyright 2013-2017 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -161,14 +165,14 @@ if(BLA_VENDOR MATCHES "Intel*")
     if(BLAS_DIR)
       set(BLAS_mkl.h_INCLUDE_DIRS "BLAS_mkl.h_INCLUDE_DIRS-NOTFOUND")
       find_path(BLAS_mkl.h_INCLUDE_DIRS
-	NAMES mkl.h
-	HINTS ${BLAS_DIR}
-	PATH_SUFFIXES include)
+        NAMES mkl.h
+        HINTS ${BLAS_DIR}
+        PATH_SUFFIXES include)
     else()
       set(BLAS_mkl.h_INCLUDE_DIRS "BLAS_mkl.h_INCLUDE_DIRS-NOTFOUND")
       find_path(BLAS_mkl.h_INCLUDE_DIRS
-	NAMES mkl.h
-	HINTS ${_inc_env})
+        NAMES mkl.h
+        HINTS ${_inc_env})
     endif()
   endif()
   mark_as_advanced(BLAS_mkl.h_INCLUDE_DIRS)
@@ -296,7 +300,7 @@ foreach(blas_lib ${BLAS_LIBRARIES})
     else()
       get_filename_component(a_blas_lib_dir "${blas_lib}" PATH)
       if (EXISTS "${a_blas_lib_dir}")
-	list(APPEND BLAS_LIBRARY_DIRS "${a_blas_lib_dir}" )
+        list(APPEND BLAS_LIBRARY_DIRS "${a_blas_lib_dir}" )
       endif()
     endif()
   endif()
@@ -312,8 +316,8 @@ if(BLA_VENDOR MATCHES "Intel*")
   if(BLA_VENDOR MATCHES "Intel10_64lp*")
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "BLAS found is Intel MKL:"
-	"\n   we manage two lists of libs, one sequential and one parallel if found"
-	"\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
+        "\n   we manage two lists of libs, one sequential and one parallel if found"
+        "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
       message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
     endif()
     find_package_handle_standard_args(BLAS DEFAULT_MSG
@@ -322,10 +326,10 @@ if(BLA_VENDOR MATCHES "Intel*")
       BLAS_INCLUDE_DIRS)
     if(BLAS_PAR_LIBRARIES)
       if(NOT BLASEXT_FIND_QUIETLY)
-	message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
+        message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
       endif()
       find_package_handle_standard_args(BLAS DEFAULT_MSG
-	BLAS_PAR_LIBRARIES)
+        BLAS_PAR_LIBRARIES)
     endif()
   else()
     if(NOT BLASEXT_FIND_QUIETLY)
@@ -377,4 +381,17 @@ else()
   find_package_handle_standard_args(BLAS DEFAULT_MSG
     BLAS_SEQ_LIBRARIES
     BLAS_LIBRARY_DIRS)
+endif()
+
+if (BLAS_FOUND)
+  set(BLASEXT_FOUND ${BLAS_FOUND})
+endif()
+if (BLAS_LIBRARIES)
+  set(BLASEXT_LIBRARIES ${BLAS_LIBRARIES})
+endif()
+if (BLAS_INCLUDE_DIRS)
+  set(BLASEXT_INCLUDE_DIRS ${BLAS_INCLUDE_DIRS})
+endif()
+if (BLAS_LIBRARY_DIRS)
+  set(BLASEXT_LIBRARY_DIRS ${BLAS_LIBRARY_DIRS})
 endif()

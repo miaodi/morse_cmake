@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2017 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -18,17 +18,21 @@
 #
 # The following variables have been added to manage links with sequential or multithreaded
 # versions:
-#  LAPACK_INCLUDE_DIRS  - LAPACK include directories
-#  LAPACK_LIBRARY_DIRS  - Link directories for LAPACK libraries
-#  LAPACK_SEQ_LIBRARIES - LAPACK component libraries to be linked (sequential)
-#  LAPACK_PAR_LIBRARIES - LAPACK component libraries to be linked (multithreaded)
+#  LAPACK_INCLUDE_DIRS    - LAPACK include directories
+#  LAPACK_LIBRARY_DIRS    - Link directories for LAPACK libraries
+#  LAPACK_SEQ_LIBRARIES   - LAPACK component libraries to be linked (sequential)
+#  LAPACK_PAR_LIBRARIES   - LAPACK component libraries to be linked (multithreaded)
+#  LAPACKEXT_FOUND        - if a LAPACK has been found
+#  LAPACKEXT_LIBRARIES    - Idem LAPACK_LIBRARIES
+#  LAPACKEXT_INCLUDE_DIRS - Idem LAPACK_INCLUDE_DIRS
+#  LAPACKEXT_LIBRARY_DIRS - Idem LAPACK_LIBRARY_DIRS
 
 #=============================================================================
 # Copyright 2012-2013 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2017 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -123,13 +127,13 @@ if(BLA_VENDOR MATCHES "Intel*")
   else()
     if(LAPACK_DIR)
       find_path(LAPACK_mkl_lapack.h_INCLUDE_DIRS
-	NAMES mkl_lapack.h
-	HINTS ${LAPACK_DIR}
-	PATH_SUFFIXES include)
+        NAMES mkl_lapack.h
+        HINTS ${LAPACK_DIR}
+        PATH_SUFFIXES include)
     else()
       find_path(LAPACK_mkl_lapack.h_INCLUDE_DIRS
-	NAMES mkl_lapack.h
-	HINTS ${_inc_env})
+        NAMES mkl_lapack.h
+        HINTS ${_inc_env})
     endif()
   endif()
   mark_as_advanced(LAPACK_mkl_lapack.h_INCLUDE_DIRS)
@@ -162,9 +166,9 @@ if(BLA_VENDOR MATCHES "Intel*")
     # if BLAS Intel 10 64 bit -> save sequential and multithreaded versions
     if(BLA_VENDOR MATCHES "Intel10_64lp*")
       if(BLAS_PAR_LIBRARIES)
-	set(LAPACK_PAR_LIBRARIES "${BLAS_PAR_LIBRARIES}")
+        set(LAPACK_PAR_LIBRARIES "${BLAS_PAR_LIBRARIES}")
       else()
-	set(LAPACK_PAR_LIBRARIES "${LAPACK_PAR_LIBRARIES-NOTFOUND}")
+        set(LAPACK_PAR_LIBRARIES "${LAPACK_PAR_LIBRARIES-NOTFOUND}")
       endif()
     endif()
   endif()
@@ -265,7 +269,7 @@ foreach(lapack_lib ${LAPACK_LIBRARIES})
     else()
       get_filename_component(a_lapack_lib_dir "${lapack_lib}" PATH)
       if (EXISTS "${a_lapack_lib_dir}")
-	list(APPEND LAPACK_LIBRARY_DIRS "${a_lapack_lib_dir}" )
+        list(APPEND LAPACK_LIBRARY_DIRS "${a_lapack_lib_dir}" )
       endif()
     endif()
   endif()
@@ -281,8 +285,8 @@ if(BLA_VENDOR MATCHES "Intel*")
   if(BLA_VENDOR MATCHES "Intel10_64lp*")
     if(NOT LAPACKEXT_FIND_QUIETLY)
       message(STATUS "LAPACK found is Intel MKL:"
-	"\n   we manage two lists of libs, one sequential and one parallel"
-	"\n   (see LAPACK_SEQ_LIBRARIES and LAPACK_PAR_LIBRARIES)")
+        "\n   we manage two lists of libs, one sequential and one parallel"
+        "\n   (see LAPACK_SEQ_LIBRARIES and LAPACK_PAR_LIBRARIES)")
       message(STATUS "LAPACK sequential libraries stored in LAPACK_SEQ_LIBRARIES")
     endif()
     find_package_handle_standard_args(LAPACK DEFAULT_MSG
@@ -291,10 +295,10 @@ if(BLA_VENDOR MATCHES "Intel*")
       LAPACK_INCLUDE_DIRS)
     if(LAPACK_PAR_LIBRARIES)
       if(NOT LAPACKEXT_FIND_QUIETLY)
-	message(STATUS "LAPACK parallel libraries stored in LAPACK_PAR_LIBRARIES")
+        message(STATUS "LAPACK parallel libraries stored in LAPACK_PAR_LIBRARIES")
       endif()
       find_package_handle_standard_args(LAPACK DEFAULT_MSG
-	LAPACK_PAR_LIBRARIES)
+        LAPACK_PAR_LIBRARIES)
     endif()
 
   else()
@@ -347,4 +351,17 @@ else()
   find_package_handle_standard_args(LAPACK DEFAULT_MSG
     LAPACK_SEQ_LIBRARIES
     LAPACK_LIBRARY_DIRS)
+endif()
+
+if (LAPACK_FOUND)
+  set(LAPACKEXT_FOUND ${LAPACK_FOUND})
+endif()
+if (LAPACK_LIBRARIES)
+  set(LAPACKEXT_LIBRARIES ${LAPACK_LIBRARIES})
+endif()
+if (LAPACK_INCLUDE_DIRS)
+  set(LAPACKEXT_INCLUDE_DIRS ${LAPACK_INCLUDE_DIRS})
+endif()
+if (LAPACK_LIBRARY_DIRS)
+  set(LAPACKEXT_LIBRARY_DIRS ${LAPACK_LIBRARY_DIRS})
 endif()

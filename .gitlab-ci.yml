@@ -1,6 +1,11 @@
 image: hpclib/hiepacs
 
 Find:
+  artifacts:
+    name: find_ctests
+    expire_in: 1 week
+    paths:
+     - build/Testing/
   script:
     - cd modules/find/tests
     - mkdir -p build

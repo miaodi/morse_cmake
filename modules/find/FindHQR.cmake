@@ -77,8 +77,8 @@ if(PKG_CONFIG_EXECUTABLE AND NOT HQR_GIVEN_BY_USER)
       #endif()
     else()
       message(STATUS "${Magenta}Looking for HQR - not found using PkgConfig."
-	"\n   Perhaps you should add the directory containing hqr.pc to the"
-	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
+        "\n   Perhaps you should add the directory containing hqr.pc to the"
+        "\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
 
@@ -133,14 +133,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     if(HQR_DIR)
       set(HQR_libhqr.h_DIRS "HQR_libhqr.h_DIRS-NOTFOUND")
       find_path(HQR_libhqr.h_DIRS
-	NAMES libhqr.h
-	HINTS ${HQR_DIR}
+        NAMES libhqr.h
+        HINTS ${HQR_DIR})
     else()
       set(HQR_libhqr.h_DIRS "HQR_libhqr.h_DIRS-NOTFOUND")
       find_path(HQR_libhqr.h_DIRS
-	NAMES libhqr.h
-	HINTS ${_inc_env}
-	PATH_SUFFIXES "hqr")
+        NAMES libhqr.h
+        HINTS ${_inc_env}
+        PATH_SUFFIXES "hqr")
     endif()
   endif()
   mark_as_advanced(HQR_libhqr.h_DIRS)
@@ -177,9 +177,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
       string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
     else()
       if(APPLE)
-	string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
       else()
-	string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
       endif()
       list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
@@ -200,14 +200,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     if(HQR_DIR)
       set(HQR_hqr_LIBRARY "HQR_hqr_LIBRARY-NOTFOUND")
       find_library(HQR_hqr_LIBRARY
-	NAMES hqr
-	HINTS ${HQR_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES hqr
+        HINTS ${HQR_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     else()
       set(HQR_hqr_LIBRARY "HQR_hqr_LIBRARY-NOTFOUND")
       find_library(HQR_hqr_LIBRARY
-	NAMES hqr
-	HINTS ${_lib_env})
+        NAMES hqr
+        HINTS ${_lib_env})
     endif()
   endif()
   mark_as_advanced(HQR_hqr_LIBRARY)
@@ -264,10 +264,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
 
     if(NOT HQR_WORKS)
       if(NOT HQR_FIND_QUIETLY)
-	message(STATUS "Looking for hqr : test of libhqr_hqr_init with hqr library fails")
-	message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-	message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-	message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        message(STATUS "Looking for hqr : test of libhqr_hqr_init with hqr library fails")
+        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
     endif()
     set(CMAKE_REQUIRED_INCLUDES)

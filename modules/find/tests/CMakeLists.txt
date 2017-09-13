@@ -6,7 +6,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../")
 
 # main variable: control the list of libraries to find thanks to find_package
 # pay attention that package names must be given with capital letters
-set(PACKAGES_TO_FIND "" CACHE STRING "List of packages to find, ex: BLAS;STARPU;PASTIX")
+set(PACKAGES "" CACHE STRING "List of packages to find, ex: BLAS;STARPU;PASTIX")
 
 # specific components to look for with packages
 set(QUARK_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with QUARK, ex: HWLOC")
@@ -21,7 +21,7 @@ set(PARSEC_COMPONENTS "" CACHE STRING "List of specific dependencies to look for
 # to enable ctests
 option(ENABLE_CTEST "Enable Testing: will test all supported packages" OFF)
 
-foreach(_library ${PACKAGES_TO_FIND})
+foreach(_library ${PACKAGES})
 
   if (${_library}_COMPONENTS)
     find_package(${_library} COMPONENTS ${${_library}_COMPONENTS})
@@ -73,7 +73,6 @@ if (ENABLE_CTEST)
       LAPACK
       LAPACKE
       LAPACKEXT
-      #MAGMA
       METIS
       MPIEXT
       MUMPS
@@ -93,7 +92,7 @@ if (ENABLE_CTEST)
       TMG)
 
   foreach(_package ${CTEST_PACKAGES_LIST})
-    add_test(FIND${_package} cmake ${CMAKE_SOURCE_DIR} -DPACKAGES_TO_FIND=${_package})
+    add_test(FIND${_package} cmake ${CMAKE_SOURCE_DIR} -DPACKAGES=${_package})
   endforeach()
 
 endif()

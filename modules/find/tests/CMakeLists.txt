@@ -1,22 +1,38 @@
 cmake_minimum_required(VERSION 2.8)
 project(TEST_MORSE_CMAKE_MODULES_FIND Fortran C CXX)
 
-# location of Find package modules
+# location of find package modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../")
 
 # main variable: control the list of libraries to find thanks to find_package
 # pay attention that package names must be given with capital letters
 set(PACKAGES_TO_FIND "" CACHE STRING "List of packages to find, ex: BLAS;STARPU;PASTIX")
+
+# specific components to look for with packages
+set(QUARK_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with QUARK, ex: HWLOC")
+set(PASTIX_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with PASTIX, ex: MPI;SEQ;STARPU;STARPU_CUDA;STARPU_FXT;SCOTCH;PTSCOTCH;METIS")
+set(PETSC_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with PETSc, ex: CXX|C")
+set(FFTW_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with FFTW, ex: MKL;ESSL;THREADS;OMP;SIMPLE;LONG;QUAD")
+set(MUMPS_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with MUMPS, ex: MPI;SEQ;SCOTCH;PTSCOTCH;METIS;PARMETIS;OPENMP")
+set(CHAMELEON_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with CHAMELEON, ex: STARPU;QUARK;CUDA;MPI;FXT")
+set(STARPU_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with STARPU, ex: HWLOC;CUDA;MPI;BLAS;MAGMA;FXT;SIMGRID")
+set(PARSEC_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with PARSEC, ex: HWLOC;CUDA;MPI;AYUDAME")
+
+# to enable ctests
 option(ENABLE_CTEST "Enable Testing: will test all supported packages" OFF)
 
 foreach(_library ${PACKAGES_TO_FIND})
 
-  find_package(${_library})
+  if (${_library}_COMPONENTS)
+    find_package(${_library} COMPONENTS ${${_library}_COMPONENTS})
+  else()
+    find_package(${_library})
+  endif()
   if (${_library}_FOUND)
     if (${_library}_LIBRARIES)
       message(STATUS "${_library}_LIBRARIES found: ${${_library}_LIBRARIES}")
     else()
-      message(ERROR "${_library}_LIBRARIES not found: ${${_library}_LIBRARIES}")
+      message(WARNING "${_library}_LIBRARIES not found: ${${_library}_LIBRARIES}")
     endif()
     if (${_library}_LIBRARY_DIRS)
       message(STATUS "${_library}_LIBRARY_DIRS found: ${${_library}_LIBRARY_DIRS}")
@@ -29,7 +45,7 @@ foreach(_library ${PACKAGES_TO_FIND})
       message(WARNING "${_library}_INCLUDE_DIRS not found: ${${_library}_INCLUDE_DIRS}")
     endif()
   else()
-    message(FATAL_ERROR "${_library} NOT FOUND !!")
+    message(ERROR "${_library} NOT FOUND !!")
   endif()
 
 endforeach()
@@ -47,7 +63,7 @@ if (ENABLE_CTEST)
       CHAMELEON
       CPPCHECK
       EZTRACE
-      FABULOUS
+      #FABULOUS
       FFTW
       FXT
       GTG
@@ -57,7 +73,7 @@ if (ENABLE_CTEST)
       LAPACK
       LAPACKE
       LAPACKEXT
-      MAGMA
+      #MAGMA
       METIS
       MPIEXT
       MUMPS

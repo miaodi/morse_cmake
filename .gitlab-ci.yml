@@ -5,7 +5,7 @@ Find:
     name: find_ctests
     expire_in: 1 week
     paths:
-     - Testing/
+     - modules/find/tests/build/Testing/
   script:
     - cd modules/find/tests
     - mkdir -p build

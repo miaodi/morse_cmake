@@ -69,7 +69,7 @@ if (ENABLE_CTEST)
       GTG
       HQR
       HWLOC
-      HYPRE
+      #HYPRE
       LAPACK
       LAPACKE
       LAPACKEXT

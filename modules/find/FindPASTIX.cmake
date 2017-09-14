@@ -716,7 +716,7 @@ if(PASTIX_LIBRARIES)
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       message(STATUS "Maybe PASTIX is linked with specific libraries. "
-        "Have you tried with COMPONENTS (MPI/SEQ, STARPU, STARPU_CUDA, SCOTCH, PTSCOTCH, METIS)? "
+        "Have you tried with COMPONENTS (MPI/SEQ, PARSEC, STARPU, STARPU_CUDA, SCOTCH, PTSCOTCH, METIS)? "
         "See the explanation in FindPASTIX.cmake.")
     endif()
   endif()

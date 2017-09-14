@@ -259,7 +259,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     # test link
     unset(HQR_WORKS CACHE)
     include(CheckFunctionExists)
-    check_function_exists(libhqr_hqr_init HQR_WORKS)
+    check_function_exists(libhqr_init_hqr HQR_WORKS)
     mark_as_advanced(HQR_WORKS)
 
     if(NOT HQR_WORKS)

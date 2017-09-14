@@ -45,7 +45,7 @@ foreach(_library ${PACKAGES})
       message(WARNING "${_library}_INCLUDE_DIRS not found: ${${_library}_INCLUDE_DIRS}")
     endif()
   else()
-    message(ERROR "${_library} NOT FOUND !!")
+    message(FATAL_ERROR "${_library} NOT FOUND !!")
   endif()
 
 endforeach()

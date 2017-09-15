@@ -63,20 +63,20 @@ if (ENABLE_CTEST)
       CHAMELEON
       CPPCHECK
       EZTRACE
-      #FABULOUS
+      #FABULOUS see https://gitlab.inria.fr/solverstack/fabulous/issues/1
       FFTW
       FXT
       GTG
       HQR
       HWLOC
-      #HYPRE
+      #HYPRE module not ready TODO: complete it
       LAPACK
       LAPACKE
       LAPACKEXT
       METIS
       MPIEXT
       MUMPS
-      PAMPA
+      #PAMPA not able to install it, link problem with ptscotch
       PAPI
       PARMETIS
       PARSEC

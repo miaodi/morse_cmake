@@ -282,6 +282,7 @@ subs = {
     ('', 'real',                 'real',                  'complex',                         r'\bcomplex'                          ),
     ('', 'float',                'double',                'float2',                          r'\bdouble2'                          ),
     ('', 'float',                'double',                'float',                           r'\bdouble'                           ),
+    ('', 'float',                'double',                'complex',                          'double_complex'                     ),
 
     # ----- Text
     ('Symmetric', 'Symmetric',      'Symmetric',      'Hermitian',      'Hermitian'       ),

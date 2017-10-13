@@ -44,9 +44,10 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
-# macro to factorize this call
-macro(find_package_blas)
-  if(BLASEXT_FIND_REQUIRED)
+# Macro to factorize this call. required arguments allows to decide if
+# the REQUIRED option must be given to find_package calls
+macro(find_package_blas required)
+  if(BLASEXT_FIND_REQUIRED AND required)
     if(BLASEXT_FIND_QUIETLY)
       find_package(BLAS REQUIRED QUIET)
     else()
@@ -84,10 +85,9 @@ if(NOT BLASEXT_FIND_QUIETLY)
 endif()
 
 if (NOT BLAS_FOUND)
-  # First try to detect two cases:
-  # 1: only SEQ libs are handled
-  # 2: both SEQ and PAR libs are handled
-  find_package_blas()
+  # First blas detection in order to decide if we should look for a
+  # multitheaded version
+  find_package_blas(0)
 endif ()
 
 # detect the cases where SEQ and PAR libs are handled
@@ -197,7 +197,7 @@ if(BLA_VENDOR MATCHES "Intel*")
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "Look for the sequential version Intel10_64lp_seq")
     endif()
-    find_package_blas()
+    find_package_blas(0)
     if(BLAS_FOUND)
       set(BLAS_SEQ_LIBRARIES "${BLAS_LIBRARIES}")
     else()
@@ -209,7 +209,7 @@ if(BLA_VENDOR MATCHES "Intel*")
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "Look for the multithreaded version Intel10_64lp")
     endif()
-    find_package_blas()
+    find_package_blas(0)
     if(BLAS_FOUND)
       set(BLAS_PAR_LIBRARIES "${BLAS_LIBRARIES}")
     else()
@@ -231,7 +231,7 @@ elseif(BLA_VENDOR MATCHES "ACML*")
 
   ## look for the sequential version
   set(BLA_VENDOR "ACML")
-  find_package_blas()
+  find_package_blas(0)
   if(BLAS_FOUND)
     set(BLAS_SEQ_LIBRARIES "${BLAS_LIBRARIES}")
   else()
@@ -240,7 +240,7 @@ elseif(BLA_VENDOR MATCHES "ACML*")
 
   ## look for the multithreaded version
   set(BLA_VENDOR "ACML_MP")
-  find_package_blas()
+  find_package_blas(0)
   if(BLAS_FOUND)
     set(BLAS_PAR_LIBRARIES "${BLAS_LIBRARIES}")
   else()
@@ -252,7 +252,7 @@ elseif(BLA_VENDOR MATCHES "IBMESSL*")
 
   ## look for the sequential version
   set(BLA_VENDOR "IBMESSL")
-  find_package_blas()
+  find_package_blas(0)
   if(BLAS_FOUND)
     set(BLAS_SEQ_LIBRARIES "${BLAS_LIBRARIES}")
   else()
@@ -261,7 +261,7 @@ elseif(BLA_VENDOR MATCHES "IBMESSL*")
 
   ## look for the multithreaded version
   set(BLA_VENDOR "IBMESSLMT")
-  find_package_blas()
+  find_package_blas(0)
   if(BLAS_FOUND)
     set(BLAS_PAR_LIBRARIES "${BLAS_LIBRARIES}")
   else()
@@ -309,83 +309,64 @@ if (BLAS_LIBRARY_DIRS)
   list(REMOVE_DUPLICATES BLAS_LIBRARY_DIRS)
 endif ()
 
-# check that BLAS has been found
+# check that BLASEXT has been found
 # ---------------------------------
 include(FindPackageHandleStandardArgs)
 if(BLA_VENDOR MATCHES "Intel*")
-  if(BLA_VENDOR MATCHES "Intel10_64lp*")
+  if(NOT BLASEXT_FIND_QUIETLY)
+    message(STATUS "BLAS found is Intel MKL")
+    message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
+  endif()
+  find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+    BLAS_SEQ_LIBRARIES
+    BLAS_LIBRARY_DIRS
+    BLAS_INCLUDE_DIRS)
+  if(BLA_VENDOR MATCHES "Intel10_64lp*" AND BLAS_PAR_LIBRARIES)
     if(NOT BLASEXT_FIND_QUIETLY)
-      message(STATUS "BLAS found is Intel MKL:"
-        "\n   we manage two lists of libs, one sequential and one parallel if found"
-        "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
-      message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
+      message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
     endif()
-    find_package_handle_standard_args(BLAS DEFAULT_MSG
-      BLAS_SEQ_LIBRARIES
-      BLAS_LIBRARY_DIRS
-      BLAS_INCLUDE_DIRS)
-    if(BLAS_PAR_LIBRARIES)
-      if(NOT BLASEXT_FIND_QUIETLY)
-        message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
-      endif()
-      find_package_handle_standard_args(BLAS DEFAULT_MSG
-        BLAS_PAR_LIBRARIES)
-    endif()
-  else()
-    if(NOT BLASEXT_FIND_QUIETLY)
-      message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
-    endif()
-    find_package_handle_standard_args(BLAS DEFAULT_MSG
-      BLAS_SEQ_LIBRARIES
-      BLAS_LIBRARY_DIRS
-      BLAS_INCLUDE_DIRS)
+    find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+      BLAS_PAR_LIBRARIES)
   endif()
 elseif(BLA_VENDOR MATCHES "ACML*")
   if(NOT BLASEXT_FIND_QUIETLY)
-    message(STATUS "BLAS found is ACML:"
-      "\n   we manage two lists of libs, one sequential and one parallel if found"
-      "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
+    message(STATUS "BLAS found is ACML")
     message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(BLAS DEFAULT_MSG
+  find_package_handle_standard_args(BLASEXT DEFAULT_MSG
     BLAS_SEQ_LIBRARIES
     BLAS_LIBRARY_DIRS)
   if(BLAS_PAR_LIBRARIES)
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
     endif()
-    find_package_handle_standard_args(BLAS DEFAULT_MSG
+    find_package_handle_standard_args(BLASEXT DEFAULT_MSG
       BLAS_PAR_LIBRARIES)
   endif()
 elseif(BLA_VENDOR MATCHES "IBMESSL*")
   if(NOT BLASEXT_FIND_QUIETLY)
-    message(STATUS "BLAS found is ESSL:"
-      "\n   we manage two lists of libs, one sequential and one parallel if found"
-      "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
+    message(STATUS "BLAS found is ESSL")
     message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(BLAS DEFAULT_MSG
+  find_package_handle_standard_args(BLASEXT DEFAULT_MSG
     BLAS_SEQ_LIBRARIES
     BLAS_LIBRARY_DIRS)
   if(BLAS_PAR_LIBRARIES)
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
     endif()
-    find_package_handle_standard_args(BLAS DEFAULT_MSG
+    find_package_handle_standard_args(BLASEXT DEFAULT_MSG
       BLAS_PAR_LIBRARIES)
   endif()
 else()
   if(NOT BLASEXT_FIND_QUIETLY)
     message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(BLAS DEFAULT_MSG
+  find_package_handle_standard_args(BLASEXT DEFAULT_MSG
     BLAS_SEQ_LIBRARIES
     BLAS_LIBRARY_DIRS)
 endif()
 
-if (BLAS_FOUND)
-  set(BLASEXT_FOUND ${BLAS_FOUND})
-endif()
 if (BLAS_LIBRARIES)
   set(BLASEXT_LIBRARIES ${BLAS_LIBRARIES})
 endif()

@@ -44,9 +44,10 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
-# macro to factorize this call
-macro(find_package_lapack)
-  if(LAPACKEXT_FIND_REQUIRED)
+# Macro to factorize this call. required arguments allows to decide if
+# the REQUIRED option must be given to find_package calls
+macro(find_package_lapack required)
+  if(LAPACKEXT_FIND_REQUIRED AND required)
     if(LAPACKEXT_FIND_QUIETLY)
       find_package(LAPACK REQUIRED QUIET)
     else()
@@ -61,22 +62,12 @@ macro(find_package_lapack)
   endif()
 endmacro()
 
-# LAPACKEXT depends on BLASEXT
-# call our extended module for BLAS
-#----------------------------------
+# LAPACKEXT depends on BLAS
 if (NOT BLAS_FOUND)
-  if(LAPACKEXT_FIND_REQUIRED)
-    if(LAPACKEXT_FIND_QUIETLY)
-      find_package(BLAS REQUIRED QUIET)
-    else()
-      find_package(BLAS REQUIRED)
-    endif()
+  if(LAPACKEXT_FIND_QUIETLY)
+    find_package(BLAS QUIET)
   else()
-    if(LAPACKEXT_FIND_QUIETLY)
-      find_package(BLAS QUIET)
-    else()
-      find_package(BLAS)
-    endif()
+    find_package(BLAS)
   endif()
 endif ()
 
@@ -155,7 +146,7 @@ if(BLA_VENDOR MATCHES "Intel*")
     ## look for the sequential version
     set(BLA_VENDOR "Intel10_64lp_seq")
   endif()
-  find_package_lapack()
+  find_package_lapack(0)
 
   if (LAPACK_FOUND)
     if(BLAS_SEQ_LIBRARIES)
@@ -177,7 +168,7 @@ elseif(BLA_VENDOR MATCHES "IBMESSL*")
 
   ## look for the sequential version
   set(BLA_VENDOR "IBMESSL")
-  find_package_lapack()
+  find_package_lapack(0)
 
   if (LAPACK_FOUND)
     if(LAPACK_LIBRARIES)
@@ -189,7 +180,7 @@ elseif(BLA_VENDOR MATCHES "IBMESSL*")
 
   ## look for the multithreaded version
   set(BLA_VENDOR "IBMESSLMT")
-  find_package_lapack()
+  find_package_lapack(0)
 
   if (LAPACK_FOUND)
     if(LAPACK_LIBRARIES)
@@ -204,7 +195,7 @@ elseif(BLA_VENDOR MATCHES "ACML*")
   ###
   # look for libs
   ###
-  find_package_lapack()
+  find_package_lapack(0)
 
   if (LAPACK_FOUND)
     if(BLAS_SEQ_LIBRARIES)
@@ -239,7 +230,7 @@ else()
   #     all the possibilities
   #  BLA_F95     if set on tries to find the f95 interfaces for LAPACK/LAPACK
   # Remark: it looks only into paths contained in the system environment variables
-  find_package_lapack()
+  find_package_lapack(0)
 
   if(LAPACK_FOUND)
     set(LAPACK_SEQ_LIBRARIES "${LAPACK_LIBRARIES}")
@@ -278,84 +269,64 @@ if (LAPACK_LIBRARY_DIRS)
   list(REMOVE_DUPLICATES LAPACK_LIBRARY_DIRS)
 endif ()
 
-# check that LAPACK has been found
-# ---------------------------------
+# check that LAPACKEXT has been found
+# -----------------------------------
 include(FindPackageHandleStandardArgs)
 if(BLA_VENDOR MATCHES "Intel*")
-  if(BLA_VENDOR MATCHES "Intel10_64lp*")
     if(NOT LAPACKEXT_FIND_QUIETLY)
-      message(STATUS "LAPACK found is Intel MKL:"
-        "\n   we manage two lists of libs, one sequential and one parallel"
-        "\n   (see LAPACK_SEQ_LIBRARIES and LAPACK_PAR_LIBRARIES)")
+      message(STATUS "LAPACK found is Intel MKL")
       message(STATUS "LAPACK sequential libraries stored in LAPACK_SEQ_LIBRARIES")
     endif()
-    find_package_handle_standard_args(LAPACK DEFAULT_MSG
+    find_package_handle_standard_args(LAPACKEXT DEFAULT_MSG
       LAPACK_SEQ_LIBRARIES
       LAPACK_LIBRARY_DIRS
       LAPACK_INCLUDE_DIRS)
-    if(LAPACK_PAR_LIBRARIES)
+    if(BLA_VENDOR MATCHES "Intel10_64lp*" AND LAPACK_PAR_LIBRARIES)
       if(NOT LAPACKEXT_FIND_QUIETLY)
         message(STATUS "LAPACK parallel libraries stored in LAPACK_PAR_LIBRARIES")
       endif()
-      find_package_handle_standard_args(LAPACK DEFAULT_MSG
+      find_package_handle_standard_args(LAPACKEXT DEFAULT_MSG
         LAPACK_PAR_LIBRARIES)
     endif()
-
-  else()
-    if(NOT LAPACKEXT_FIND_QUIETLY)
-      message(STATUS "LAPACK sequential libraries stored in LAPACK_SEQ_LIBRARIES")
-    endif()
-    find_package_handle_standard_args(LAPACK DEFAULT_MSG
-      LAPACK_SEQ_LIBRARIES
-      LAPACK_LIBRARY_DIRS
-      LAPACK_INCLUDE_DIRS)
-  endif()
 elseif(BLA_VENDOR MATCHES "ACML*")
   if(NOT LAPACKEXT_FIND_QUIETLY)
-    message(STATUS "LAPACK found is ACML:"
-      "\n   we manage two lists of libs, one sequential and one parallel"
-      "\n   (see LAPACK_SEQ_LIBRARIES and LAPACK_PAR_LIBRARIES)")
+    message(STATUS "LAPACK found is ACML")
     message(STATUS "LAPACK sequential libraries stored in LAPACK_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(LAPACK DEFAULT_MSG
+  find_package_handle_standard_args(LAPACKEXT DEFAULT_MSG
     LAPACK_SEQ_LIBRARIES
     LAPACK_LIBRARY_DIRS)
   if(LAPACK_PAR_LIBRARIES)
     if(NOT LAPACKEXT_FIND_QUIETLY)
       message(STATUS "LAPACK parallel libraries stored in LAPACK_PAR_LIBRARIES")
     endif()
-    find_package_handle_standard_args(LAPACK DEFAULT_MSG
+    find_package_handle_standard_args(LAPACKEXT DEFAULT_MSG
       LAPACK_PAR_LIBRARIES)
   endif()
 elseif(BLA_VENDOR MATCHES "IBMESSL*")
   if(NOT LAPACKEXT_FIND_QUIETLY)
-    message(STATUS "LAPACK found is IBMESSL:"
-      "\n   we manage two lists of libs, one sequential and one parallel"
-      "\n   (see LAPACK_SEQ_LIBRARIES and LAPACK_PAR_LIBRARIES)")
+    message(STATUS "LAPACK found is IBMESSL")
     message(STATUS "LAPACK sequential libraries stored in LAPACK_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(LAPACK DEFAULT_MSG
+  find_package_handle_standard_args(LAPACKEXT DEFAULT_MSG
     LAPACK_SEQ_LIBRARIES
     LAPACK_LIBRARY_DIRS)
   if(LAPACK_PAR_LIBRARIES)
     if(NOT LAPACKEXT_FIND_QUIETLY)
       message(STATUS "LAPACK parallel libraries stored in LAPACK_PAR_LIBRARIES")
     endif()
-    find_package_handle_standard_args(LAPACK DEFAULT_MSG
+    find_package_handle_standard_args(LAPACKEXT DEFAULT_MSG
       LAPACK_PAR_LIBRARIES)
   endif()
 else()
   if(NOT LAPACKEXT_FIND_QUIETLY)
     message(STATUS "LAPACK sequential libraries stored in LAPACK_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(LAPACK DEFAULT_MSG
+  find_package_handle_standard_args(LAPACKEXT DEFAULT_MSG
     LAPACK_SEQ_LIBRARIES
     LAPACK_LIBRARY_DIRS)
 endif()
 
-if (LAPACK_FOUND)
-  set(LAPACKEXT_FOUND ${LAPACK_FOUND})
-endif()
 if (LAPACK_LIBRARIES)
   set(LAPACKEXT_LIBRARIES ${LAPACK_LIBRARIES})
 endif()

@@ -32,9 +32,13 @@ CMake project and include the MorseInit module:
     list(APPEND CMAKE_MODULE_PATH "${MORSE_CMAKE_MODULE_PATH}/modules/" )
     # Include the init module
     include(MorseInit)
-    #
 
 We recommend to use this project as a `git submodule` of your project.
+
+Testing
+---------------------
+
+See the file [README](modules/find/test/README.md).
 
 Get involved!
 ---------------------

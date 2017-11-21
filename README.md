@@ -38,7 +38,7 @@ We recommend to use this project as a `git submodule` of your project.
 Testing
 ---------------------
 
-See the file [README](modules/find/test/README.md).
+See the file [README](modules/find/tests/README.md).
 
 Get involved!
 ---------------------

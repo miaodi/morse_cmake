@@ -1,7 +1,7 @@
 Test MORSE CMake modules
 ========================
 
-Procedure to test the `find_package' modules hosted in `modules/find`
+Procedure to test the `find_package` modules hosted in `modules/find`
 
 ```
 git clone https://gitlab.inria.fr/solverstack/morse_cmake.git

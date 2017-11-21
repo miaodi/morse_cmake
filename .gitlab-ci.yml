@@ -10,5 +10,5 @@ Find:
     - cd modules/find/tests
     - mkdir -p build
     - cd build
-    - cmake .. -DENABLE_CTEST=ON -DQUARK_COMPONENTS="HWLOC" -DPASTIX_COMPONENTS="PARSEC;STARPU"
+    - cmake .. -DENABLE_CTEST=ON -DLAPACKE_COMPONENTS="TMG" -DQUARK_COMPONENTS="HWLOC" -DPASTIX_COMPONENTS="PARSEC;STARPU"
     - ctest -V

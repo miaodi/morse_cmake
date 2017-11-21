@@ -9,6 +9,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../")
 set(PACKAGES "" CACHE STRING "List of packages to find, ex: BLAS;STARPU;PASTIX")
 
 # specific components to look for with packages
+set(LAPACKE_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with LAPACKE, ex: TMG")
 set(QUARK_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with QUARK, ex: HWLOC")
 set(PASTIX_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with PASTIX, ex: MPI;SEQ;STARPU;STARPU_CUDA;STARPU_FXT;SCOTCH;PTSCOTCH;METIS")
 set(PETSC_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with PETSc, ex: CXX|C")

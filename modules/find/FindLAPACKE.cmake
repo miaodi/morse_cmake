@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2017 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -17,6 +17,11 @@
 #
 #  LAPACKE depends on the following libraries:
 #   - LAPACK
+#
+#  COMPONENTS are optional libraries CHAMELEON could be linked with,
+#  Use it to drive detection of a specific compilation chain
+#  COMPONENTS can be some of the following:
+#   - TMG: to check that LAPACKE provides the tmglib interface
 #
 # This module finds headers and lapacke library.
 # Results are reported in variables:
@@ -49,7 +54,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2016 Florent Pruvost
+# Copyright 2013-2017 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -66,6 +71,16 @@ if (NOT LAPACKE_FOUND)
   if (NOT LAPACKE_FIND_QUIETLY)
     message(STATUS "A cache variable, namely LAPACKE_DIR, has been set to specify the install directory of LAPACKE")
   endif()
+endif()
+
+# to check that LAPACKE provides the tmglib interface
+set(LAPACKE_WITH_TMG OFF)
+if( LAPACKE_FIND_COMPONENTS )
+  foreach( component ${LAPACKE_FIND_COMPONENTS} )
+    if (${component} STREQUAL "TMG")
+      set(LAPACKE_WITH_TMG ON)
+    endif()
+  endforeach()
 endif()
 
 # LAPACKE depends on LAPACK anyway, try to find it
@@ -324,6 +339,10 @@ if (LAPACK_FOUND)
       unset(LAPACKE_WORKS CACHE)
       include(CheckFunctionExists)
       check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
+      if (LAPACKE_WORKS AND LAPACKE_WITH_TMG)
+        unset(LAPACKE_WORKS CACHE)
+        check_function_exists(LAPACKE_dlatms_work LAPACKE_WORKS)
+      endif()
       mark_as_advanced(LAPACKE_WORKS)
 
       if(LAPACKE_WORKS)

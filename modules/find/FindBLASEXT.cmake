@@ -18,14 +18,20 @@
 #
 # The following variables have been added to manage links with sequential or multithreaded
 # versions:
-#  BLAS_INCLUDE_DIRS    - BLAS include directories
-#  BLAS_LIBRARY_DIRS    - Link directories for BLAS libraries
-#  BLAS_SEQ_LIBRARIES   - BLAS component libraries to be linked (sequential)
-#  BLAS_PAR_LIBRARIES   - BLAS component libraries to be linked (multithreaded)
-#  BLASEXT_FOUND        - if a BLAS has been found
-#  BLASEXT_LIBRARIES    - Idem BLAS_LIBRARIES
-#  BLASEXT_INCLUDE_DIRS - Idem BLAS_INCLUDE_DIRS
-#  BLASEXT_LIBRARY_DIRS - Idem BLAS_LIBRARY_DIRS
+#  BLAS_INCLUDE_DIRS       - BLAS include directories
+#  BLAS_LIBRARY_DIRS       - Link directories for BLAS libraries
+#  BLAS_SEQ_LIBRARIES      - BLAS component libraries to be linked (sequential)
+#  BLAS_SEQ_COMPILER_FLAGS - uncached list of required compiler flags (including -I for mkl headers).
+#  BLAS_SEQ_LINKER_FLAGS   - uncached list of required linker flags (excluding -l
+#    and -L)
+#  BLAS_PAR_LIBRARIES      - BLAS component libraries to be linked (multithreaded)
+#  BLAS_PAR_COMPILER_FLAGS - uncached list of required compiler flags (including -I for mkl headers)
+#  BLAS_PAR_LINKER_FLAGS   - uncached list of required linker flags (excluding -l
+#    and -L)
+#  BLASEXT_FOUND           - if a BLAS has been found
+#  BLASEXT_LIBRARIES       - Idem BLAS_LIBRARIES
+#  BLASEXT_INCLUDE_DIRS    - Idem BLAS_INCLUDE_DIRS
+#  BLASEXT_LIBRARY_DIRS    - Idem BLAS_LIBRARY_DIRS
 
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -200,6 +206,12 @@ if(BLA_VENDOR MATCHES "Intel*")
     find_package_blas(0)
     if(BLAS_FOUND)
       set(BLAS_SEQ_LIBRARIES "${BLAS_LIBRARIES}")
+      if (BLAS_COMPILER_FLAGS)
+        set (BLAS_SEQ_COMPILER_FLAGS "${BLAS_COMPILER_FLAGS}")
+      endif()
+      if (BLAS_LINKER_FLAGS)
+        set (BLAS_SEQ_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
+      endif()
     else()
       set(BLAS_SEQ_LIBRARIES "${BLAS_SEQ_LIBRARIES-NOTFOUND}")
     endif()
@@ -212,6 +224,12 @@ if(BLA_VENDOR MATCHES "Intel*")
     find_package_blas(0)
     if(BLAS_FOUND)
       set(BLAS_PAR_LIBRARIES "${BLAS_LIBRARIES}")
+      if (BLAS_COMPILER_FLAGS)
+        set (BLAS_PAR_COMPILER_FLAGS "${BLAS_COMPILER_FLAGS}")
+      endif()
+      if (BLAS_LINKER_FLAGS)
+        set (BLAS_PAR_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
+      endif()
     else()
       set(BLAS_PAR_LIBRARIES "${BLAS_PAR_LIBRARIES-NOTFOUND}")
     endif()
@@ -280,9 +298,15 @@ else()
 
 endif()
 
-
+# Reset pure BLAS cmake variables to the sequential case (arbitrary default)
 if(BLAS_SEQ_LIBRARIES)
   set(BLAS_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
+endif()
+if (BLAS_SEQ_COMPILER_FLAGS)
+  set(BLAS_COMPILER_FLAGS "${BLAS_SEQ_COMPILER_FLAGS}")
+endif()
+if (BLAS_SEQ_LINKER_FLAGS)
+  set(BLAS_LINKER_FLAGS "${BLAS_SEQ_LINKER_FLAGS}")
 endif()
 
 # extract libs paths

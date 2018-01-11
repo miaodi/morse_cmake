@@ -767,8 +767,6 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
 	message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
 	message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
-    else()
-      set(FFTW_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
     endif()
     set(CMAKE_REQUIRED_INCLUDES)
     set(CMAKE_REQUIRED_FLAGS)

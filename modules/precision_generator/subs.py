@@ -82,6 +82,8 @@ subs = {
     ('morse_get_s',               'morse_get_c'                      ),
     ('TASK_S',                    'TASK_C'                           ),
     ('TASK_D',                    'TASK_Z'                           ),
+    ('TASKS_S',                   'TASKS_C'                          ),
+    ('TASKS_D',                   'TASKS_Z'                          ),
     ('RUNTIME_S',                 'RUNTIME_C'                        ),
     ('RUNTIME_D',                 'RUNTIME_Z'                        ),
 
@@ -280,6 +282,7 @@ subs = {
     ('', 'real',                 'real',                  'complex',                         r'\bcomplex'                          ),
     ('', 'float',                'double',                'float2',                          r'\bdouble2'                          ),
     ('', 'float',                'double',                'float',                           r'\bdouble'                           ),
+    ('', 'float',                'double',                'complex',                          'double_complex'                     ),
 
     # ----- Text
     ('Symmetric', 'Symmetric',      'Symmetric',      'Hermitian',      'Hermitian'       ),
@@ -382,6 +385,8 @@ subs = {
     ('', 'TASK_stsmqr_sy', 'TASK_dtsmqr_sy', 'TASK_ctsmqr_he', 'TASK_ztsmqr_he'  ),
     ('', 'TASK_sor',       'TASK_dor',       'TASK_cun',       'TASK_zun'        ),
     ('', 'TASK_s',         'TASK_d',         'TASK_c',         'TASK_z'          ),
+    ('', 'TASKS_s',        'TASKS_d',        'TASKS_c',        'TASKS_z'         ),
+    ('', 'tasks_s',        'tasks_d',        'tasks_c',        'tasks_z'         ),
     ('', 'TASK_slan',      'TASK_dlan',      'TASK_slan',      'TASK_dlan'       ),
     ('', 'RUNTIME_S',      'RUNTIME_D',      'RUNTIME_C',      'RUNTIME_Z'       ),
     ('', 'RUNTIME_s',      'RUNTIME_d',      'RUNTIME_c',      'RUNTIME_z'       ),
@@ -395,6 +400,7 @@ subs = {
     ('', 'csc_s',          'csc_d',          'csc_c',          'csc_z'           ),
     ('', 'sequential_s',   'sequential_d',   'sequential_c',   'sequential_z'    ),
     ('', 'coeftab_s',      'coeftab_d',      'coeftab_c',      'coeftab_z'       ),
+    ('', 'cblk_s',         'cblk_d',         'cblk_c',         'cblk_z'          ),
     ('', 'thread_s',       'thread_d',       'thread_c',       'thread_z'        ),
     ('', 'thread_ps',      'thread_pd',      'thread_pc',      'thread_pz'       ),
 
@@ -565,6 +571,7 @@ subs = {
     ('', 'ssysv',          'dsysv',          'csysv',          'zsysv'           ),
     ('', 'sposv',          'sposv',          'cposv',          'cposv'           ),
     ('', 'spotrf',         'dpotrf',         'cpotrf',         'zpotrf'          ),
+    ('', 'spotrf',         'dpotrf',         'cpxtrf',         'zpxtrf'          ),
     ('', 'ssytrf',         'dsytrf',         'csytrf',         'zsytrf'          ),
     ('', 'spotri',         'dpotri',         'cpotri',         'zpotri'          ),
     ('', 'spotrs',         'dpotrs',         'cpotrs',         'zpotrs'          ),
@@ -621,6 +628,7 @@ subs = {
     ('', 'sger',           'dger',           'cgerc',          'zgerc'           ),
     ('', 'sger',           'dger',           'cgeru',          'zgeru'           ),
     ('', 'snrm2',          'dnrm2',          'scnrm2',         'dznrm2'          ),
+    ('', 'snrm2',          'dnrm2',          'snrm2',          'dnrm2'           ),
     ('', 'ssymm',          'dsymm',          'chemm',          'zhemm'           ),
     ('', 'ssymv',          'dsymv',          'chemv',          'zhemv'           ),
     ('', 'ssyr2',          'dsyr2',          'cher2',          'zher2'           ),
@@ -836,6 +844,7 @@ subs = {
     ('', 'SSYSV',          'DSYSV',          'CSYSV',          'ZSYSV'           ),
     ('', 'SPOSV',          'SPOSV',          'CPOSV',          'CPOSV'           ),
     ('', 'SPOTRF',         'DPOTRF',         'CPOTRF',         'ZPOTRF'          ),
+    ('', 'SPOTRF',         'DPOTRF',         'CPXTRF',         'ZPXTRF'          ),
     ('', 'SSYTRF',         'DSYTRF',         'CSYTRF',         'ZSYTRF'          ),
     ('', 'SPOTRI',         'DPOTRI',         'CPOTRI',         'ZPOTRI'          ),
     ('', 'SPOTRS',         'DPOTRS',         'CPOTRS',         'ZPOTRS'          ),

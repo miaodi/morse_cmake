@@ -244,7 +244,6 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
       find_library(${_prefix}_${_library}_LIBRARY
         NAMES ${_library}
         HINTS ${_libdir}
-        NO_DEFAULT_PATH
         )
       mark_as_advanced(${_prefix}_${_library}_LIBRARY)
       # Print status if not found

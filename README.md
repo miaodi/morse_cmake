@@ -18,7 +18,7 @@ master branch:
 Documentation
 ---------------------
 
-TODO
+See the file [morse_cmakefind_doc.org](modules/find/morse_cmakefind_doc.org).
 
 Installation
 ---------------------
@@ -32,9 +32,13 @@ CMake project and include the MorseInit module:
     list(APPEND CMAKE_MODULE_PATH "${MORSE_CMAKE_MODULE_PATH}/modules/" )
     # Include the init module
     include(MorseInit)
-    #
 
 We recommend to use this project as a `git submodule` of your project.
+
+Testing
+---------------------
+
+See the file [README](modules/find/tests/README.md).
 
 Get involved!
 ---------------------

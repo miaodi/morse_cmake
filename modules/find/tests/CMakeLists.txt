@@ -73,7 +73,7 @@ if (ENABLE_CTEST)
       CHAMELEON
       CPPCHECK
       EZTRACE
-      #FABULOUS see https://gitlab.inria.fr/solverstack/fabulous/issues/1
+      FABULOUS
       FFTW
       FXT
       GTG

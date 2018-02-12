@@ -91,7 +91,7 @@ if (ENABLE_CTEST)
       PARMETIS
       PARSEC
       PASTIX
-      PETSC
+      PETSc
       PTSCOTCH
       QUARK
       SCALAPACK

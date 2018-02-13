@@ -78,8 +78,8 @@ if(PKG_CONFIG_EXECUTABLE AND NOT GTG_GIVEN_BY_USER)
       #endif()
     else()
       message(STATUS "${Magenta}Looking for GTG - not found using PkgConfig."
-	"\n   Perhaps you should add the directory containing gtg.pc to the"
-	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
+        "\n   Perhaps you should add the directory containing gtg.pc to the"
+        "\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
 
@@ -137,15 +137,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT GTG_FOUND) OR 
     if(GTG_DIR)
       set(GTG_GTG.h_DIRS "GTG_GTG.h_DIRS-NOTFOUND")
       find_path(GTG_GTG.h_DIRS
-	NAMES GTG.h
-	HINTS ${GTG_DIR}
-	PATH_SUFFIXES "include" "include/gtg")
+        NAMES GTG.h
+        HINTS ${GTG_DIR}
+        PATH_SUFFIXES "include" "include/gtg")
     else()
       set(GTG_GTG.h_DIRS "GTG_GTG.h_DIRS-NOTFOUND")
       find_path(GTG_GTG.h_DIRS
-	NAMES GTG.h
-	HINTS ${_inc_env}
-	PATH_SUFFIXES "gtg")
+        NAMES GTG.h
+        HINTS ${_inc_env}
+        PATH_SUFFIXES "gtg")
     endif()
   endif()
   mark_as_advanced(GTG_GTG.h_DIRS)
@@ -183,9 +183,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT GTG_FOUND) OR 
       string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
     else()
       if(APPLE)
-	string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
       else()
-	string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
       endif()
       list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
@@ -206,14 +206,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT GTG_FOUND) OR 
     if(GTG_DIR)
       set(GTG_gtg_LIBRARY "GTG_gtg_LIBRARY-NOTFOUND")
       find_library(GTG_gtg_LIBRARY
-	NAMES gtg
-	HINTS ${GTG_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES gtg
+        HINTS ${GTG_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     else()
       set(GTG_gtg_LIBRARY "GTG_gtg_LIBRARY-NOTFOUND")
       find_library(GTG_gtg_LIBRARY
-	NAMES gtg
-	HINTS ${_lib_env})
+        NAMES gtg
+        HINTS ${_lib_env})
     endif()
   endif()
   mark_as_advanced(GTG_gtg_LIBRARY)
@@ -270,10 +270,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT GTG_FOUND) OR 
 
     if(NOT GTG_WORKS)
       if(NOT GTG_FIND_QUIETLY)
-	message(STATUS "Looking for gtg : test of GTG_start with gtg library fails")
-	message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-	message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-	message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        message(STATUS "Looking for gtg : test of GTG_start with gtg library fails")
+        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
     endif()
     set(CMAKE_REQUIRED_INCLUDES)
@@ -289,6 +289,7 @@ if (GTG_LIBRARIES)
   else()
     list(GET GTG_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
+    set(GTG_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")

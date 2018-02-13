@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -479,11 +479,13 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
       endif()
       set(BLAS_COMPILER_FLAGS "")
       if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
-        if (CMAKE_C_COMPILER_ID STREQUAL "Intel")
-          list(APPEND BLAS_COMPILER_FLAGS "-openmp")
+        if(BLAS_FIND_REQUIRED)
+          find_package(OpenMP REQUIRED)
+        else()
+          find_package(OpenMP)
         endif()
-        if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-          list(APPEND BLAS_COMPILER_FLAGS "-fopenmp")
+        if(OPENMP_C_FLAGS)
+          list(APPEND BLAS_COMPILER_FLAGS "${OPENMP_C_FLAGS}")
         endif()
       endif()
       if (CMAKE_C_COMPILER_ID STREQUAL "GNU")

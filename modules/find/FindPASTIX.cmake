@@ -47,6 +47,7 @@
 #  PASTIX_INCLUDE_DIRS_DEP - pastix + dependencies include directories
 #  PASTIX_LIBRARY_DIRS_DEP - pastix + dependencies link directories
 #  PASTIX_LIBRARIES_DEP    - pastix libraries + dependencies
+#  PASTIX_INTSIZE          - Number of octets occupied by a pastix_int_t
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPASTIX_DIR=path/to/pastix):
@@ -737,6 +738,73 @@ if(PASTIX_LIBRARIES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
 endif(PASTIX_LIBRARIES)
+
+
+# Check the size of pastix_int_t
+# ---------------------------------
+set(CMAKE_REQUIRED_INCLUDES ${PASTIX_INCLUDE_DIRS} ${PASTIX_INCLUDE_DIRS_DEP})
+
+include(CheckCSourceRuns)
+#mpi.h should be included by pastix.h directly
+if ((PASTIX_LOOK_FOR_MPI AND MPI_FOUND) AND (${PASTIX_VERSION_MAJOR} EQUAL 5))
+  set(PASTIX_C_TEST_PASTIX_INT_4 "
+#include <mpi.h>
+#include <pastix.h>
+int main(int argc, char **argv) {
+  if (sizeof(pastix_int_t) == 4)
+    return 0;
+  else
+    return 1;
+}
+")
+
+  set(PASTIX_C_TEST_PASTIX_INT_8 "
+#include <mpi.h>
+#include <pastix.h>
+int main(int argc, char **argv) {
+  if (sizeof(pastix_int_t) == 8)
+    return 0;
+  else
+    return 1;
+}
+")
+else()
+  set(PASTIX_C_TEST_PASTIX_INT_4 "
+#include <pastix.h>
+int main(int argc, char **argv) {
+  if (sizeof(pastix_int_t) == 4)
+    return 0;
+  else
+    return 1;
+}
+")
+
+  set(PASTIX_C_TEST_PASTIX_INT_8 "
+#include <pastix.h>
+int main(int argc, char **argv) {
+  if (sizeof(pastix_int_t) == 8)
+    return 0;
+  else
+    return 1;
+}
+")
+endif()
+
+unset(PASTIX_INT_4 CACHE)
+unset(PASTIX_INT_8 CACHE)
+check_c_source_runs("${PASTIX_C_TEST_PASTIX_INT_4}" PASTIX_INT_4)
+check_c_source_runs("${PASTIX_C_TEST_PASTIX_INT_8}" PASTIX_INT_8)
+if(NOT PASTIX_INT_4)
+  if(NOT PASTIX_INT_8)
+    set(PASTIX_INTSIZE -1)
+  else()
+    set(PASTIX_INTSIZE 8)
+  endif()
+else()
+  set(PASTIX_INTSIZE 4)
+endif()
+set(CMAKE_REQUIRED_INCLUDES "")
+
 
 if (PASTIX_LIBRARIES)
   list(GET PASTIX_LIBRARIES 0 first_lib)

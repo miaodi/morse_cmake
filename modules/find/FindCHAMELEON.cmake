@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -44,6 +44,7 @@
 #  CHAMELEON_INCLUDE_DIRS_DEP - chameleon + dependencies include directories
 #  CHAMELEON_LIBRARY_DIRS_DEP - chameleon + dependencies link directories
 #  CHAMELEON_LIBRARIES_DEP    - chameleon libraries + dependencies
+#  CHAMELEON_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DCHAMELEON_DIR=path/to/chameleon):
 #  CHAMELEON_DIR              - Where to find the base directory of chameleon
@@ -53,11 +54,11 @@
 # are not given as cmake variable: CHAMELEON_DIR, CHAMELEON_INCDIR, CHAMELEON_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2016 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -134,11 +135,6 @@ if(PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_GIVEN_BY_USER)
   if (NOT CHAMELEON_FIND_QUIETLY)
     if (CHAMELEON_FOUND AND CHAMELEON_LIBRARIES)
       message(STATUS "Looking for CHAMELEON - found using PkgConfig")
-      #if(NOT CHAMELEON_INCLUDE_DIRS)
-      #    message("${Magenta}CHAMELEON_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to chameleon headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for CHAMELEON - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing chameleon.pc"
@@ -171,6 +167,12 @@ if(PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_GIVEN_BY_USER)
   set(CHAMELEON_INCLUDE_DIRS_DEP "${CHAMELEON_STATIC_INCLUDE_DIRS}")
   set(CHAMELEON_LIBRARY_DIRS_DEP "${CHAMELEON_STATIC_LIBRARY_DIRS}")
   set(CHAMELEON_LIBRARIES_DEP "${CHAMELEON_STATIC_LIBRARIES}")
+
+  if (CHAMELEON_FOUND AND CHAMELEON_LIBRARIES)
+    set(CHAMELEON_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(CHAMELEON_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_GIVEN_BY_USER)
 

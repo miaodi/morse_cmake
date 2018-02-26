@@ -48,6 +48,8 @@
 # <PREFIX> = PETSC        for common case
 # <PREFIX> = PETSC_STATIC for static linking
 #
+# PETSC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#
 # find_package(PETSc [QUIET] [REQUIRED])
 #
 # Setting these changes the behavior of the search
@@ -77,6 +79,11 @@ if( PKG_CONFIG_EXECUTABLE AND NOT PETSC_DIR )
     endif()
   endif()
   set(PETSC_DIR "${PETSC_PREFIX}")
+  if (PETSC_FOUND AND PETSC_LIBRARIES)
+    set(PETSC_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(PETSC_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 endif()
 
 # consider using the env. var. PETSC_DIR if not directly given through the CMake cache var.

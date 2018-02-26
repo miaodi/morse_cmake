@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -24,6 +24,7 @@
 #  EZTRACE_INCLUDE_DIRS    - eztrace include directories
 #  EZTRACE_LIBRARY_DIRS    - Link directories for eztrace libraries
 #  EZTRACE_LIBRARIES       - eztrace component libraries to be linked
+#  EZTRACE_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DEZTRACE_DIR=path/to/eztrace):
@@ -34,11 +35,11 @@
 # are not given as cmake variable: EZTRACE_DIR, EZTRACE_INCDIR, EZTRACE_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -84,6 +85,11 @@ if( PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_GIVEN_BY_USER )
       message(STATUS "${Magenta}Looking for EZTRACE - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing eztrace.pc to"
         "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
+    endif()
+    if (EZTRACE_FOUND AND EZTRACE_LIBRARIES)
+      set(EZTRACE_FOUND_WITH_PKGCONFIG "TRUE")
+    else()
+      set(EZTRACE_FOUND_WITH_PKGCONFIG "FALSE")
     endif()
   endif()
 

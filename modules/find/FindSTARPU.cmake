@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2017 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2016 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -51,11 +51,11 @@
 # are not given as cmake variable: STARPU_DIR, STARPU_INCDIR, STARPU_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2017 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -227,11 +227,6 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
   if (NOT STARPU_FIND_QUIETLY)
     if (STARPU_SHM_FOUND AND STARPU_SHM_LIBRARIES)
       message(STATUS "Looking for STARPU - found using PkgConfig")
-      #if(NOT STARPU_SHM_INCLUDE_DIRS)
-      #    message("${Magenta}STARPU_SHM_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to starpu headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
       set(STARPU_VERSION_STRING "${STARPU_SHM_VERSION}")
       string(REPLACE "." ";" STARPU_VERSION_STRING_LIST ${STARPU_VERSION_STRING})
       list(GET STARPU_VERSION_STRING_LIST 0 STARPU_VERSION_MAJOR)
@@ -271,6 +266,12 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
            " when required is ${STARPU_FIND_VERSION} or newer")
         endif()
       endif()
+    endif()
+
+    if (STARPU_SHM_FOUND AND STARPU_SHM_LIBRARIES)
+      set(STARPU_FOUND_WITH_PKGCONFIG "TRUE")
+    else()
+      set(STARPU_FOUND_WITH_PKGCONFIG "FALSE")
     endif()
 
   endif()

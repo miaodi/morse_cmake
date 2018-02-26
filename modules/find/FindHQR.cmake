@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2017 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -19,6 +19,7 @@
 #  HQR_INCLUDE_DIRS    - hqr include directories
 #  HQR_LIBRARY_DIRS    - Link directories for hqr libraries
 #  HQR_LIBRARIES       - hqr component libraries to be linked
+#  HQR_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DHQR_DIR=path/to/hqr):
@@ -29,11 +30,11 @@
 # are not given as cmake variable: HQR_DIR, HQR_INCDIR, HQR_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2017 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2017 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -81,7 +82,11 @@ if(PKG_CONFIG_EXECUTABLE AND NOT HQR_GIVEN_BY_USER)
         "\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
-
+  if (HQR_FOUND AND HQR_LIBRARIES)
+    set(HQR_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(HQR_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 endif(PKG_CONFIG_EXECUTABLE AND NOT HQR_GIVEN_BY_USER)
 
 if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR (HQR_GIVEN_BY_USER) )

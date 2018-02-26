@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2017 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -20,6 +20,7 @@
 #  GTG_INCLUDE_DIRS    - gtg include directories
 #  GTG_LIBRARY_DIRS    - Link directories for gtg libraries
 #  GTG_LIBRARIES       - gtg component libraries to be linked
+#  GTG_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DGTG_DIR=path/to/gtg):
@@ -30,11 +31,11 @@
 # are not given as cmake variable: GTG_DIR, GTG_INCDIR, GTG_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2017 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2017 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -84,6 +85,12 @@ if(PKG_CONFIG_EXECUTABLE AND NOT GTG_GIVEN_BY_USER)
   endif()
 
   set(GTG_C_FLAGS "${GTG_CFLAGS_OTHER}")
+
+  if (GTG_FOUND AND GTG_LIBRARIES)
+    set(GTG_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(GTG_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT GTG_GIVEN_BY_USER)
 

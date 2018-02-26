@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -20,6 +20,7 @@
 #  HWLOC_INCLUDE_DIRS    - hwloc include directories
 #  HWLOC_LIBRARY_DIRS    - Link directories for hwloc libraries
 #  HWLOC_LIBRARIES       - hwloc component libraries to be linked
+#  HWLOC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DHWLOC_DIR=path/to/hwloc):
@@ -30,11 +31,11 @@
 # are not given as cmake variable: HWLOC_DIR, HWLOC_INCDIR, HWLOC_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -74,11 +75,6 @@ if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
   if (NOT HWLOC_FIND_QUIETLY)
     if (HWLOC_FOUND AND HWLOC_LIBRARIES)
       message(STATUS "Looking for HWLOC - found using PkgConfig")
-      #if(NOT HWLOC_INCLUDE_DIRS)
-      #    message("${Magenta}HWLOC_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to hwloc headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for HWLOC - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing hwloc.pc to"
@@ -87,6 +83,12 @@ if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
   endif()
 
   set(HWLOC_C_FLAGS "${HWLOC_CFLAGS_OTHER}")
+
+  if (HWLOC_FOUND AND HWLOC_LIBRARIES)
+    set(HWLOC_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(HWLOC_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 
 endif( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 

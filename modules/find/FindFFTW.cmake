@@ -36,6 +36,7 @@
 #  FFTW_INCLUDE_DIRS_DEP - fftw + dependencies include directories
 #  FFTW_LIBRARY_DIRS_DEP - fftw + dependencies link directories
 #  FFTW_LIBRARIES_DEP    - fftw libraries + dependencies
+#  FFTW_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DFFTW_DIR=path/to/fftw):
@@ -48,11 +49,11 @@
 # environment variable
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2016 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -353,6 +354,12 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
 
     if (FFTW_LIBRARIES)
       set(FFTW_WORKS TRUE)
+    endif()
+
+    if (FFTW_FOUND AND FFTW_LIBRARIES)
+      set(FFTW_FOUND_WITH_PKGCONFIG "TRUE")
+    else()
+      set(FFTW_FOUND_WITH_PKGCONFIG "FALSE")
     endif()
 
   endif( PKG_CONFIG_EXECUTABLE AND NOT FFTW_GIVEN_BY_USER )

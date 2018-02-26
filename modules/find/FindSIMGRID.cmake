@@ -20,6 +20,7 @@
 #  SIMGRID_INCLUDE_DIRS    - simgrid include directories
 #  SIMGRID_LIBRARY_DIRS    - Link directories for simgrid libraries
 #  SIMGRID_LIBRARIES       - simgrid component libraries to be linked
+#  SIMGRID_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DSIMGRID_DIR=path/to/simgrid):
@@ -84,6 +85,12 @@ if(PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_GIVEN_BY_USER)
   endif()
 
   set(SIMGRID_C_FLAGS "${SIMGRID_CFLAGS_OTHER}")
+
+  if (SIMGRID_FOUND AND SIMGRID_LIBRARIES)
+    set(SIMGRID_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(SIMGRID_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_GIVEN_BY_USER)
 

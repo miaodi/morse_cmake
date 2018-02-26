@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -20,6 +20,7 @@
 #  PAPI_INCLUDE_DIRS    - papi include directories
 #  PAPI_LIBRARY_DIRS    - Link directories for papi libraries
 #  PAPI_LIBRARIES       - papi component libraries to be linked
+#  PAPI_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPAPI_DIR=path/to/papi):
@@ -30,11 +31,11 @@
 # are not given as cmake variable: PAPI_DIR, PAPI_INCDIR, PAPI_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2016 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2016 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -84,6 +85,12 @@ if(PKG_CONFIG_EXECUTABLE AND NOT PAPI_GIVEN_BY_USER)
   endif()
 
   set(PAPI_C_FLAGS "${PAPI_CFLAGS_OTHER}")
+
+  if (PAPI_FOUND AND PAPI_LIBRARIES)
+    set(PAPI_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(PAPI_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT PAPI_GIVEN_BY_USER)
 

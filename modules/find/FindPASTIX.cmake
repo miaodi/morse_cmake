@@ -449,34 +449,47 @@ list(REMOVE_DUPLICATES _lib_env)
 # ------------------------------------------------
 
 # create list of libs to find
-set(PASTIX_libs_to_find "pastix_murge;pastix")
-
-# call cmake macro to find the lib path
-if(PASTIX_LIBDIR)
+set(PASTIX_libs_to_find_v5 "pastix_murge;pastix")
+set(PASTIX_libs_to_find_v6 "pastix;pastix_kernels;pastix_spm;pastix_bcsc")
+foreach(v 5 6)
+  set(V_FOUND TRUE)
+  set(PASTIX_libs_to_find ${PASTIX_libs_to_find_v${v}})
+  message(STATUS "Looking for pastix -- Testing is version ${v}")
+  # call cmake macro to find the lib path
   foreach(pastix_lib ${PASTIX_libs_to_find})
     set(PASTIX_${pastix_lib}_LIBRARY "PASTIX_${pastix_lib}_LIBRARY-NOTFOUND")
-    find_library(PASTIX_${pastix_lib}_LIBRARY
-      NAMES ${pastix_lib}
-      HINTS ${PASTIX_LIBDIR})
+    if(PASTIX_LIBDIR)
+      find_library(PASTIX_${pastix_lib}_LIBRARY
+        NAMES ${pastix_lib}
+        HINTS ${PASTIX_LIBDIR})
+    else()
+      if(PASTIX_DIR)
+        find_library(PASTIX_${pastix_lib}_LIBRARY
+          NAMES ${pastix_lib}
+          HINTS ${PASTIX_DIR}
+          PATH_SUFFIXES lib lib32 lib64)
+      else()
+        find_library(PASTIX_${pastix_lib}_LIBRARY
+          NAMES ${pastix_lib}
+          HINTS ${_lib_env})
+      endif()
+    endif()
+    if (NOT PASTIX_${pastix_lib}_LIBRARY)
+      set (V_FOUND FALSE)
+      break()
+    endif()
   endforeach()
-else()
-  if(PASTIX_DIR)
-    foreach(pastix_lib ${PASTIX_libs_to_find})
-      set(PASTIX_${pastix_lib}_LIBRARY "PASTIX_${pastix_lib}_LIBRARY-NOTFOUND")
-      find_library(PASTIX_${pastix_lib}_LIBRARY
-        NAMES ${pastix_lib}
-        HINTS ${PASTIX_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
-    endforeach()
-  else()
-    foreach(pastix_lib ${PASTIX_libs_to_find})
-      set(PASTIX_${pastix_lib}_LIBRARY "PASTIX_${pastix_lib}_LIBRARY-NOTFOUND")
-      find_library(PASTIX_${pastix_lib}_LIBRARY
-        NAMES ${pastix_lib}
-        HINTS ${_lib_env})
-    endforeach()
+  if (V_FOUND)
+    set(PASTIX_VERSION_MAJOR ${v})
+    message(STATUS "Looking for pastix -- major version detected: ${PASTIX_VERSION_MAJOR}")
+    if (PASTIX_FIND_VERSION)
+      if (NOT ${PASTIX_VERSION_MAJOR} EQUAL ${PASTIX_FIND_VERSION_MAJOR})
+        message(FATAL_ERROR "Looking for pastix -- PaStiX version found differ from required")
+      endif()
+    endif()
+    break()
   endif()
-endif()
+endforeach()
 
 # If found, add path to cmake variable
 # ------------------------------------

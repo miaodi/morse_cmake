@@ -506,7 +506,7 @@ if(BLAS_FOUND)
         LAPACK
         cheevd
         ""
-        "essl;lapack"
+        "essl"
         "${BLAS_LIBRARIES}"
         ""
         )
@@ -531,7 +531,7 @@ if(BLAS_FOUND)
         LAPACK
         cheevd
         ""
-        "esslsmp;lapack"
+        "esslsmp"
         "${BLAS_PAR_LIBRARIES}"
         ""
         )

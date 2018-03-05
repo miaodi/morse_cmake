@@ -1014,7 +1014,7 @@ if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
       BLAS
       sgemm
       ""
-      "essl;xlfmath;xlf90_r;blas"
+      "essl"
       ""
       )
     if(NOT BLAS_FIND_QUIETLY)
@@ -1041,7 +1041,7 @@ if (BLA_VENDOR STREQUAL "IBMESSLMT" OR BLA_VENDOR STREQUAL "All")
       BLAS
       sgemm
       ""
-      "esslsmp;xlsmp;xlfmath;xlf90_r;blas"
+      "esslsmp"
       ""
       )
     if(NOT BLAS_FIND_QUIETLY)

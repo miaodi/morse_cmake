@@ -134,7 +134,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
 
   # Try to find the simgrid header in the given paths
   # -------------------------------------------------
-  set(SIMGRID_hdrs_to_find "simgrid.h;simgrid_config.h")
+  set(SIMGRID_hdrs_to_find "simgrid_config.h")
 
   # call cmake macro to find the header path
   if(SIMGRID_INCDIR)

@@ -278,6 +278,9 @@ subs = {
     ('int',             'float',           'double',          'float',              r'\bdouble'            ),
     ('PastixPattern',   'PastixFloat',     'PastixDouble',    'PastixComplex32',    r'\bPastixComplex64'   ),
     ('PastixPattern',   'PastixFloat',     'PastixDouble',    'PastixFloat',        r'\bPastixDouble'      ),
+    ('int',             'float',           'double',          'spm_complex32_t', r'\bspm_complex64_t'),
+    ('SpmPattern',   'SpmFloat',     'SpmDouble',    'SpmComplex32',    r'\bSpmComplex64'   ),
+    ('SpmPattern',   'SpmFloat',     'SpmDouble',    'SpmFloat',        r'\bSpmDouble'      ),
     ('', 'sizeof_real',          'sizeof_double',         'sizeof_complex',                  r'\bsizeof_complex_16'                ),  # before complex
     ('', 'real',                 'real',                  'complex',                         r'\bcomplex'                          ),
     ('', 'float',                'double',                'float2',                          r'\bdouble2'                          ),

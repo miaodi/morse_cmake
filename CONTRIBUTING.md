@@ -13,7 +13,7 @@ git clone git@gitlab.inria.fr:username/forkname.git
 Once this is done, you can setup the morse_cmake repository as the upstream of your clone to simplify the update of your fork repository.
 ```
 #!shell
-git remote add upstream git@bitbucket.org:solverstack/morse_cmake.git
+git remote add upstream git@gitlab.inria.fr:solverstack/morse_cmake.git
 ```
 
 Now, you have your repository configured, and you want to create a new pull request. The first step is to create a branch from the HEAD of the your fork repository.

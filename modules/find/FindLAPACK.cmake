@@ -356,290 +356,376 @@ if(BLAS_FOUND)
     endif()
   endif(BLAS_LIBRARIES)
 
-  #intel lapack
-  if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
+  # if not lapack in blas libs, try to find lapack with pkg-config
+  set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
+  set(ENV_LAPACK_INCDIR "$ENV{LAPACK_INCDIR}")
+  set(ENV_LAPACK_LIBDIR "$ENV{LAPACK_LIBDIR}")
+  set(LAPACK_GIVEN_BY_USER "FALSE")
+  if ( LAPACK_DIR OR ( LAPACK_INCDIR AND LAPACK_LIBDIR) OR ENV_LAPACK_DIR OR (ENV_LAPACK_INCDIR AND ENV_LAPACK_LIBDIR) )
+    set(LAPACK_GIVEN_BY_USER "TRUE")
+  endif()
 
-    if(NOT LAPACK_LIBRARIES)
-      if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
-
-        if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
-              find_PACKAGE(Threads)
+  macro(FIND_PKGCONFIG_LIBRARIES_ABSOLUTE_PATH _prefix)
+    if(WIN32)
+      string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    elseif(APPLE)
+      string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+    else()
+      string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+    endif()
+    list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+    list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+    set(${_prefix}_LIBRARIES_COPY "${${_prefix}_LIBRARIES}")
+    set(${_prefix}_LIBRARIES "")
+    foreach(_library ${${_prefix}_LIBRARIES_COPY})
+        get_filename_component(_library "${_library}" NAME_WE)
+        find_library(_library_path NAMES ${_library}
+            HINTS ${${_prefix}_LIBDIR} ${${_prefix}_LIBRARY_DIRS} ${_lib_env})
+        if (_library_path)
+            list(APPEND ${_prefix}_LIBRARIES ${_library_path})
         else()
-              find_package(Threads REQUIRED)
+            message(FATAL_ERROR "Dependency of ${_prefix} '${_library}' NOT FOUND")
         endif()
-
-        set(LAPACK_SEARCH_LIBS "")
-
-        set(additional_flags "")
-        if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-              set(additional_flags "-Wl,--no-as-needed")
+        unset(_library_path CACHE)
+    endforeach()
+    set(${_prefix}_STATIC_LIBRARIES_COPY "${${_prefix}_STATIC_LIBRARIES}")
+    set(${_prefix}_STATIC_LIBRARIES "")
+    foreach(_library ${${_prefix}_STATIC_LIBRARIES_COPY})
+        get_filename_component(_library "${_library}" NAME_WE)
+        find_library(_library_path NAMES ${_library}
+            HINTS ${${_prefix}_STATIC_LIBDIR} ${${_prefix}_STATIC_LIBRARY_DIRS} ${_lib_env})
+        if (_library_path)
+            list(APPEND ${_prefix}_STATIC_LIBRARIES ${_library_path})
+        else()
+            message(FATAL_ERROR "Dependency of ${_prefix} '${_library}' NOT FOUND")
         endif()
+        unset(_library_path CACHE)
+    endforeach()
+  endmacro()
+  
+  # Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
+  # -------------------------------------------------------------------------------------
+  include(FindPkgConfig)
+  find_package(PkgConfig QUIET)
+  if( PKG_CONFIG_EXECUTABLE AND NOT LAPACK_GIVEN_BY_USER AND BLA_VENDOR STREQUAL "All")
+  
+    pkg_search_module(LAPACK lapack)
+    find_pkgconfig_libraries_absolute_path(LAPACK)
+    
+    if (NOT LAPACK_FIND_QUIETLY)
+      if (LAPACK_FOUND AND LAPACK_LIBRARIES)
+        message(STATUS "Looking for LAPACK - found using PkgConfig")
+      else()
+        message(STATUS "${Magenta}Looking for LAPACK - not found using PkgConfig."
+          "\n   Perhaps you should add the directory containing lapack.pc to"
+          "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
+      endif()
+    endif()
+  
+    if (BLA_STATIC)
+      set(LAPACK_LINKER_FLAGS "${LAPACK_STATIC_LDFLAGS}")
+      set(LAPACK_COMPILER_FLAGS "${LAPACK_STATIC_CFLAGS}")
+      set(LAPACK_LIBRARIES "${LAPACK_STATIC_LIBRARIES}")
+    else()
+      set(LAPACK_LINKER_FLAGS "${LAPACK_LDFLAGS}")
+      set(LAPACK_COMPILER_FLAGS "${LAPACK_CFLAGS}")
+    endif()
+    
+    if (LAPACK_FOUND AND LAPACK_LIBRARIES)
+      set(LAPACK_FOUND_WITH_PKGCONFIG "TRUE")
+    else()
+      set(LAPACK_FOUND_WITH_PKGCONFIG "FALSE")
+    endif()
+  
+  endif()
 
-        if (BLA_F95)
-              set(LAPACK_mkl_SEARCH_SYMBOL "CHEEV")
-              set(_LIBRARIES LAPACK95_LIBRARIES)
-              set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
-
-              # old
-              list(APPEND LAPACK_SEARCH_LIBS
-                "mkl_lapack95")
-              # new >= 10.3
-              list(APPEND LAPACK_SEARCH_LIBS
-                "mkl_intel_c")
-              list(APPEND LAPACK_SEARCH_LIBS
-                "mkl_intel_lp64")
-        else(BLA_F95)
-              set(LAPACK_mkl_SEARCH_SYMBOL "cheev")
-              set(_LIBRARIES LAPACK_LIBRARIES)
-              set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
-
-              # old
-              list(APPEND LAPACK_SEARCH_LIBS
-                "mkl_lapack")
-              # new >= 10.3
-              list(APPEND LAPACK_SEARCH_LIBS
-                "mkl_gf_lp64")
-        endif(BLA_F95)
-
-        # First try empty lapack libs
-        if (NOT ${_LIBRARIES})
-              check_lapack_libraries(
-                ${_LIBRARIES}
-                LAPACK
-                ${LAPACK_mkl_SEARCH_SYMBOL}
-                "${additional_flags}"
-                ""
-                "${_BLAS_LIBRARIES}"
-                "${CMAKE_THREAD_LIBS_INIT};${LM}"
-                )
-              if(_LIBRARIES)
-                set(LAPACK_LINKER_FLAGS "${additional_flags}")
-              endif()
-        endif ()
-        # Then try the search libs
-        foreach (IT ${LAPACK_SEARCH_LIBS})
-              if (NOT ${_LIBRARIES})
+  if( (NOT LAPACK_FOUND_WITH_PKGCONFIG) OR LAPACK_GIVEN_BY_USER )
+    #intel lapack
+    if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
+    
+      if(NOT LAPACK_LIBRARIES)
+        if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
+    
+          if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
+                find_PACKAGE(Threads)
+          else()
+                find_package(Threads REQUIRED)
+          endif()
+    
+          set(LAPACK_SEARCH_LIBS "")
+    
+          set(additional_flags "")
+          if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+                set(additional_flags "-Wl,--no-as-needed")
+          endif()
+    
+          if (BLA_F95)
+                set(LAPACK_mkl_SEARCH_SYMBOL "CHEEV")
+                set(_LIBRARIES LAPACK95_LIBRARIES)
+                set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
+    
+                # old
+                list(APPEND LAPACK_SEARCH_LIBS
+                  "mkl_lapack95")
+                # new >= 10.3
+                list(APPEND LAPACK_SEARCH_LIBS
+                  "mkl_intel_c")
+                list(APPEND LAPACK_SEARCH_LIBS
+                  "mkl_intel_lp64")
+          else(BLA_F95)
+                set(LAPACK_mkl_SEARCH_SYMBOL "cheev")
+                set(_LIBRARIES LAPACK_LIBRARIES)
+                set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
+    
+                # old
+                list(APPEND LAPACK_SEARCH_LIBS
+                  "mkl_lapack")
+                # new >= 10.3
+                list(APPEND LAPACK_SEARCH_LIBS
+                  "mkl_gf_lp64")
+          endif(BLA_F95)
+    
+          # First try empty lapack libs
+          if (NOT ${_LIBRARIES})
                 check_lapack_libraries(
                   ${_LIBRARIES}
                   LAPACK
                   ${LAPACK_mkl_SEARCH_SYMBOL}
                   "${additional_flags}"
-                  "${IT}"
+                  ""
                   "${_BLAS_LIBRARIES}"
                   "${CMAKE_THREAD_LIBS_INIT};${LM}"
                   )
                 if(_LIBRARIES)
                   set(LAPACK_LINKER_FLAGS "${additional_flags}")
                 endif()
-              endif ()
-        endforeach ()
-        if(NOT LAPACK_FIND_QUIETLY)
-              if(${_LIBRARIES})
-                message(STATUS "Looking for MKL LAPACK: found")
-              else()
-                message(STATUS "Looking for MKL LAPACK: not found")
-              endif()
-        endif(NOT LAPACK_FIND_QUIETLY)
-        if (${_LIBRARIES} AND NOT LAPACK_VENDOR_FOUND)
+          endif ()
+          # Then try the search libs
+          foreach (IT ${LAPACK_SEARCH_LIBS})
+                if (NOT ${_LIBRARIES})
+                  check_lapack_libraries(
+                    ${_LIBRARIES}
+                    LAPACK
+                    ${LAPACK_mkl_SEARCH_SYMBOL}
+                    "${additional_flags}"
+                    "${IT}"
+                    "${_BLAS_LIBRARIES}"
+                    "${CMAKE_THREAD_LIBS_INIT};${LM}"
+                    )
+                  if(_LIBRARIES)
+                    set(LAPACK_LINKER_FLAGS "${additional_flags}")
+                  endif()
+                endif ()
+          endforeach ()
+          if(NOT LAPACK_FIND_QUIETLY)
+                if(${_LIBRARIES})
+                  message(STATUS "Looking for MKL LAPACK: found")
+                else()
+                  message(STATUS "Looking for MKL LAPACK: not found")
+                endif()
+          endif(NOT LAPACK_FIND_QUIETLY)
+          if(${_LIBRARIES} AND NOT LAPACK_VENDOR_FOUND)
             set (LAPACK_VENDOR_FOUND "Intel MKL")
+          endif()
+    
+        endif (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
+      endif(NOT LAPACK_LIBRARIES)
+    endif(BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
+    
+    #goto lapack
+    if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
+      if(NOT LAPACK_LIBRARIES)
+        check_lapack_libraries(
+          LAPACK_LIBRARIES
+          LAPACK
+          cheev
+          ""
+          "goto2"
+          "${BLAS_LIBRARIES}"
+          ""
+          )
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for Goto LAPACK: found")
+          else()
+            message(STATUS "Looking for Goto LAPACK: not found")
+          endif()
         endif()
-
-      endif (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
-    endif(NOT LAPACK_LIBRARIES)
-  endif(BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
-
-  #goto lapack
-  if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
-    if(NOT LAPACK_LIBRARIES)
-      check_lapack_libraries(
-        LAPACK_LIBRARIES
-        LAPACK
-        cheev
-        ""
-        "goto2"
-        "${BLAS_LIBRARIES}"
-        ""
-        )
-      if(NOT LAPACK_FIND_QUIETLY)
-        if(LAPACK_LIBRARIES)
-          message(STATUS "Looking for Goto LAPACK: found")
-        else()
-          message(STATUS "Looking for Goto LAPACK: not found")
+        if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
+            set (LAPACK_VENDOR_FOUND "Goto")
         endif()
-      endif()
-      if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "Goto")
-      endif()
-    endif(NOT LAPACK_LIBRARIES)
-  endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
-
-  #open lapack
-  if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
-    if(NOT LAPACK_LIBRARIES)
-      check_lapack_libraries(
-        LAPACK_LIBRARIES
-        LAPACK
-        cheev
-        ""
-        "openblas"
-        "${BLAS_LIBRARIES}"
-        ""
-        )
-      if(NOT LAPACK_FIND_QUIETLY)
-        if(LAPACK_LIBRARIES)
-          message(STATUS "Looking for Open LAPACK: found")
-        else()
-          message(STATUS "Looking for Open LAPACK: not found")
+      endif(NOT LAPACK_LIBRARIES)
+    endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
+    
+    #open lapack
+    if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
+      if(NOT LAPACK_LIBRARIES)
+        check_lapack_libraries(
+          LAPACK_LIBRARIES
+          LAPACK
+          cheev
+          ""
+          "openblas"
+          "${BLAS_LIBRARIES}"
+          ""
+          )
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for Open LAPACK: found")
+          else()
+            message(STATUS "Looking for Open LAPACK: not found")
+          endif()
         endif()
-      endif()
-      if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "Openblas")
-      endif()
-    endif(NOT LAPACK_LIBRARIES)
-  endif (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
-
-  # LAPACK in IBM ESSL library (requires generic lapack lib, too)
-  if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
-    if(NOT LAPACK_LIBRARIES)
-      check_lapack_libraries(
-        LAPACK_LIBRARIES
-        LAPACK
-        cheevd
-        ""
-        "essl"
-        "${BLAS_LIBRARIES}"
-        ""
-        )
-      if(NOT LAPACK_FIND_QUIETLY)
-        if(LAPACK_LIBRARIES)
-          message(STATUS "Looking for IBM ESSL LAPACK: found")
-        else()
-          message(STATUS "Looking for IBM ESSL LAPACK: not found")
+        if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
+            set (LAPACK_VENDOR_FOUND "Openblas")
         endif()
-      endif()
-      if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "IBM ESSL")
-      endif()
-    endif()
-  endif ()
-
-  # LAPACK in IBM ESSL_MT library (requires generic lapack lib, too)
-  if (BLA_VENDOR STREQUAL "IBMESSLMT" OR BLA_VENDOR STREQUAL "All")
-    if(NOT LAPACK_LIBRARIES)
-      check_lapack_libraries(
-        LAPACK_LIBRARIES
-        LAPACK
-        cheevd
-        ""
-        "esslsmp"
-        "${BLAS_PAR_LIBRARIES}"
-        ""
-        )
-      if(NOT LAPACK_FIND_QUIETLY)
-        if(LAPACK_LIBRARIES)
-          message(STATUS "Looking for IBM ESSL MT LAPACK: found")
-        else()
-          message(STATUS "Looking for IBM ESSL MT LAPACK: not found")
+      endif(NOT LAPACK_LIBRARIES)
+    endif (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
+    
+    # LAPACK in IBM ESSL library (requires generic lapack lib, too)
+    if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
+      if(NOT LAPACK_LIBRARIES)
+        check_lapack_libraries(
+          LAPACK_LIBRARIES
+          LAPACK
+          cheevd
+          ""
+          "essl"
+          "${BLAS_LIBRARIES}"
+          ""
+          )
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for IBM ESSL LAPACK: found")
+          else()
+            message(STATUS "Looking for IBM ESSL LAPACK: not found")
+          endif()
         endif()
-      endif()
-      if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "IBM ESSL MT")
-      endif()
-    endif()
-  endif ()
-
-  #acml lapack
-  if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
-    if (BLAS_LIBRARIES MATCHES ".+acml.+")
-      set (LAPACK_LIBRARIES ${BLAS_LIBRARIES})
-      if(NOT LAPACK_FIND_QUIETLY)
-        if(LAPACK_LIBRARIES)
-          message(STATUS "Looking for ACML LAPACK: found")
-        else()
-          message(STATUS "Looking for ACML LAPACK: not found")
+        if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
+            set (LAPACK_VENDOR_FOUND "IBM ESSL")
         endif()
-      endif()
-      if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "ACML")
       endif()
     endif ()
-  endif ()
-
-  # Apple LAPACK library?
-  if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
-    if(NOT LAPACK_LIBRARIES)
-      check_lapack_libraries(
-        LAPACK_LIBRARIES
-        LAPACK
-        cheev
-        ""
-        "Accelerate"
-        "${BLAS_LIBRARIES}"
-        ""
-        )
-      if(NOT LAPACK_FIND_QUIETLY)
-        if(LAPACK_LIBRARIES)
-          message(STATUS "Looking for Apple Accelerate LAPACK: found")
-        else()
-          message(STATUS "Looking for Apple Accelerate LAPACK: not found")
+    
+    # LAPACK in IBM ESSL_MT library (requires generic lapack lib, too)
+    if (BLA_VENDOR STREQUAL "IBMESSLMT" OR BLA_VENDOR STREQUAL "All")
+      if(NOT LAPACK_LIBRARIES)
+        check_lapack_libraries(
+          LAPACK_LIBRARIES
+          LAPACK
+          cheevd
+          ""
+          "esslsmp"
+          "${BLAS_PAR_LIBRARIES}"
+          ""
+          )
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for IBM ESSL MT LAPACK: found")
+          else()
+            message(STATUS "Looking for IBM ESSL MT LAPACK: not found")
+          endif()
+        endif()
+        if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
+            set (LAPACK_VENDOR_FOUND "IBM ESSL MT")
         endif()
       endif()
-      if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "Apple Accelerate")
-      endif()
-    endif(NOT LAPACK_LIBRARIES)
-  endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
-
-  if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
-    if ( NOT LAPACK_LIBRARIES )
-      check_lapack_libraries(
-        LAPACK_LIBRARIES
-        LAPACK
-        cheev
-        ""
-        "vecLib"
-        "${BLAS_LIBRARIES}"
-        ""
-        )
-      if(NOT LAPACK_FIND_QUIETLY)
-        if(LAPACK_LIBRARIES)
-          message(STATUS "Looking for NAS LAPACK: found")
-        else()
-          message(STATUS "Looking for NAS LAPACK: not found")
+    endif ()
+    
+    #acml lapack
+    if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
+      if (BLAS_LIBRARIES MATCHES ".+acml.+")
+        set (LAPACK_LIBRARIES ${BLAS_LIBRARIES})
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for ACML LAPACK: found")
+          else()
+            message(STATUS "Looking for ACML LAPACK: not found")
+          endif()
         endif()
-      endif()
-      if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "NAS")
-      endif()
-    endif ( NOT LAPACK_LIBRARIES )
-  endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
-
-  # Generic LAPACK library?
-  if (BLA_VENDOR STREQUAL "Generic" OR
-      BLA_VENDOR STREQUAL "ATLAS" OR
-      BLA_VENDOR STREQUAL "All")
-    if ( NOT LAPACK_LIBRARIES )
-      check_lapack_libraries(
-        LAPACK_LIBRARIES
-        LAPACK
-        cheev
-        ""
-        "lapack"
-        "${BLAS_LIBRARIES};${LM}"
-        ""
-        )
-      if(NOT LAPACK_FIND_QUIETLY)
-        if(LAPACK_LIBRARIES)
-          message(STATUS "Looking for Generic LAPACK: found")
-        else()
-          message(STATUS "Looking for Generic LAPACK: not found")
+        if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
+            set (LAPACK_VENDOR_FOUND "ACML")
         endif()
-      endif()
-      if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "Netlib or other Generic liblapack")
-      endif()
-    endif ( NOT LAPACK_LIBRARIES )
-  endif ()
+      endif ()
+    endif ()
+    
+    # Apple LAPACK library?
+    if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
+      if(NOT LAPACK_LIBRARIES)
+        check_lapack_libraries(
+          LAPACK_LIBRARIES
+          LAPACK
+          cheev
+          ""
+          "Accelerate"
+          "${BLAS_LIBRARIES}"
+          ""
+          )
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for Apple Accelerate LAPACK: found")
+          else()
+            message(STATUS "Looking for Apple Accelerate LAPACK: not found")
+          endif()
+        endif()
+        if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
+            set (LAPACK_VENDOR_FOUND "Apple Accelerate")
+        endif()
+      endif(NOT LAPACK_LIBRARIES)
+    endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
+    
+    if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
+      if ( NOT LAPACK_LIBRARIES )
+        check_lapack_libraries(
+          LAPACK_LIBRARIES
+          LAPACK
+          cheev
+          ""
+          "vecLib"
+          "${BLAS_LIBRARIES}"
+          ""
+          )
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for NAS LAPACK: found")
+          else()
+            message(STATUS "Looking for NAS LAPACK: not found")
+          endif()
+        endif()
+        if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
+            set (LAPACK_VENDOR_FOUND "NAS")
+        endif()
+      endif ( NOT LAPACK_LIBRARIES )
+    endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
+    
+    # Generic LAPACK library?
+    if (BLA_VENDOR STREQUAL "Generic" OR
+        BLA_VENDOR STREQUAL "ATLAS" OR
+        BLA_VENDOR STREQUAL "All")
+      if ( NOT LAPACK_LIBRARIES )
+        check_lapack_libraries(
+          LAPACK_LIBRARIES
+          LAPACK
+          cheev
+          ""
+          "lapack"
+          "${BLAS_LIBRARIES};${LM}"
+          ""
+          )
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for Generic LAPACK: found")
+          else()
+            message(STATUS "Looking for Generic LAPACK: not found")
+          endif()
+        endif()
+        if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
+            set (LAPACK_VENDOR_FOUND "Netlib or other Generic liblapack")
+        endif()
+      endif ( NOT LAPACK_LIBRARIES )
+    endif ()
+  endif( (NOT LAPACK_FOUND_WITH_PKGCONFIG) OR LAPACK_GIVEN_BY_USER )
+  
 else(BLAS_FOUND)
   message(STATUS "LAPACK requires BLAS")
 endif(BLAS_FOUND)

@@ -50,6 +50,9 @@ endif()
 # To find headers and libs
 include(FindHeadersAndLibs)
 
+# To transform relative path from pkg-config into absolute
+include(FindPkgconfigLibrariesAbsolutePath)
+
 # Some macros to print status when search for headers and libs
 # PrintFindStatus.cmake is in cmake_modules/morse/find directory
 include(PrintFindStatus)

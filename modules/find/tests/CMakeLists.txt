@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(TEST_MORSE_CMAKE_MODULES_FIND Fortran C CXX)
 
+# location of Morse modules to get some specific macros
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../")
+include(MorseInit)
 # location of find package modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../")
 

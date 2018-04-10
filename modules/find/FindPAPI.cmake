@@ -20,7 +20,20 @@
 #  PAPI_INCLUDE_DIRS    - papi include directories
 #  PAPI_LIBRARY_DIRS    - Link directories for papi libraries
 #  PAPI_LIBRARIES       - papi component libraries to be linked
+#
 #  PAPI_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = PAPI
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPAPI_DIR=path/to/papi):
@@ -69,14 +82,10 @@ find_package(PkgConfig QUIET)
 if(PKG_CONFIG_EXECUTABLE AND NOT PAPI_GIVEN_BY_USER)
 
   pkg_search_module(PAPI papi)
+
   if (NOT PAPI_FIND_QUIETLY)
     if (PAPI_FOUND AND PAPI_LIBRARIES)
       message(STATUS "Looking for PAPI - found using PkgConfig")
-      #if(NOT PAPI_INCLUDE_DIRS)
-      #    message("${Magenta}PAPI_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to papi headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for PAPI - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing papi.pc to the"
@@ -84,10 +93,9 @@ if(PKG_CONFIG_EXECUTABLE AND NOT PAPI_GIVEN_BY_USER)
     endif()
   endif()
 
-  set(PAPI_C_FLAGS "${PAPI_CFLAGS_OTHER}")
-
   if (PAPI_FOUND AND PAPI_LIBRARIES)
     set(PAPI_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(PAPI)
   else()
     set(PAPI_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -244,51 +252,59 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PAPI_FOUND) OR
     list(REMOVE_DUPLICATES PAPI_LIBRARY_DIRS)
   endif ()
 
-  # check a function to validate the find
-  if(PAPI_LIBRARIES)
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # PAPI
-    if (PAPI_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${PAPI_INCLUDE_DIRS}")
-    endif()
-    if (PAPI_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${PAPI_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${PAPI_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(PAPI_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(PAPI_start PAPI_WORKS)
-    mark_as_advanced(PAPI_WORKS)
-
-    if(NOT PAPI_WORKS)
-      if(NOT PAPI_FIND_QUIETLY)
-        message(STATUS "Looking for papi : test of PAPI_start with papi library fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(PAPI_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PAPI_FOUND) OR (PAPI_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(PAPI_LIBRARIES)
+
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # PAPI
+  if (PAPI_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${PAPI_INCLUDE_DIRS}")
+  endif()
+  if (PAPI_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${PAPI_CFLAGS_OTHER}")
+  endif()
+  if (PAPI_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${PAPI_LDFLAGS_OTHER}")
+  endif()
+  if (PAPI_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${PAPI_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${PAPI_LIBRARIES}")
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(PAPI_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(PAPI_start PAPI_WORKS)
+  mark_as_advanced(PAPI_WORKS)
+
+  if(NOT PAPI_WORKS)
+    if(NOT PAPI_FIND_QUIETLY)
+      message(STATUS "Looking for papi : test of PAPI_start with papi library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(PAPI_LIBRARIES)
 
 if (PAPI_LIBRARIES)
   if (PAPI_LIBRARY_DIRS)
@@ -311,11 +327,6 @@ mark_as_advanced(PAPI_DIR_FOUND)
 # check that PAPI has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
-if (PKG_CONFIG_EXECUTABLE AND PAPI_FOUND)
-  find_package_handle_standard_args(PAPI DEFAULT_MSG
-    PAPI_LIBRARIES)
-else()
-  find_package_handle_standard_args(PAPI DEFAULT_MSG
-    PAPI_LIBRARIES
-    PAPI_WORKS)
-endif()
+find_package_handle_standard_args(PAPI DEFAULT_MSG
+  PAPI_LIBRARIES
+  PAPI_WORKS)

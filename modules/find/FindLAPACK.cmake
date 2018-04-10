@@ -31,6 +31,21 @@
 #     all the possibilities
 #  LAPACK_VENDOR_FOUND stores the LAPACK vendor found
 #  BLA_F95     if set on tries to find the f95 interfaces for BLAS/LAPACK
+#
+#  LAPACK_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = LAPACK
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
+#
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DLAPACK_DIR=path/to/lapack):
 #  LAPACK_DIR            - Where to find the base directory of lapack
@@ -370,10 +385,9 @@ if(BLAS_FOUND)
   include(FindPkgConfig)
   find_package(PkgConfig QUIET)
   if( PKG_CONFIG_EXECUTABLE AND NOT LAPACK_GIVEN_BY_USER AND BLA_VENDOR STREQUAL "All")
-  
+
     pkg_search_module(LAPACK lapack)
-    find_pkgconfig_libraries_absolute_path(LAPACK)
-    
+
     if (NOT LAPACK_FIND_QUIETLY)
       if (LAPACK_FOUND AND LAPACK_LIBRARIES)
         message(STATUS "Looking for LAPACK - found using PkgConfig")
@@ -383,49 +397,49 @@ if(BLAS_FOUND)
           "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
       endif()
     endif()
-  
-    if (BLA_STATIC)
-      set(LAPACK_LINKER_FLAGS "${LAPACK_STATIC_LDFLAGS}")
-      set(LAPACK_COMPILER_FLAGS "${LAPACK_STATIC_CFLAGS}")
-      set(LAPACK_LIBRARIES "${LAPACK_STATIC_LIBRARIES}")
-    else()
-      set(LAPACK_LINKER_FLAGS "${LAPACK_LDFLAGS}")
-      set(LAPACK_COMPILER_FLAGS "${LAPACK_CFLAGS}")
-    endif()
-    
+
     if (LAPACK_FOUND AND LAPACK_LIBRARIES)
       set(LAPACK_FOUND_WITH_PKGCONFIG "TRUE")
+      find_pkgconfig_libraries_absolute_path(LAPACK)
+      if (BLA_STATIC)
+        set(LAPACK_LINKER_FLAGS "${LAPACK_STATIC_LDFLAGS_OTHER}")
+        set(LAPACK_COMPILER_FLAGS "${LAPACK_STATIC_CFLAGS_OTHER}")
+        set(LAPACK_LIBRARIES "${LAPACK_STATIC_LIBRARIES}")
+      else()
+        set(LAPACK_LINKER_FLAGS "${LAPACK_LDFLAGS_OTHER}")
+        set(LAPACK_COMPILER_FLAGS "${LAPACK_CFLAGS_OTHER}")
+      endif()
     else()
       set(LAPACK_FOUND_WITH_PKGCONFIG "FALSE")
     endif()
-  
+
   endif()
 
   if( (NOT LAPACK_FOUND_WITH_PKGCONFIG) OR LAPACK_GIVEN_BY_USER )
     #intel lapack
     if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
-    
+
       if(NOT LAPACK_LIBRARIES)
         if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
-    
+
           if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
                 find_PACKAGE(Threads)
           else()
                 find_package(Threads REQUIRED)
           endif()
-    
+
           set(LAPACK_SEARCH_LIBS "")
-    
+
           set(additional_flags "")
           if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
                 set(additional_flags "-Wl,--no-as-needed")
           endif()
-    
+
           if (BLA_F95)
                 set(LAPACK_mkl_SEARCH_SYMBOL "CHEEV")
                 set(_LIBRARIES LAPACK95_LIBRARIES)
                 set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
-    
+
                 # old
                 list(APPEND LAPACK_SEARCH_LIBS
                   "mkl_lapack95")
@@ -438,7 +452,7 @@ if(BLAS_FOUND)
                 set(LAPACK_mkl_SEARCH_SYMBOL "cheev")
                 set(_LIBRARIES LAPACK_LIBRARIES)
                 set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
-    
+
                 # old
                 list(APPEND LAPACK_SEARCH_LIBS
                   "mkl_lapack")
@@ -446,7 +460,7 @@ if(BLAS_FOUND)
                 list(APPEND LAPACK_SEARCH_LIBS
                   "mkl_gf_lp64")
           endif(BLA_F95)
-    
+
           # First try empty lapack libs
           if (NOT ${_LIBRARIES})
                 check_lapack_libraries(
@@ -489,11 +503,11 @@ if(BLAS_FOUND)
           if(${_LIBRARIES} AND NOT LAPACK_VENDOR_FOUND)
             set (LAPACK_VENDOR_FOUND "Intel MKL")
           endif()
-    
+
         endif (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
       endif(NOT LAPACK_LIBRARIES)
     endif(BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
-    
+
     #goto lapack
     if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
       if(NOT LAPACK_LIBRARIES)
@@ -518,7 +532,7 @@ if(BLAS_FOUND)
         endif()
       endif(NOT LAPACK_LIBRARIES)
     endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
-    
+
     #open lapack
     if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
       if(NOT LAPACK_LIBRARIES)
@@ -543,7 +557,7 @@ if(BLAS_FOUND)
         endif()
       endif(NOT LAPACK_LIBRARIES)
     endif (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
-    
+
     # LAPACK in IBM ESSL library (requires generic lapack lib, too)
     if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
       if(NOT LAPACK_LIBRARIES)
@@ -568,7 +582,7 @@ if(BLAS_FOUND)
         endif()
       endif()
     endif ()
-    
+
     # LAPACK in IBM ESSL_MT library (requires generic lapack lib, too)
     if (BLA_VENDOR STREQUAL "IBMESSLMT" OR BLA_VENDOR STREQUAL "All")
       if(NOT LAPACK_LIBRARIES)
@@ -593,7 +607,7 @@ if(BLAS_FOUND)
         endif()
       endif()
     endif ()
-    
+
     #acml lapack
     if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
       if (BLAS_LIBRARIES MATCHES ".+acml.+")
@@ -610,7 +624,7 @@ if(BLAS_FOUND)
         endif()
       endif ()
     endif ()
-    
+
     # Apple LAPACK library?
     if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
       if(NOT LAPACK_LIBRARIES)
@@ -635,7 +649,7 @@ if(BLAS_FOUND)
         endif()
       endif(NOT LAPACK_LIBRARIES)
     endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
-    
+
     if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
       if ( NOT LAPACK_LIBRARIES )
         check_lapack_libraries(
@@ -659,7 +673,7 @@ if(BLAS_FOUND)
         endif()
       endif ( NOT LAPACK_LIBRARIES )
     endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
-    
+
     # Generic LAPACK library?
     if (BLA_VENDOR STREQUAL "Generic" OR
         BLA_VENDOR STREQUAL "ATLAS" OR
@@ -687,7 +701,7 @@ if(BLAS_FOUND)
       endif ( NOT LAPACK_LIBRARIES )
     endif ()
   endif( (NOT LAPACK_FOUND_WITH_PKGCONFIG) OR LAPACK_GIVEN_BY_USER )
-  
+
 else(BLAS_FOUND)
   message(STATUS "LAPACK requires BLAS")
 endif(BLAS_FOUND)

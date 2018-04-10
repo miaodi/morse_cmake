@@ -20,7 +20,7 @@
 #    is found
 #  BLAS_LINKER_FLAGS - uncached list of required linker flags (excluding -l
 #    and -L).
-#  BLAS_COMPILER_FLAGS - uncached list of required compiler flags (including -I for mkl headers).
+#  BLAS_COMPILER_FLAGS - uncached list of required compiler flags (including -I).
 #  BLAS_LIBRARIES - uncached list of libraries (using full path name) to
 #    link against to use BLAS
 #  BLAS95_LIBRARIES - uncached list of libraries (using full path name)
@@ -32,6 +32,21 @@
 #     all the possibilities
 #  BLAS_VENDOR_FOUND stores the BLAS vendor found
 #  BLA_F95     if set on tries to find the f95 interfaces for BLAS/LAPACK
+#
+#  BLAS_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = BLAS
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
+#
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DBLAS_DIR=path/to/blas):
 #  BLAS_DIR            - Where to find the base directory of blas
@@ -342,8 +357,7 @@ find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT BLAS_GIVEN_BY_USER AND BLA_VENDOR STREQUAL "All")
 
   pkg_search_module(BLAS blas)
-  find_pkgconfig_libraries_absolute_path(BLAS)
-  
+
   if (NOT BLAS_FIND_QUIETLY)
     if (BLAS_FOUND AND BLAS_LIBRARIES)
       message(STATUS "Looking for BLAS - found using PkgConfig")
@@ -354,17 +368,17 @@ if( PKG_CONFIG_EXECUTABLE AND NOT BLAS_GIVEN_BY_USER AND BLA_VENDOR STREQUAL "Al
     endif()
   endif()
 
-  if (BLA_STATIC)
-    set(BLAS_LINKER_FLAGS "${BLAS_STATIC_LDFLAGS}")
-    set(BLAS_COMPILER_FLAGS "${BLAS_STATIC_CFLAGS}")
-    set(BLAS_LIBRARIES "${BLAS_STATIC_LIBRARIES}")
-  else()
-    set(BLAS_LINKER_FLAGS "${BLAS_LDFLAGS}")
-    set(BLAS_COMPILER_FLAGS "${BLAS_CFLAGS}")
-  endif()
-  
   if (BLAS_FOUND AND BLAS_LIBRARIES)
     set(BLAS_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(BLAS)
+    if (BLA_STATIC)
+      set(BLAS_LINKER_FLAGS "${BLAS_STATIC_LDFLAGS_OTHER}")
+      set(BLAS_COMPILER_FLAGS "${BLAS_STATIC_CFLAGS_OTHER}")
+      set(BLAS_LIBRARIES "${BLAS_STATIC_LIBRARIES}")
+    else()
+      set(BLAS_LINKER_FLAGS "${BLAS_LDFLAGS_OTHER}")
+      set(BLAS_COMPILER_FLAGS "${BLAS_CFLAGS_OTHER}")
+    endif()
   else()
     set(BLAS_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -374,11 +388,11 @@ endif()
 if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
   #BLAS in intel mkl 10 library? (em64t 64bit)
   if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES OR BLA_VENDOR MATCHES "Intel*")
       # Looking for include
       # -------------------
-  
+
       # Add system include paths to search include
       # ------------------------------------------
       unset(_inc_env)
@@ -412,10 +426,10 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
       list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
       list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
       list(REMOVE_DUPLICATES _inc_env)
-  
+
       # set paths where to look for
       set(PATH_TO_LOOK_FOR "${_inc_env}")
-  
+
       # Try to find the fftw header in the given paths
       # -------------------------------------------------
       # call cmake macro to find the header path
@@ -439,7 +453,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
       mark_as_advanced(BLAS_mkl.h_DIRS)
-  
+
       # If found, add path to cmake variable
       # ------------------------------------
       if (BLAS_mkl.h_DIRS)
@@ -450,7 +464,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           message(STATUS "Looking for BLAS -- mkl.h not found")
         endif()
       endif()
-  
+
       if (WIN32)
         string(REPLACE ":" ";" _libdir "$ENV{LIB}")
       elseif (APPLE)
@@ -487,7 +501,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           set(OMP_LIB "${OMP_iomp5_LIBRARY}")
         endif()
       endif()
-  
+
       if (UNIX AND NOT WIN32)
         # m
         find_library(M_LIBRARY
@@ -546,24 +560,24 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
             list(APPEND BLAS_COMPILER_FLAGS "-I${ENV_MKLROOT}/include")
           endif()
         endif()
-  
+
         set(additional_flags "")
         if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
           set(additional_flags "-Wl,--no-as-needed")
         endif()
       endif ()
-  
+
       if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
         if(BLAS_FIND_QUIETLY OR NOT BLAS_FIND_REQUIRED)
           find_package(Threads)
         else()
           find_package(Threads REQUIRED)
         endif()
-  
+
         set(BLAS_SEARCH_LIBS "")
-  
+
         if(BLA_F95)
-  
+
           set(BLAS_mkl_SEARCH_SYMBOL SGEMM)
           set(_LIBRARIES BLAS95_LIBRARIES)
           if (WIN32)
@@ -572,7 +586,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
             else()
               set(BLAS_mkl_DLL_SUFFIX "_dll")
             endif()
-  
+
             # Find the main file (32-bit or 64-bit)
             set(BLAS_SEARCH_LIBS_WIN_MAIN "")
             if (BLA_VENDOR STREQUAL "Intel10_32" OR BLA_VENDOR STREQUAL "All")
@@ -583,7 +597,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               list(APPEND BLAS_SEARCH_LIBS_WIN_MAIN
                 "mkl_blas95_lp64${BLAS_mkl_DLL_SUFFIX} mkl_intel_lp64${BLAS_mkl_DLL_SUFFIX}")
             endif ()
-  
+
             # Add threading/sequential libs
             set(BLAS_SEARCH_LIBS_WIN_THREAD "")
             if (BLA_VENDOR STREQUAL "*_seq" OR BLA_VENDOR STREQUAL "All")
@@ -598,7 +612,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               list(APPEND BLAS_SEARCH_LIBS_WIN_THREAD
                 "libiomp5md mkl_intel_thread${BLAS_mkl_DLL_SUFFIX}")
             endif()
-  
+
             # Cartesian product of the above
             foreach (MAIN ${BLAS_SEARCH_LIBS_WIN_MAIN})
               foreach (THREAD ${BLAS_SEARCH_LIBS_WIN_THREAD})
@@ -633,9 +647,9 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               endif()
             endif ()
           endif (WIN32)
-  
+
         else (BLA_F95)
-  
+
           set(BLAS_mkl_SEARCH_SYMBOL sgemm)
           set(_LIBRARIES BLAS_LIBRARIES)
           if (WIN32)
@@ -644,7 +658,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
             else()
               set(BLAS_mkl_DLL_SUFFIX "_dll")
             endif()
-  
+
             # Find the main file (32-bit or 64-bit)
             set(BLAS_SEARCH_LIBS_WIN_MAIN "")
             if (BLA_VENDOR STREQUAL "Intel10_32" OR BLA_VENDOR STREQUAL "All")
@@ -655,7 +669,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               list(APPEND BLAS_SEARCH_LIBS_WIN_MAIN
                 "mkl_intel_lp64${BLAS_mkl_DLL_SUFFIX}")
             endif ()
-  
+
             # Add threading/sequential libs
             set(BLAS_SEARCH_LIBS_WIN_THREAD "")
             if (NOT BLA_VENDOR STREQUAL "*_seq" OR BLA_VENDOR STREQUAL "All")
@@ -670,7 +684,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               list(APPEND BLAS_SEARCH_LIBS_WIN_THREAD
                 "mkl_sequential${BLAS_mkl_DLL_SUFFIX}")
             endif()
-  
+
             # Cartesian product of the above
             foreach (MAIN ${BLAS_SEARCH_LIBS_WIN_MAIN})
               foreach (THREAD ${BLAS_SEARCH_LIBS_WIN_THREAD})
@@ -714,9 +728,9 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
                 "mkl_em64t")
             endif ()
           endif (WIN32)
-  
+
         endif (BLA_F95)
-  
+
         foreach (IT ${BLAS_SEARCH_LIBS})
           string(REPLACE " " ";" SEARCH_LIBS ${IT})
           if (${_LIBRARIES})
@@ -747,10 +761,10 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
       endif (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
     endif(NOT BLAS_LIBRARIES OR BLA_VENDOR MATCHES "Intel*")
   endif (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       # gotoblas (http://www.tacc.utexas.edu/tacc-projects/gotoblas2)
       check_fortran_libraries(
@@ -772,13 +786,13 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "Goto")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   # OpenBlas
   if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       # openblas (http://www.openblas.net/)
       check_fortran_libraries(
@@ -800,13 +814,13 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "Openblas")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   # EigenBlas
   if (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       # eigenblas (http://eigen.tuxfamily.org/index.php?title=Main_Page)
       check_fortran_libraries(
@@ -825,7 +839,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if(NOT BLAS_LIBRARIES)
       # eigenblas (http://eigen.tuxfamily.org/index.php?title=Main_Page)
       check_fortran_libraries(
@@ -847,12 +861,12 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "Eigen")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   if (BLA_VENDOR STREQUAL "ATLAS" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       # BLAS in ATLAS library? (http://math-atlas.sourceforge.net/)
       check_fortran_libraries(
@@ -871,17 +885,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "Atlas")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "ATLAS" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   # BLAS in PhiPACK libraries? (requires generic BLAS lib, too)
   if (BLA_VENDOR STREQUAL "PhiPACK" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -899,17 +913,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "PhiPACK")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "PhiPACK" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   # BLAS in Alpha CXML library?
   if (BLA_VENDOR STREQUAL "CXML" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -927,17 +941,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "CXML")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "CXML" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   # BLAS in Alpha DXML library? (now called CXML, see above)
   if (BLA_VENDOR STREQUAL "DXML" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -955,17 +969,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "DXML")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "DXML" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   # BLAS in Sun Performance library?
   if (BLA_VENDOR STREQUAL "SunPerf" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -986,17 +1000,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "SunPerf")
     endif()
-  
+
   endif ()
-  
-  
+
+
   # BLAS in SCSL library?  (SGI/Cray Scientific Library)
   if (BLA_VENDOR STREQUAL "SCSL" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -1014,17 +1028,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "SunPerf")
     endif()
-  
+
   endif ()
-  
-  
+
+
   # BLAS in SGIMATH library?
   if (BLA_VENDOR STREQUAL "SGIMATH" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -1042,17 +1056,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "SGIMATH")
     endif()
-  
+
   endif ()
-  
-  
+
+
   # BLAS in IBM ESSL library (requires generic BLAS lib, too)
   if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -1070,16 +1084,16 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "IBM ESSL")
     endif()
-  
+
   endif ()
-  
+
   # BLAS in IBM ESSL_MT library (requires generic BLAS lib, too)
   if (BLA_VENDOR STREQUAL "IBMESSLMT" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -1097,21 +1111,21 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "IBM ESSL MT")
     endif()
-  
+
   endif ()
-  
-  
+
+
   #BLAS in acml library?
   if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
-  
+
     if( ((BLA_VENDOR STREQUAL "ACML") AND (NOT BLAS_ACML_LIB_DIRS)) OR
         ((BLA_VENDOR STREQUAL "ACML_MP") AND (NOT BLAS_ACML_MP_LIB_DIRS)) OR
         ((BLA_VENDOR STREQUAL "ACML_GPU") AND (NOT BLAS_ACML_GPU_LIB_DIRS)))
-  
+
       # try to find acml in "standard" paths
       if( WIN32 )
         file( GLOB _ACML_ROOT "C:/AMD/acml*/ACML-EULA.txt" )
@@ -1125,9 +1139,9 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
       endif()
       list(GET _ACML_ROOT 0 _ACML_ROOT)
       list(GET _ACML_GPU_ROOT 0 _ACML_GPU_ROOT)
-  
+
       if( _ACML_ROOT )
-  
+
         get_filename_component( _ACML_ROOT ${_ACML_ROOT} PATH )
         if( SIZEOF_INTEGER EQUAL 8 )
           set( _ACML_PATH_SUFFIX "_int64" )
@@ -1159,7 +1173,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           set( _ACML_COMPILER32 "gfortran32" )
           set( _ACML_COMPILER64 "gfortran64" )
         endif()
-  
+
         if( BLA_VENDOR STREQUAL "ACML_MP" )
           set(_ACML_MP_LIB_DIRS
             "${_ACML_ROOT}/${_ACML_COMPILER32}_mp${_ACML_PATH_SUFFIX}/lib"
@@ -1169,15 +1183,15 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
             "${_ACML_ROOT}/${_ACML_COMPILER32}${_ACML_PATH_SUFFIX}/lib"
             "${_ACML_ROOT}/${_ACML_COMPILER64}${_ACML_PATH_SUFFIX}/lib" )
         endif()
-  
+
       endif(_ACML_ROOT)
-  
+
     elseif(BLAS_${BLA_VENDOR}_LIB_DIRS)
-  
+
       set(_${BLA_VENDOR}_LIB_DIRS ${BLAS_${BLA_VENDOR}_LIB_DIRS})
-  
+
     endif()
-  
+
     if( BLA_VENDOR STREQUAL "ACML_MP" )
       foreach( BLAS_ACML_MP_LIB_DIRS ${_ACML_MP_LIB_DIRS})
         check_fortran_libraries (
@@ -1215,7 +1229,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endforeach()
     endif()
-  
+
     # Either acml or acml_mp should be in LD_LIBRARY_PATH but not both
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
@@ -1234,7 +1248,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -1252,7 +1266,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -1270,17 +1284,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "ACML")
     endif()
-  
+
   endif (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All") # ACML
-  
-  
+
+
   # Apple BLAS library?
   if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
-  
+
     if(NOT BLAS_LIBRARIES)
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -1298,16 +1312,16 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "Apple Accelerate")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
-  
+
     if ( NOT BLAS_LIBRARIES )
       check_fortran_libraries(
         BLAS_LIBRARIES
@@ -1325,17 +1339,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endif ()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "NAS")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   # Generic BLAS library?
   if (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
-  
+
     set(BLAS_SEARCH_LIBS "blas;blas_LINUX;blas_MAC;blas_WINDOWS;refblas")
     foreach (SEARCH_LIB ${BLAS_SEARCH_LIBS})
       if (BLAS_LIBRARIES)
@@ -1357,22 +1371,22 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
     endforeach ()
-  
+
     if (BLAS_LIBRARIES AND NOT BLAS_VENDOR_FOUND)
         set (BLAS_VENDOR_FOUND "Netlib or other Generic libblas")
     endif()
-  
+
   endif (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
-  
-  
+
+
   if(BLA_F95)
-  
+
     if(BLAS95_LIBRARIES)
       set(BLAS95_FOUND TRUE)
     else()
       set(BLAS95_FOUND FALSE)
     endif()
-  
+
     if(NOT BLAS_FIND_QUIETLY)
       if(BLAS95_FOUND)
         message(STATUS "A library with BLAS95 API found.")
@@ -1397,15 +1411,15 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif(BLAS95_FOUND)
     endif(NOT BLAS_FIND_QUIETLY)
-  
+
     set(BLAS_FOUND TRUE)
     set(BLAS_LIBRARIES "${BLAS95_LIBRARIES}")
     if (NOT BLAS_LIBRARIES_DEP)
       set(BLAS_LIBRARIES_DEP "${BLAS95_LIBRARIES}")
     endif()
-  
+
   else(BLA_F95)
-  
+
     if(BLAS_LIBRARIES)
       set(BLAS_FOUND TRUE)
       if (NOT BLAS_LIBRARIES_DEP)
@@ -1414,7 +1428,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
     else()
       set(BLAS_FOUND FALSE)
     endif()
-  
+
     if(NOT BLAS_FIND_QUIETLY)
       if(BLAS_FOUND)
         message(STATUS "A library with BLAS API found.")
@@ -1439,7 +1453,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif(BLAS_FOUND)
     endif(NOT BLAS_FIND_QUIETLY)
-  
+
   endif(BLA_F95)
 endif( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
 

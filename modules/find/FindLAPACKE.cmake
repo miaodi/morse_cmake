@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2017 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -34,6 +34,20 @@
 #  LAPACKE_LIBRARY_DIRS_DEP - lapacke + dependencies link directories
 #  LAPACKE_LIBRARIES_DEP    - lapacke libraries + dependencies
 #
+#  LAPACKE_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables may be set
+#  <PREFIX>  = LAPACKE
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
+#
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DLAPACKE_DIR=path/to/lapacke):
 #  LAPACKE_DIR             - Where to find the base directory of lapacke
@@ -50,11 +64,11 @@
 # set(LAPACKE_STANDALONE TRUE)
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2017 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -124,250 +138,296 @@ if (LAPACK_FOUND)
     endif()
   endif (NOT LAPACKE_STANDALONE)
 
+  # test fails with lapack: try to find LAPACKE lib exterior to LAPACK
   if (LAPACKE_STANDALONE OR NOT LAPACKE_WORKS)
 
     if(NOT LAPACKE_WORKS AND NOT LAPACKE_FIND_QUIETLY)
       message(STATUS "Looking for lapacke : test with lapack fails")
     endif()
-    # test fails: try to find LAPACKE lib exterior to LAPACK
 
-    # Try to find LAPACKE lib
-    #######################
-
-    # Looking for include
-    # -------------------
-
-    # Add system include paths to search include
-    # ------------------------------------------
-    unset(_inc_env)
+    # try with pkg-config
     set(ENV_LAPACKE_DIR "$ENV{LAPACKE_DIR}")
     set(ENV_LAPACKE_INCDIR "$ENV{LAPACKE_INCDIR}")
-    if(ENV_LAPACKE_INCDIR)
-      list(APPEND _inc_env "${ENV_LAPACKE_INCDIR}")
-    elseif(ENV_LAPACKE_DIR)
-      list(APPEND _inc_env "${ENV_LAPACKE_DIR}")
-      list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include")
-      list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
-    else()
-      if(WIN32)
-        string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-      else()
-        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-        list(APPEND _inc_env "${_path_env}")
-        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-        list(APPEND _inc_env "${_path_env}")
-      endif()
-    endif()
-    list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
-    list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-    list(REMOVE_DUPLICATES _inc_env)
-
-
-    # Try to find the lapacke header in the given paths
-    # -------------------------------------------------
-    # call cmake macro to find the header path
-    if(LAPACKE_INCDIR)
-      set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-      find_path(LAPACKE_lapacke.h_DIRS
-        NAMES lapacke.h
-        HINTS ${LAPACKE_INCDIR})
-    else()
-      if(LAPACKE_DIR)
-        set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-        find_path(LAPACKE_lapacke.h_DIRS
-          NAMES lapacke.h
-          HINTS ${LAPACKE_DIR}
-          PATH_SUFFIXES "include" "include/lapacke")
-      else()
-        set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-        find_path(LAPACKE_lapacke.h_DIRS
-          NAMES lapacke.h
-          HINTS ${_inc_env})
-      endif()
-    endif()
-    mark_as_advanced(LAPACKE_lapacke.h_DIRS)
-
-    # If found, add path to cmake variable
-    # ------------------------------------
-    if (LAPACKE_lapacke.h_DIRS)
-      set(LAPACKE_INCLUDE_DIRS "${LAPACKE_lapacke.h_DIRS}")
-    else ()
-      set(LAPACKE_INCLUDE_DIRS "LAPACKE_INCLUDE_DIRS-NOTFOUND")
-      if(NOT LAPACKE_FIND_QUIETLY)
-        message(STATUS "Looking for lapacke -- lapacke.h not found")
-      endif()
-    endif()
-
-
-    # Looking for lib
-    # ---------------
-
-    # Add system library paths to search lib
-    # --------------------------------------
-    unset(_lib_env)
     set(ENV_LAPACKE_LIBDIR "$ENV{LAPACKE_LIBDIR}")
-    if(ENV_LAPACKE_LIBDIR)
-      list(APPEND _lib_env "${ENV_LAPACKE_LIBDIR}")
-    elseif(ENV_LAPACKE_DIR)
-      list(APPEND _lib_env "${ENV_LAPACKE_DIR}")
-      list(APPEND _lib_env "${ENV_LAPACKE_DIR}/lib")
-    else()
-      if(WIN32)
-        string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
-      else()
-        if(APPLE)
-          string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
-        else()
-          string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
-        endif()
-        list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-        list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-      endif()
+    set(LAPACKE_GIVEN_BY_USER "FALSE")
+    if ( LAPACKE_DIR OR ( LAPACKE_INCDIR AND LAPACKE_LIBDIR) OR ENV_LAPACKE_DIR OR (ENV_LAPACKE_INCDIR AND ENV_LAPACKE_LIBDIR) )
+      set(LAPACKE_GIVEN_BY_USER "TRUE")
     endif()
-    list(REMOVE_DUPLICATES _lib_env)
 
-    # Try to find the lapacke lib in the given paths
-    # ----------------------------------------------
+    include(FindPkgConfig)
+    find_package(PkgConfig QUIET)
+    if( PKG_CONFIG_EXECUTABLE AND NOT LAPACKE_GIVEN_BY_USER)
 
-    # call cmake macro to find the lib path
-    if(LAPACKE_LIBDIR)
-      set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
-      find_library(LAPACKE_lapacke_LIBRARY
-        NAMES lapacke
-        HINTS ${LAPACKE_LIBDIR})
-    else()
-      if(LAPACKE_DIR)
-        set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
-        find_library(LAPACKE_lapacke_LIBRARY
-          NAMES lapacke
-          HINTS ${LAPACKE_DIR}
-          PATH_SUFFIXES lib lib32 lib64)
-      else()
-        set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
-        find_library(LAPACKE_lapacke_LIBRARY
-          NAMES lapacke
-          HINTS ${_lib_env})
-      endif()
-    endif()
-    mark_as_advanced(LAPACKE_lapacke_LIBRARY)
+      pkg_search_module(LAPACKE lapacke)
 
-    # If found, add path to cmake variable
-    # ------------------------------------
-    if (LAPACKE_lapacke_LIBRARY)
-      get_filename_component(lapacke_lib_path "${LAPACKE_lapacke_LIBRARY}" PATH)
-      # set cmake variables
-      set(LAPACKE_LIBRARIES    "${LAPACKE_lapacke_LIBRARY}")
-      set(LAPACKE_LIBRARY_DIRS "${lapacke_lib_path}")
-    else ()
-      set(LAPACKE_LIBRARIES    "LAPACKE_LIBRARIES-NOTFOUND")
-      set(LAPACKE_LIBRARY_DIRS "LAPACKE_LIBRARY_DIRS-NOTFOUND")
       if (NOT LAPACKE_FIND_QUIETLY)
-        message(STATUS "Looking for lapacke -- lib lapacke not found")
-      endif()
-    endif ()
-
-    # check a function to validate the find
-    if(LAPACKE_LIBRARIES)
-
-      set(REQUIRED_LDFLAGS)
-      set(REQUIRED_INCDIRS)
-      set(REQUIRED_LIBDIRS)
-      set(REQUIRED_LIBS)
-
-      # LAPACKE
-      if (LAPACKE_INCLUDE_DIRS)
-        set(REQUIRED_INCDIRS "${LAPACKE_INCLUDE_DIRS}")
-      endif()
-      if (LAPACKE_LIBRARY_DIRS)
-        set(REQUIRED_LIBDIRS "${LAPACKE_LIBRARY_DIRS}")
-      endif()
-      set(REQUIRED_LIBS "${LAPACKE_LIBRARIES}")
-      # LAPACK
-      if (LAPACK_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
-      endif()
-      if (LAPACK_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
-      endif()
-      list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
-      if (LAPACK_LINKER_FLAGS)
-        list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
-      endif()
-      # Fortran
-      if (CMAKE_C_COMPILER_ID MATCHES "GNU")
-        find_library(
-          FORTRAN_gfortran_LIBRARY
-          NAMES gfortran
-          HINTS ${_lib_env}
-          )
-        mark_as_advanced(FORTRAN_gfortran_LIBRARY)
-        if (FORTRAN_gfortran_LIBRARY)
-          list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
-        endif()
-      elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
-        find_library(
-          FORTRAN_ifcore_LIBRARY
-          NAMES ifcore
-          HINTS ${_lib_env}
-          )
-        mark_as_advanced(FORTRAN_ifcore_LIBRARY)
-        if (FORTRAN_ifcore_LIBRARY)
-          list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
+        if (LAPACKE_FOUND AND LAPACKE_LIBRARIES)
+          message(STATUS "Looking for LAPACKE - found using PkgConfig")
+        else()
+          message(STATUS "${Magenta}Looking for LAPACKE - not found using PkgConfig."
+            "\n   Perhaps you should add the directory containing lapacke.pc to"
+            "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
         endif()
       endif()
-      # m
-      find_library(M_LIBRARY NAMES m HINTS ${_lib_env})
-      mark_as_advanced(M_LIBRARY)
-      if(M_LIBRARY)
-        list(APPEND REQUIRED_LIBS "-lm")
-      endif()
-      # set required libraries for link
-      set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-      set(CMAKE_REQUIRED_LIBRARIES)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-      foreach(lib_dir ${REQUIRED_LIBDIRS})
-        list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-      endforeach()
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-      string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
-      # test link
-      unset(LAPACKE_WORKS CACHE)
-      include(CheckFunctionExists)
-      check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
-      if (LAPACKE_WORKS AND LAPACKE_WITH_TMG)
-        unset(LAPACKE_WORKS CACHE)
-        check_function_exists(LAPACKE_dlatms_work LAPACKE_WORKS)
-      endif()
-      mark_as_advanced(LAPACKE_WORKS)
-
-      if(LAPACKE_WORKS)
-        # save link with dependencies
-        set(LAPACKE_LIBRARIES_DEP "${REQUIRED_LIBS}")
-        set(LAPACKE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-        set(LAPACKE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-        set(LAPACKE_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
-        list(REMOVE_DUPLICATES LAPACKE_LIBRARY_DIRS_DEP)
-        list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS_DEP)
-        list(REMOVE_DUPLICATES LAPACKE_LINKER_FLAGS)
+      if (LAPACKE_FOUND AND LAPACKE_LIBRARIES)
+        set(LAPACKE_FOUND_WITH_PKGCONFIG "TRUE")
+        find_pkgconfig_libraries_absolute_path(LAPACKE)
       else()
-        if(NOT LAPACKE_FIND_QUIETLY)
-          message(STATUS "Looking for lapacke: test of LAPACKE_dgeqrf with lapacke and lapack libraries fails")
-          message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-          message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-          message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        set(LAPACKE_FOUND_WITH_PKGCONFIG "FALSE")
+      endif()
+
+    endif()
+
+    if (NOT LAPACKE_FOUND_WITH_PKGCONFIG OR LAPACKE_GIVEN_BY_USER)
+
+      # Try to find LAPACKE lib
+      #######################
+
+      # Looking for include
+      # -------------------
+
+      # Add system include paths to search include
+      # ------------------------------------------
+      unset(_inc_env)
+      set(ENV_LAPACKE_DIR "$ENV{LAPACKE_DIR}")
+      set(ENV_LAPACKE_INCDIR "$ENV{LAPACKE_INCDIR}")
+      if(ENV_LAPACKE_INCDIR)
+        list(APPEND _inc_env "${ENV_LAPACKE_INCDIR}")
+      elseif(ENV_LAPACKE_DIR)
+        list(APPEND _inc_env "${ENV_LAPACKE_DIR}")
+        list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include")
+        list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
+      else()
+        if(WIN32)
+          string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+        else()
+          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+          list(APPEND _inc_env "${_path_env}")
+          string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+          list(APPEND _inc_env "${_path_env}")
+          string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+          list(APPEND _inc_env "${_path_env}")
+          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+          list(APPEND _inc_env "${_path_env}")
         endif()
       endif()
-      set(CMAKE_REQUIRED_INCLUDES)
-      set(CMAKE_REQUIRED_FLAGS)
-      set(CMAKE_REQUIRED_LIBRARIES)
-    endif(LAPACKE_LIBRARIES)
+      list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
+      list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+      list(REMOVE_DUPLICATES _inc_env)
+
+
+      # Try to find the lapacke header in the given paths
+      # -------------------------------------------------
+      # call cmake macro to find the header path
+      if(LAPACKE_INCDIR)
+        set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
+        find_path(LAPACKE_lapacke.h_DIRS
+          NAMES lapacke.h
+          HINTS ${LAPACKE_INCDIR})
+      else()
+        if(LAPACKE_DIR)
+          set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
+          find_path(LAPACKE_lapacke.h_DIRS
+            NAMES lapacke.h
+            HINTS ${LAPACKE_DIR}
+            PATH_SUFFIXES "include" "include/lapacke")
+        else()
+          set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
+          find_path(LAPACKE_lapacke.h_DIRS
+            NAMES lapacke.h
+            HINTS ${_inc_env})
+        endif()
+      endif()
+      mark_as_advanced(LAPACKE_lapacke.h_DIRS)
+
+      # If found, add path to cmake variable
+      # ------------------------------------
+      if (LAPACKE_lapacke.h_DIRS)
+        set(LAPACKE_INCLUDE_DIRS "${LAPACKE_lapacke.h_DIRS}")
+      else ()
+        set(LAPACKE_INCLUDE_DIRS "LAPACKE_INCLUDE_DIRS-NOTFOUND")
+        if(NOT LAPACKE_FIND_QUIETLY)
+          message(STATUS "Looking for lapacke -- lapacke.h not found")
+        endif()
+      endif()
+
+
+      # Looking for lib
+      # ---------------
+
+      # Add system library paths to search lib
+      # --------------------------------------
+      unset(_lib_env)
+      set(ENV_LAPACKE_LIBDIR "$ENV{LAPACKE_LIBDIR}")
+      if(ENV_LAPACKE_LIBDIR)
+        list(APPEND _lib_env "${ENV_LAPACKE_LIBDIR}")
+      elseif(ENV_LAPACKE_DIR)
+        list(APPEND _lib_env "${ENV_LAPACKE_DIR}")
+        list(APPEND _lib_env "${ENV_LAPACKE_DIR}/lib")
+      else()
+        if(WIN32)
+          string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+        else()
+          if(APPLE)
+            string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+          else()
+            string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+          endif()
+          list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+          list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+        endif()
+      endif()
+      list(REMOVE_DUPLICATES _lib_env)
+
+      # Try to find the lapacke lib in the given paths
+      # ----------------------------------------------
+
+      # call cmake macro to find the lib path
+      if(LAPACKE_LIBDIR)
+        set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
+        find_library(LAPACKE_lapacke_LIBRARY
+          NAMES lapacke
+          HINTS ${LAPACKE_LIBDIR})
+      else()
+        if(LAPACKE_DIR)
+          set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
+          find_library(LAPACKE_lapacke_LIBRARY
+            NAMES lapacke
+            HINTS ${LAPACKE_DIR}
+            PATH_SUFFIXES lib lib32 lib64)
+        else()
+          set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
+          find_library(LAPACKE_lapacke_LIBRARY
+            NAMES lapacke
+            HINTS ${_lib_env})
+        endif()
+      endif()
+      mark_as_advanced(LAPACKE_lapacke_LIBRARY)
+
+      # If found, add path to cmake variable
+      # ------------------------------------
+      if (LAPACKE_lapacke_LIBRARY)
+        get_filename_component(lapacke_lib_path "${LAPACKE_lapacke_LIBRARY}" PATH)
+        # set cmake variables
+        set(LAPACKE_LIBRARIES    "${LAPACKE_lapacke_LIBRARY}")
+        set(LAPACKE_LIBRARY_DIRS "${lapacke_lib_path}")
+      else ()
+        set(LAPACKE_LIBRARIES    "LAPACKE_LIBRARIES-NOTFOUND")
+        set(LAPACKE_LIBRARY_DIRS "LAPACKE_LIBRARY_DIRS-NOTFOUND")
+        if (NOT LAPACKE_FIND_QUIETLY)
+          message(STATUS "Looking for lapacke -- lib lapacke not found")
+        endif()
+      endif ()
+
+    endif (NOT LAPACKE_FOUND_WITH_PKGCONFIG OR LAPACKE_GIVEN_BY_USER)
 
   endif (LAPACKE_STANDALONE OR NOT LAPACKE_WORKS)
+
+  # check a function to validate the find
+  if(LAPACKE_LIBRARIES)
+
+    set(REQUIRED_LDFLAGS)
+    set(REQUIRED_INCDIRS)
+    set(REQUIRED_LIBDIRS)
+    set(REQUIRED_LIBS)
+
+    # LAPACKE
+    if (LAPACKE_INCLUDE_DIRS)
+      set(REQUIRED_INCDIRS "${LAPACKE_INCLUDE_DIRS}")
+    endif()
+    if (LAPACKE_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${LAPACKE_CFLAGS_OTHER}")
+    endif()
+    if (LAPACKE_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACKE_LDFLAGS_OTHER}")
+    endif()
+    if (LAPACKE_LIBRARY_DIRS)
+      set(REQUIRED_LIBDIRS "${LAPACKE_LIBRARY_DIRS}")
+    endif()
+    set(REQUIRED_LIBS "${LAPACKE_LIBRARIES}")
+    # LAPACK
+    if (LAPACK_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
+    endif()
+    if (LAPACK_COMPILER_FLAGS)
+      list(APPEND REQUIRED_FLAGS "${LAPACK_COMPILER_FLAGS}")
+    endif()
+    if (LAPACK_LINKER_FLAGS)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
+    endif()
+    if (LAPACK_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
+    # Fortran
+    if (CMAKE_C_COMPILER_ID MATCHES "GNU")
+      find_library(
+        FORTRAN_gfortran_LIBRARY
+        NAMES gfortran
+        HINTS ${_lib_env}
+        )
+      mark_as_advanced(FORTRAN_gfortran_LIBRARY)
+      if (FORTRAN_gfortran_LIBRARY)
+        list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
+      endif()
+    elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
+      find_library(
+        FORTRAN_ifcore_LIBRARY
+        NAMES ifcore
+        HINTS ${_lib_env}
+        )
+      mark_as_advanced(FORTRAN_ifcore_LIBRARY)
+      if (FORTRAN_ifcore_LIBRARY)
+        list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
+      endif()
+    endif()
+    # m
+    find_library(M_LIBRARY NAMES m HINTS ${_lib_env})
+    mark_as_advanced(M_LIBRARY)
+    if(M_LIBRARY)
+      list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
+    endif()
+    # set required libraries for link
+    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+    set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+    set(CMAKE_REQUIRED_LIBRARIES)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+    foreach(lib_dir ${REQUIRED_LIBDIRS})
+      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+    endforeach()
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+    # test link
+    unset(LAPACKE_WORKS CACHE)
+    include(CheckFunctionExists)
+    check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
+    if (LAPACKE_WORKS AND LAPACKE_WITH_TMG)
+      unset(LAPACKE_WORKS CACHE)
+      check_function_exists(LAPACKE_dlatms_work LAPACKE_WORKS)
+    endif()
+    mark_as_advanced(LAPACKE_WORKS)
+
+    if(LAPACKE_WORKS)
+      # save link with dependencies
+      set(LAPACKE_LIBRARIES_DEP "${REQUIRED_LIBS}")
+      set(LAPACKE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
+      set(LAPACKE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+      list(REMOVE_DUPLICATES LAPACKE_LIBRARY_DIRS_DEP)
+      list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS_DEP)
+    else()
+      if(NOT LAPACKE_FIND_QUIETLY)
+        message(STATUS "Looking for lapacke: test of LAPACKE_dgeqrf with lapacke and lapack libraries fails")
+        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+      endif()
+    endif()
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_FLAGS)
+    set(CMAKE_REQUIRED_LIBRARIES)
+  endif(LAPACKE_LIBRARIES)
 
 else(LAPACK_FOUND)
 

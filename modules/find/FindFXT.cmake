@@ -20,7 +20,20 @@
 #  FXT_INCLUDE_DIRS    - fxt include directories
 #  FXT_LIBRARY_DIRS    - Link directories for fxt libraries
 #  FXT_LIBRARIES       - fxt component libraries to be linked
+#
 #  FXT_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = FXT
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DFXT_DIR=path/to/fxt):
@@ -69,14 +82,10 @@ find_package(PkgConfig QUIET)
 if(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
 
   pkg_search_module(FXT fxt)
+
   if (NOT FXT_FIND_QUIETLY)
     if (FXT_FOUND AND FXT_LIBRARIES)
       message(STATUS "Looking for FXT - found using PkgConfig")
-      #if(NOT FXT_INCLUDE_DIRS)
-      #    message("${Magenta}FXT_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to fxt headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for FXT - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing fxt.pc to the"
@@ -88,6 +97,7 @@ if(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
 
   if (FXT_FOUND AND FXT_LIBRARIES)
     set(FXT_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(FXT)
   else()
     set(FXT_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -244,51 +254,59 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
     list(REMOVE_DUPLICATES FXT_LIBRARY_DIRS)
   endif ()
 
-  # check a function to validate the find
-  if(FXT_LIBRARIES)
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # FXT
-    if (FXT_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${FXT_INCLUDE_DIRS}")
-    endif()
-    if (FXT_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${FXT_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${FXT_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(FXT_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(fut_keychange FXT_WORKS)
-    mark_as_advanced(FXT_WORKS)
-
-    if(NOT FXT_WORKS)
-      if(NOT FXT_FIND_QUIETLY)
-        message(STATUS "Looking for fxt : test of fut_keychange with fxt library fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(FXT_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR (FXT_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(FXT_LIBRARIES)
+
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # FXT
+  if (FXT_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${FXT_INCLUDE_DIRS}")
+  endif()
+  if (FXT_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${FXT_CFLAGS_OTHER}")
+  endif()
+  if (FXT_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${FXT_LDFLAGS_OTHER}")
+  endif()
+  if (FXT_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${FXT_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${FXT_LIBRARIES}")
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(FXT_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(fut_keychange FXT_WORKS)
+  mark_as_advanced(FXT_WORKS)
+
+  if(NOT FXT_WORKS)
+    if(NOT FXT_FIND_QUIETLY)
+      message(STATUS "Looking for fxt : test of fut_keychange with fxt library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(FXT_LIBRARIES)
 
 if (FXT_LIBRARIES)
   if (FXT_LIBRARY_DIRS)
@@ -311,11 +329,6 @@ mark_as_advanced(FXT_DIR_FOUND)
 # check that FXT has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
-if (PKG_CONFIG_EXECUTABLE AND FXT_FOUND)
-  find_package_handle_standard_args(FXT DEFAULT_MSG
-    FXT_LIBRARIES)
-else()
-  find_package_handle_standard_args(FXT DEFAULT_MSG
-    FXT_LIBRARIES
-    FXT_WORKS)
-endif()
+find_package_handle_standard_args(FXT DEFAULT_MSG
+  FXT_LIBRARIES
+  FXT_WORKS)

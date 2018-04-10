@@ -16,11 +16,23 @@
 # This module finds headers and gtg library.
 # Results are reported in variables:
 #  GTG_FOUND           - True if headers and requested libraries were found
-#  GTG_C_FLAGS         - list of required compilation flags (excluding -I)
 #  GTG_INCLUDE_DIRS    - gtg include directories
 #  GTG_LIBRARY_DIRS    - Link directories for gtg libraries
 #  GTG_LIBRARIES       - gtg component libraries to be linked
+#
 #  GTG_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = GTG
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DGTG_DIR=path/to/gtg):
@@ -69,14 +81,10 @@ find_package(PkgConfig QUIET)
 if(PKG_CONFIG_EXECUTABLE AND NOT GTG_GIVEN_BY_USER)
 
   pkg_search_module(GTG gtg)
+
   if (NOT GTG_FIND_QUIETLY)
     if (GTG_FOUND AND GTG_LIBRARIES)
       message(STATUS "Looking for GTG - found using PkgConfig")
-      #if(NOT GTG_INCLUDE_DIRS)
-      #    message("${Magenta}GTG_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to gtg headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for GTG - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing gtg.pc to the"
@@ -84,10 +92,9 @@ if(PKG_CONFIG_EXECUTABLE AND NOT GTG_GIVEN_BY_USER)
     endif()
   endif()
 
-  set(GTG_C_FLAGS "${GTG_CFLAGS_OTHER}")
-
   if (GTG_FOUND AND GTG_LIBRARIES)
     set(GTG_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(GTG)
   else()
     set(GTG_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -244,51 +251,59 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT GTG_FOUND) OR 
     list(REMOVE_DUPLICATES GTG_LIBRARY_DIRS)
   endif ()
 
-  # check a function to validate the find
-  if(GTG_LIBRARIES)
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # GTG
-    if (GTG_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${GTG_INCLUDE_DIRS}")
-    endif()
-    if (GTG_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${GTG_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${GTG_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(GTG_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(initTrace GTG_WORKS)
-    mark_as_advanced(GTG_WORKS)
-
-    if(NOT GTG_WORKS)
-      if(NOT GTG_FIND_QUIETLY)
-        message(STATUS "Looking for gtg : test of GTG_start with gtg library fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(GTG_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT GTG_FOUND) OR (GTG_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(GTG_LIBRARIES)
+
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # GTG
+  if (GTG_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${GTG_INCLUDE_DIRS}")
+  endif()
+  if (GTG_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${GTG_CFLAGS_OTHER}")
+  endif()
+  if (GTG_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${GTG_LDFLAGS_OTHER}")
+  endif()
+  if (GTG_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${GTG_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${GTG_LIBRARIES}")
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(GTG_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(initTrace GTG_WORKS)
+  mark_as_advanced(GTG_WORKS)
+
+  if(NOT GTG_WORKS)
+    if(NOT GTG_FIND_QUIETLY)
+      message(STATUS "Looking for gtg : test of GTG_start with gtg library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(GTG_LIBRARIES)
 
 if (GTG_LIBRARIES)
   if (GTG_LIBRARY_DIRS)
@@ -311,11 +326,6 @@ mark_as_advanced(GTG_DIR_FOUND)
 # check that GTG has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
-if (PKG_CONFIG_EXECUTABLE AND GTG_FOUND)
-  find_package_handle_standard_args(GTG DEFAULT_MSG
-    GTG_LIBRARIES)
-else()
-  find_package_handle_standard_args(GTG DEFAULT_MSG
-    GTG_LIBRARIES
-    GTG_WORKS)
-endif()
+find_package_handle_standard_args(GTG DEFAULT_MSG
+  GTG_LIBRARIES
+  GTG_WORKS)

@@ -20,11 +20,23 @@
 # This module finds headers and eztrace library.
 # Results are reported in variables:
 #  EZTRACE_FOUND           - True if headers and requested libraries were found
-#  EZTRACE_C_FLAGS         - list of required compilation flags (excluding -I)
 #  EZTRACE_INCLUDE_DIRS    - eztrace include directories
 #  EZTRACE_LIBRARY_DIRS    - Link directories for eztrace libraries
 #  EZTRACE_LIBRARIES       - eztrace component libraries to be linked
+#
 #  EZTRACE_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = EZTRACE
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DEZTRACE_DIR=path/to/eztrace):
@@ -73,14 +85,10 @@ find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_GIVEN_BY_USER )
 
   pkg_search_module(EZTRACE eztrace)
+
   if (NOT EZTRACE_FIND_QUIETLY)
     if (EZTRACE_FOUND AND EZTRACE_LIBRARIES)
       message(STATUS "Looking for EZTRACE - found using PkgConfig")
-      #if(NOT EZTRACE_INCLUDE_DIRS)
-      #    message("${Magenta}EZTRACE_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to eztrace headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for EZTRACE - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing eztrace.pc to"
@@ -88,12 +96,11 @@ if( PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_GIVEN_BY_USER )
     endif()
     if (EZTRACE_FOUND AND EZTRACE_LIBRARIES)
       set(EZTRACE_FOUND_WITH_PKGCONFIG "TRUE")
+      find_pkgconfig_libraries_absolute_path(EZTRACE)
     else()
       set(EZTRACE_FOUND_WITH_PKGCONFIG "FALSE")
     endif()
   endif()
-
-  set(EZTRACE_C_FLAGS "${EZTRACE_CFLAGS_OTHER}")
 
 endif( PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_GIVEN_BY_USER )
 
@@ -288,51 +295,59 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_FOUND)
     list(REMOVE_DUPLICATES EZTRACE_LIBRARY_DIRS)
   endif ()
 
-  # check a function to validate the find
-  if(EZTRACE_LIBRARIES)
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # EZTRACE
-    if (EZTRACE_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${EZTRACE_INCLUDE_DIRS}")
-    endif()
-    if (EZTRACE_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${EZTRACE_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${EZTRACE_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(EZTRACE_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(eztrace_start EZTRACE_WORKS)
-    mark_as_advanced(EZTRACE_WORKS)
-
-    if(NOT EZTRACE_WORKS)
-      if(NOT EZTRACE_FIND_QUIETLY)
-        message(STATUS "Looking for eztrace : test of eztrace_topology_init with eztrace library fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(EZTRACE_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_FOUND) OR (EZTRACE_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(EZTRACE_LIBRARIES)
+
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # EZTRACE
+  if (EZTRACE_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${EZTRACE_INCLUDE_DIRS}")
+  endif()
+  if (EZTRACE_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${EZTRACE_CFLAGS_OTHER}")
+  endif()
+  if (EZTRACE_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${EZTRACE_LDFLAGS_OTHER}")
+  endif()
+  if (EZTRACE_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${EZTRACE_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${EZTRACE_LIBRARIES}")
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(EZTRACE_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(eztrace_start EZTRACE_WORKS)
+  mark_as_advanced(EZTRACE_WORKS)
+
+  if(NOT EZTRACE_WORKS)
+    if(NOT EZTRACE_FIND_QUIETLY)
+      message(STATUS "Looking for eztrace : test of eztrace_topology_init with eztrace library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(EZTRACE_LIBRARIES)
 
 if (EZTRACE_LIBRARIES)
   if (EZTRACE_LIBRARY_DIRS)
@@ -355,11 +370,6 @@ mark_as_advanced(EZTRACE_DIR_FOUND)
 # check that EZTRACE has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
-if (PKG_CONFIG_EXECUTABLE AND EZTRACE_FOUND)
-  find_package_handle_standard_args(EZTRACE DEFAULT_MSG
-    EZTRACE_LIBRARIES)
-else()
-  find_package_handle_standard_args(EZTRACE DEFAULT_MSG
-    EZTRACE_LIBRARIES
-    EZTRACE_WORKS)
-endif()
+find_package_handle_standard_args(EZTRACE DEFAULT_MSG
+  EZTRACE_LIBRARIES
+  EZTRACE_WORKS)

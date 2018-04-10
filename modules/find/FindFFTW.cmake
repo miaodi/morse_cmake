@@ -28,7 +28,6 @@
 # This module finds headers and fftw library.
 # Results are reported in variables:
 #  FFTW_FOUND            - True if headers and requested libraries were found
-#  FFTW_C_FLAGS          - list of required compilation flags (excluding -I)
 #  FFTW_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  FFTW_INCLUDE_DIRS     - fftw include directories
 #  FFTW_LIBRARY_DIRS     - Link directories for fftw libraries
@@ -36,7 +35,20 @@
 #  FFTW_INCLUDE_DIRS_DEP - fftw + dependencies include directories
 #  FFTW_LIBRARY_DIRS_DEP - fftw + dependencies link directories
 #  FFTW_LIBRARIES_DEP    - fftw libraries + dependencies
+#
 #  FFTW_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = FFTW3F or FFTW3 or FFTW3L or FFTW3Q
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DFFTW_DIR=path/to/fftw):
@@ -231,11 +243,11 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
       pkg_search_module(FFTW3F fftw3f)
       pkg_search_module(FFTW3 fftw3)
       if (FFTW3F_FOUND)
-        set(FFTW_C_FLAGS "${FFTW3F_CFLAGS_OTHER}")
         if (NOT FFTW_FIND_QUIETLY)
           message(STATUS "Looking for FFTW3F - found using PkgConfig")
         endif()
         if (FFTW3F_LIBRARIES)
+          find_pkgconfig_libraries_absolute_path(FFTW3F)
           list(APPEND FFTW_LIBRARIES "${FFTW3F_LIBRARIES}")
         endif()
         if(FFTW3F_INCLUDE_DIRS)
@@ -261,11 +273,11 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
       pkg_search_module(FFTW3L fftw3l)
       pkg_search_module(FFTW3 fftw3)
       if (FFTW3L_FOUND)
-       set(FFTW_C_FLAGS "${FFTW3L_CFLAGS_OTHER}")
         if (NOT FFTW_FIND_QUIETLY)
           message(STATUS "Looking for FFTW3L - found using PkgConfig")
         endif()
         if (FFTW3L_LIBRARIES)
+          find_pkgconfig_libraries_absolute_path(FFTW3L)
           list(APPEND FFTW_LIBRARIES "${FFTW3L_LIBRARIES}")
         endif()
         if(FFTW3L_INCLUDE_DIRS)
@@ -291,11 +303,11 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
       pkg_search_module(FFTW3Q fftw3q)
       pkg_search_module(FFTW3 fftw3)
       if (FFTW3Q_FOUND)
-        set(FFTW_C_FLAGS "${FFTW3Q_CFLAGS_OTHER}")
         if (NOT FFTW_FIND_QUIETLY)
           message(STATUS "Looking for FFTW3Q - found using PkgConfig")
         endif()
         if (FFTW3Q_LIBRARIES)
+          find_pkgconfig_libraries_absolute_path(FFTW3Q)
           list(APPEND FFTW_LIBRARIES "${FFTW3Q_LIBRARIES}")
         endif()
         if(FFTW3Q_INCLUDE_DIRS)
@@ -319,13 +331,16 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
       endif(FFTW3Q_FOUND)
     else()
       pkg_search_module(FFTW3 fftw3)
+      if (FFTW3_FOUND AND FFTW3_LIBRARIES)
+        find_pkgconfig_libraries_absolute_path(FFTW3)
+      endif()
     endif()
     if (FFTW3_FOUND)
-      set(FFTW_C_FLAGS "${FFTW3_CFLAGS_OTHER}")
       if (NOT FFTW_FIND_QUIETLY)
         message(STATUS "Looking for FFTW3 - found using PkgConfig")
       endif()
       if (FFTW3_LIBRARIES)
+        find_pkgconfig_libraries_absolute_path(FFTW3)
         list(APPEND FFTW_LIBRARIES "${FFTW3_LIBRARIES}")
       endif()
       if(FFTW3_INCLUDE_DIRS)
@@ -347,14 +362,6 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
           "\n   the PKG_CONFIG_PATH environment variable.")
       endif()
     endif(FFTW3_FOUND)
-
-    set(FFTW_INCLUDE_DIRS_DEP "${FFTW_STATIC_INCLUDE_DIRS}")
-    set(FFTW_LIBRARY_DIRS_DEP "${FFTW_STATIC_LIBRARY_DIRS}")
-    set(FFTW_LIBRARIES_DEP    "${FFTW_STATIC_LIBRARIES}"   )
-
-    if (FFTW_LIBRARIES)
-      set(FFTW_WORKS TRUE)
-    endif()
 
     if (FFTW_FOUND AND FFTW_LIBRARIES)
       set(FFTW_FOUND_WITH_PKGCONFIG "TRUE")
@@ -688,104 +695,103 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     endif()
   endforeach()
 
-  # check a function to validate the find
-  if(FFTW_LIBRARIES)
-
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_LDFLAGS)
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # FFTW
-    if (FFTW_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${FFTW_INCLUDE_DIRS}")
-    endif()
-    if (FFTW_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${FFTW_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${FFTW_LIBRARIES}")
-    # THREADS
-    if (FFTW_LOOK_FOR_THREADS)
-      list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
-    endif()
-    # OMP
-    if(FFTW_LOOK_FOR_OMP)
-      list(APPEND REQUIRED_FLAGS "${OPENMP_C_FLAGS}")
-      #if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-      #  # either gomp ...
-      #  list(APPEND REQUIRED_LIBS "-lgomp")
-      #  # or iomp5
-      #  list(APPEND REQUIRED_LIBS "-liomp5")
-      #elseif (CMAKE_C_COMPILER_ID STREQUAL "Intel")
-      #  list(APPEND REQUIRED_LIBS "-liomp5")
-      #endif()
-    endif()
-    # MKL
-    if(FFTW_LOOK_FOR_MKL)
-      list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
-      if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
-      endif()
-    endif()
-    # m
-    find_library(M_LIBRARY NAMES m)
-    mark_as_advanced(M_LIBRARY)
-    if(M_LIBRARY)
-      list(APPEND REQUIRED_LIBS "-lm")
-    endif()
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(FFTW_WORKS CACHE)
-    include(CheckFunctionExists)
-    if (FFTW_LOOK_FOR_ESSL)
-      check_function_exists(${FFTW_PREC_TESTFUNC}fftw_execute FFTW_WORKS)
-    else()
-      check_function_exists(${FFTW_PREC_TESTFUNC}fftw_execute_ FFTW_WORKS)
-    endif()
-    mark_as_advanced(FFTW_WORKS)
-
-    if(FFTW_WORKS)
-      # save link with dependencies
-      set(FFTW_LIBRARIES_DEP "${REQUIRED_LIBS}")
-      set(FFTW_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-      set(FFTW_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-      set(FFTW_C_FLAGS "${REQUIRED_FLAGS}")
-      set(FFTW_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
-      list(REMOVE_DUPLICATES FFTW_LIBRARY_DIRS_DEP)
-      list(REMOVE_DUPLICATES FFTW_INCLUDE_DIRS_DEP)
-      list(REMOVE_DUPLICATES FFTW_LINKER_FLAGS)
-    else()
-      if(NOT FFTW_FIND_QUIETLY)
-        message(STATUS "Looking for FFTW : test of ${FFTW_PREC_TESTFUNC}fftw_execute_ with fftw library fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(FFTW_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR
   (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR
   FFTW_GIVEN_BY_USER OR
   FFTW_LOOK_FOR_MKL  OR
   FFTW_LOOK_FOR_ESSL
   )
+
+# check a function to validate the find
+if(FFTW_LIBRARIES)
+
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # FFTW
+  if (FFTW_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${FFTW_INCLUDE_DIRS}")
+  endif()
+  if (FFTW_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${FFTW_CFLAGS_OTHER}")
+  endif()
+  if (FFTW_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${FFTW_LDFLAGS_OTHER}")
+  endif()
+  if (FFTW_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${FFTW_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${FFTW_LIBRARIES}")
+  # THREADS
+  if (FFTW_LOOK_FOR_THREADS)
+    list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
+  endif()
+  # OMP
+  if(FFTW_LOOK_FOR_OMP)
+    list(APPEND REQUIRED_FLAGS "${OPENMP_C_FLAGS}")
+  endif()
+  # MKL
+  if(FFTW_LOOK_FOR_MKL)
+    list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+      list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
+    endif()
+  endif()
+  # m
+  find_library(M_LIBRARY NAMES m)
+  mark_as_advanced(M_LIBRARY)
+  if(M_LIBRARY)
+    list(APPEND REQUIRED_LIBS "-lm")
+  endif()
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(FFTW_WORKS CACHE)
+  include(CheckFunctionExists)
+  if (FFTW_LOOK_FOR_ESSL)
+    check_function_exists(${FFTW_PREC_TESTFUNC}fftw_execute FFTW_WORKS)
+  else()
+    check_function_exists(${FFTW_PREC_TESTFUNC}fftw_execute_ FFTW_WORKS)
+  endif()
+  mark_as_advanced(FFTW_WORKS)
+
+  if(FFTW_WORKS)
+    # save link with dependencies
+    set(FFTW_LIBRARIES_DEP "${REQUIRED_LIBS}")
+    set(FFTW_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
+    set(FFTW_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+    set(FFTW_C_FLAGS "${REQUIRED_FLAGS}")
+    set(FFTW_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
+    list(REMOVE_DUPLICATES FFTW_LIBRARY_DIRS_DEP)
+    list(REMOVE_DUPLICATES FFTW_INCLUDE_DIRS_DEP)
+    list(REMOVE_DUPLICATES FFTW_LINKER_FLAGS)
+  else()
+    if(NOT FFTW_FIND_QUIETLY)
+      message(STATUS "Looking for FFTW : test of ${FFTW_PREC_TESTFUNC}fftw_execute_ with fftw library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(FFTW_LIBRARIES)
 
 if (FFTW_LIBRARIES)
   list(GET FFTW_LIBRARIES 0 first_lib)
@@ -806,13 +812,6 @@ mark_as_advanced(FFTW_DIR_FOUND)
 # check that FFTW has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
-if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR (FFTW_GIVEN_BY_USER) )
-  find_package_handle_standard_args(FFTW DEFAULT_MSG
-    FFTW_LIBRARIES
-    FFTW_INCLUDE_DIRS
-    FFTW_WORKS)
-else()
-  find_package_handle_standard_args(FFTW DEFAULT_MSG
-    FFTW_LIBRARIES
-    FFTW_WORKS)
-endif()
+find_package_handle_standard_args(FFTW DEFAULT_MSG
+  FFTW_LIBRARIES
+  FFTW_WORKS)

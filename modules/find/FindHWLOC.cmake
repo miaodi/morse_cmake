@@ -16,11 +16,23 @@
 # This module finds headers and hwloc library.
 # Results are reported in variables:
 #  HWLOC_FOUND           - True if headers and requested libraries were found
-#  HWLOC_C_FLAGS         - list of required compilation flags (excluding -I)
 #  HWLOC_INCLUDE_DIRS    - hwloc include directories
 #  HWLOC_LIBRARY_DIRS    - Link directories for hwloc libraries
 #  HWLOC_LIBRARIES       - hwloc component libraries to be linked
+#
 #  HWLOC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = HWLOC
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DHWLOC_DIR=path/to/hwloc):
@@ -72,6 +84,7 @@ find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 
   pkg_search_module(HWLOC hwloc)
+
   if (NOT HWLOC_FIND_QUIETLY)
     if (HWLOC_FOUND AND HWLOC_LIBRARIES)
       message(STATUS "Looking for HWLOC - found using PkgConfig")
@@ -82,10 +95,9 @@ if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
     endif()
   endif()
 
-  set(HWLOC_C_FLAGS "${HWLOC_CFLAGS_OTHER}")
-
   if (HWLOC_FOUND AND HWLOC_LIBRARIES)
     set(HWLOC_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(HWLOC)
   else()
     set(HWLOC_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -245,51 +257,59 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
     list(REMOVE_DUPLICATES HWLOC_LIBRARY_DIRS)
   endif ()
 
-  # check a function to validate the find
-  if(HWLOC_LIBRARIES)
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # HWLOC
-    if (HWLOC_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
-    endif()
-    if (HWLOC_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${HWLOC_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(HWLOC_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(hwloc_topology_init HWLOC_WORKS)
-    mark_as_advanced(HWLOC_WORKS)
-
-    if(NOT HWLOC_WORKS)
-      if(NOT HWLOC_FIND_QUIETLY)
-        message(STATUS "Looking for hwloc : test of hwloc_topology_init with hwloc library fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(HWLOC_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(HWLOC_LIBRARIES)
+
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # HWLOC
+  if (HWLOC_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
+  endif()
+  if (HWLOC_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${HWLOC_CFLAGS_OTHER}")
+  endif()
+  if (HWLOC_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${HWLOC_LDFLAGS_OTHER}")
+  endif()
+  if (HWLOC_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${HWLOC_LIBRARIES}")
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(HWLOC_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(hwloc_topology_init HWLOC_WORKS)
+  mark_as_advanced(HWLOC_WORKS)
+
+  if(NOT HWLOC_WORKS)
+    if(NOT HWLOC_FIND_QUIETLY)
+      message(STATUS "Looking for hwloc : test of hwloc_topology_init with hwloc library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(HWLOC_LIBRARIES)
 
 if (HWLOC_LIBRARIES)
   if (HWLOC_LIBRARY_DIRS)
@@ -312,14 +332,9 @@ mark_as_advanced(HWLOC_DIR_FOUND)
 # check that HWLOC has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
-if (PKG_CONFIG_EXECUTABLE AND HWLOC_FOUND)
-  find_package_handle_standard_args(HWLOC DEFAULT_MSG
-    HWLOC_LIBRARIES)
-else()
-  find_package_handle_standard_args(HWLOC DEFAULT_MSG
-    HWLOC_LIBRARIES
-    HWLOC_WORKS)
-endif()
+find_package_handle_standard_args(HWLOC DEFAULT_MSG
+  HWLOC_LIBRARIES
+  HWLOC_WORKS)
 
 if (HWLOC_FOUND)
   set(HWLOC_SAVE_CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})

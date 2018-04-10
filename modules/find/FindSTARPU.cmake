@@ -29,19 +29,30 @@
 #
 # Results are reported in variables:
 #  STARPU_FOUND                  - True if headers and requested libraries were found
-#  STARPU_C_FLAGS                - list of required compilation flags (excluding -I)
-#  STARPU_LINKER_FLAGS           - list of required linker flags (excluding -l and -L)
 #  STARPU_INCLUDE_DIRS           - starpu include directories
 #  STARPU_LIBRARY_DIRS           - Link directories for starpu libraries
 #  STARPU_LIBRARIES              - starpu libraries
-#  STARPU_SHM_LIBRARIES          - starpu libraries without libstarpumpi
-#  STARPU_MPI_LIBRARIES          - starpu libraries with libstarpumpi
 #  STARPU_INCLUDE_DIRS_DEP       - starpu + dependencies include directories
 #  STARPU_LIBRARY_DIRS_DEP       - starpu + dependencies link directories
 #  STARPU_LIBRARIES_DEP          - starpu libraries + dependencies
 #  STARPU_VERSION                - A human-readable string containing the version of the package found
 #  STARPU_VERSION_MAJOR          - The major version of the package found
 #  STARPU_VERSION_MINOR          - The minor version of the package found
+#
+#  STARPU_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = STARPU
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
+#
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DSTARPU=path/to/starpu):
 #  STARPU_DIR                    - Where to find the base directory of starpu
@@ -213,21 +224,20 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
 
   set (STARPU_VERSION_LIST "1.3;1.2;1.1;1.0")
   foreach(_version ${STARPU_VERSION_LIST})
-    pkg_search_module(STARPU_SHM starpu-${_version})
-    if (STARPU_SHM_FOUND)
+    if(STARPU_LOOK_FOR_MPI)
+      pkg_search_module(STARPU starpumpi-${_version})
+    else()
+      pkg_search_module(STARPU starpu-${_version})
+    endif()
+    if (STARPU_FOUND)
       set(STARPU_VERSION "${_version}" CACHE INTERNAL "StarPU version found")
       break()
     endif()
   endforeach()
-  set(STARPU_INCLUDE_DIRS "${STARPU_SHM_STATIC_INCLUDE_DIRS}")
-  set(STARPU_LIBRARY_DIRS "${STARPU_SHM_STATIC_LIBRARY_DIRS}")
-  if(STARPU_LOOK_FOR_MPI AND MPI_FOUND)
-    pkg_search_module(STARPU_MPI starpumpi-${STARPU_VERSION})
-  endif()
   if (NOT STARPU_FIND_QUIETLY)
-    if (STARPU_SHM_FOUND AND STARPU_SHM_LIBRARIES)
+    if (STARPU_FOUND AND STARPU_LIBRARIES)
       message(STATUS "Looking for STARPU - found using PkgConfig")
-      set(STARPU_VERSION_STRING "${STARPU_SHM_VERSION}")
+      set(STARPU_VERSION_STRING "${STARPU_VERSION}")
       string(REPLACE "." ";" STARPU_VERSION_STRING_LIST ${STARPU_VERSION_STRING})
       list(GET STARPU_VERSION_STRING_LIST 0 STARPU_VERSION_MAJOR)
       list(GET STARPU_VERSION_STRING_LIST 1 STARPU_VERSION_MINOR)
@@ -235,15 +245,6 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
       message(STATUS "${Magenta}Looking for STARPU - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing libstarpu.pc"
         "\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
-    endif()
-    if (STARPU_LOOK_FOR_MPI)
-      if (STARPU_MPI_FOUND AND STARPU_MPI_LIBRARIES)
-        message(STATUS "Looking for STARPU MPI - found using PkgConfig")
-      else()
-        message(STATUS "${Magenta}Looking for STARPU MPI - not found using PkgConfig."
-          " Perhaps you should add the directory containing libstarpumpi.pc to"
-          " the PKG_CONFIG_PATH environment variable.${ColourReset}")
-      endif()
     endif()
 
     # check if the version found respects the minimum required
@@ -268,41 +269,21 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
       endif()
     endif()
 
-    if (STARPU_SHM_FOUND AND STARPU_SHM_LIBRARIES)
+    if (STARPU_FOUND AND STARPU_LIBRARIES)
       set(STARPU_FOUND_WITH_PKGCONFIG "TRUE")
+      find_pkgconfig_libraries_absolute_path(STARPU)
     else()
       set(STARPU_FOUND_WITH_PKGCONFIG "FALSE")
     endif()
 
   endif()
 
-  if(STARPU_MPI_LIBRARIES)
-    if (STARPU_LOOK_FOR_SIMGRID)
-      # Cmake does not fetch explicit libfxt.a static paths from pkg-config...
-      find_package(FXT)
-      string(REGEX MATCH "[^;]*/libfxt.a" FXT_STATIC_LIB "${STARPU_MPI_LDFLAGS_OTHER}")
-      list(APPEND STARPU_MPI_LIBRARIES "${FXT_STATIC_LIB}")
-    endif()
-    set(STARPU_LIBRARIES "${STARPU_MPI_STATIC_LIBRARIES}")
-    set(STARPU_LINKER_FLAGS "${STARPU_MPI_STATIC_LDFLAGS_OTHER}")
-    set(STARPU_C_FLAGS "${STARPU_MPI_CFLAGS_OTHER}")
-  elseif(STARPU_SHM_LIBRARIES)
-    set(STARPU_LIBRARIES "${STARPU_SHM_STATIC_LIBRARIES}")
-    set(STARPU_LINKER_FLAGS "${STARPU_SHM_STATIC_LDFLAGS_OTHER}")
-    set(STARPU_C_FLAGS "${STARPU_CFLAGS_OTHER}")
-  else()
-    set(STARPU_LIBRARIES "STARPU_LIBRARIES-NOTFOUND")
-  endif()
-  set(STARPU_INCLUDE_DIRS_DEP "${STARPU_INCLUDE_DIRS}")
-  set(STARPU_LIBRARY_DIRS_DEP "${STARPU_LIBRARY_DIRS}")
-  set(STARPU_LIBRARIES_DEP "${STARPU_LIBRARIES}")
-  if (STARPU_SHM_FOUND)
-    set(STARPU_FOUND "TRUE")
-  else()
-    set(STARPU_FOUND "FALSE")
-  endif()
-  if (STARPU_LOOK_FOR_MPI AND NOT STARPU_MPI_FOUND)
-    set(STARPU_FOUND "FALSE")
+  if(STARPU_LOOK_FOR_MPI AND STARPU_LOOK_FOR_SIMGRID AND STARPU_FOUND)
+    # Cmake does not fetch explicit libfxt.a static paths from pkg-config...
+    find_package(FXT)
+    string(REGEX MATCH "[^;]*/libfxt.a" FXT_STATIC_LIB "${STARPU_MPI_LDFLAGS_OTHER}")
+    list(APPEND STARPU_LIBRARIES "${FXT_STATIC_LIB}")
+    list(APPEND STARPU_STATIC_LIBRARIES "${FXT_STATIC_LIB}")
   endif()
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
@@ -456,10 +437,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
 
   # create list of headers to find
   list(APPEND STARPU_hdrs_to_find "starpu.h;starpu_profiling.h")
-  if(STARPU_LOOK_FOR_MPI AND MPI_FOUND)
+  if(STARPU_LOOK_FOR_MPI)
     list(APPEND STARPU_hdrs_to_find "starpu_mpi.h")
   endif()
-  if(STARPU_LOOK_FOR_CUDA AND CUDA_FOUND)
+  if(STARPU_LOOK_FOR_CUDA)
     list(APPEND STARPU_hdrs_to_find "starpu_cuda.h;starpu_scheduler.h")
   endif()
 
@@ -541,8 +522,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
     # Looking for lib
     # ---------------
 
-    set(STARPU_SHM_LIBRARIES "")
-    set(STARPU_MPI_LIBRARIES "")
+    set(STARPU_LIBRARIES "")
     set(STARPU_LIBRARY_DIRS "")
 
     # Add system library paths to search lib
@@ -574,10 +554,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
 
     # create list of libs to find
     set(STARPU_libs_to_find     "starpu-${STARPU_VERSION}")
-    set(STARPU_SHM_libs_to_find "starpu-${STARPU_VERSION}")
-    if (STARPU_LOOK_FOR_MPI OR MPI_FOUND)
+    if (STARPU_LOOK_FOR_MPI)
       list(INSERT STARPU_libs_to_find 0 "starpumpi-${STARPU_VERSION}")
-      set(STARPU_MPI_libs_to_find "${STARPU_libs_to_find}")
     endif()
 
     # call cmake macro to find the lib path
@@ -612,293 +590,247 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
     foreach(starpu_lib ${STARPU_libs_to_find})
 
       if (STARPU_${starpu_lib}_LIBRARY)
-
         get_filename_component(${starpu_lib}_lib_path ${STARPU_${starpu_lib}_LIBRARY} PATH)
         # set cmake variables (respects naming convention)
-
-        foreach(starpu_shm_lib ${STARPU_SHM_libs_to_find})
-          if(starpu_shm_lib STREQUAL starpu_lib)
-            list(APPEND STARPU_SHM_LIBRARIES "${STARPU_${starpu_lib}_LIBRARY}")
-          endif()
-        endforeach()
-        if (STARPU_LOOK_FOR_MPI AND MPI_FOUND)
-          foreach(starpu_mpi_lib ${STARPU_MPI_libs_to_find})
-            if(starpu_mpi_lib STREQUAL starpu_lib)
-              list(APPEND STARPU_MPI_LIBRARIES "${STARPU_${starpu_lib}_LIBRARY}")
-            endif()
-          endforeach()
-        endif ()
+        list(APPEND STARPU_LIBRARIES "${STARPU_${starpu_lib}_LIBRARY}")
         list(APPEND STARPU_LIBRARY_DIRS "${${starpu_lib}_lib_path}")
-
       else (STARPU_${starpu_lib}_LIBRARY)
-
+        list(APPEND STARPU_LIBRARIES "${STARPU_${starpu_lib}_LIBRARY}")
         if(NOT STARPU_FIND_QUIETLY)
           message(STATUS "Looking for starpu -- lib ${starpu_lib} not found")
         endif()
-        if(starpu_lib STREQUAL "starpumpi-${STARPU_VERSION}" AND
-            NOT STARPU_FIND_REQUIRED_MPI)
-          # if MPI optional, not a problem: no NOTFOUND in list of MPI LIBRARIES
-          if(NOT STARPU_FIND_QUIETLY)
-            message(STATUS "Looking for starpu -- lib ${starpu_lib} not required")
-          endif()
-        else()
-          # for any other lib, add NOTFOUND in the proper list of LIBRARIES
-          foreach(starpu_shm_lib ${STARPU_SHM_libs_to_find})
-            if(starpu_shm_lib STREQUAL starpu_lib)
-              set(STARPU_SHM_LIBRARIES "${STARPU_${starpu_lib}_LIBRARY}")
-            endif()
-          endforeach()
-          if (STARPU_LOOK_FOR_MPI AND MPI_FOUND)
-            foreach(starpu_mpi_lib ${STARPU_MPI_libs_to_find})
-              if(starpu_mpi_lib STREQUAL starpu_lib)
-                list(APPEND STARPU_MPI_LIBRARIES "${STARPU_${starpu_mpi_lib}_LIBRARY}")
-              endif()
-            endforeach()
-          endif ()
-        endif()
-
       endif (STARPU_${starpu_lib}_LIBRARY)
 
       mark_as_advanced(STARPU_${starpu_lib}_LIBRARY)
 
     endforeach(starpu_lib ${STARPU_libs_to_find})
 
-    list(REMOVE_DUPLICATES STARPU_SHM_LIBRARIES)
-    list(REMOVE_DUPLICATES STARPU_MPI_LIBRARIES)
+    list(REMOVE_DUPLICATES STARPU_LIBRARIES)
     if (STARPU_LIBRARY_DIRS)
       list(REMOVE_DUPLICATES STARPU_LIBRARY_DIRS)
     endif ()
 
-    if (STARPU_SHM_LIBRARIES AND STARPU_LIBRARY_DIRS AND STARPU_INCLUDE_DIRS)
-      set(STARPU_SHM_FOUND TRUE)
-      if(STARPU_MPI_LIBRARIES)
-        set(STARPU_MPI_FOUND TRUE)
-      endif()
+    if (STARPU_LIBRARIES AND STARPU_LIBRARY_DIRS AND STARPU_INCLUDE_DIRS)
+      set(STARPU_FOUND TRUE)
     endif()
 
   else(STARPU_starpu_config.h_INCLUDE_DIRS)
+
     if(NOT STARPU_FIND_QUIETLY)
       message(STATUS "The version of StarPU is not known so that we do not search libraries")
     endif()
   endif(STARPU_starpu_config.h_INCLUDE_DIRS)
 
-  foreach(lib ${STARPU_SHM_LIBRARIES})
-    if (NOT lib)
-      set(STARPU_SHM_LIBRARIES "STARPU_SHM_LIBRARIES-NOTFOUND")
+  foreach(_lib ${STARPU_LIBRARIES})
+    if (NOT _lib)
+      set(STARPU_LIBRARIES "STARPU_LIBRARIES-NOTFOUND")
     endif()
   endforeach()
-  foreach(lib ${STARPU_MPI_LIBRARIES})
-    if (NOT lib)
-      set(STARPU_MPI_LIBRARIES "STARPU_MPI_LIBRARIES-NOTFOUND")
-    endif()
-  endforeach()
-  if(STARPU_LOOK_FOR_MPI)
-    set(STARPU_LIBRARIES "${STARPU_MPI_LIBRARIES}")
-  else()
-    set(STARPU_LIBRARIES "${STARPU_SHM_LIBRARIES}")
-  endif()
-
-  # check a function to validate the find
-  if(STARPU_LIBRARIES)
-
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_LDFLAGS)
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # STARPU
-    if (STARPU_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${STARPU_INCLUDE_DIRS}")
-    endif()
-    set(CMAKE_REQUIRED_FLAGS)
-    foreach(libdir ${STARPU_LIBRARY_DIRS})
-      if (libdir)
-        list(APPEND REQUIRED_LIBDIRS "${libdir}")
-      endif()
-    endforeach()
-    set(REQUIRED_LIBS "${STARPU_LIBRARIES}")
-    # HWLOC
-    if (HWLOC_FOUND AND STARPU_LOOK_FOR_HWLOC)
-      if (HWLOC_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
-      endif()
-      if (HWLOC_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
-      endif()
-      foreach(lib ${HWLOC_LIBRARIES})
-        if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-          list(APPEND REQUIRED_LIBS "${lib}")
-        else()
-          list(APPEND REQUIRED_LIBS "-l${lib}")
-        endif()
-      endforeach()
-    endif()
-    # MPI
-    if (MPI_FOUND AND STARPU_LOOK_FOR_MPI)
-      if (MPI_C_INCLUDE_PATH)
-        list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
-      endif()
-      if (MPI_C_LINK_FLAGS)
-        if (${MPI_C_LINK_FLAGS} MATCHES "  -")
-          string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
-        endif()
-        list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
-      endif()
-      list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
-    endif()
-    # MAGMA
-    if (MAGMA_FOUND AND STARPU_LOOK_FOR_MAGMA)
-      if (MAGMA_INCLUDE_DIRS_DEP)
-        list(APPEND REQUIRED_INCDIRS "${MAGMA_INCLUDE_DIRS_DEP}")
-      elseif(MAGMA_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${MAGMA_INCLUDE_DIRS}")
-      endif()
-      if (MAGMA_LIBRARY_DIRS_DEP)
-        list(APPEND REQUIRED_LIBDIRS "${MAGMA_LIBRARY_DIRS_DEP}")
-      elseif(MAGMA_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${MAGMA_LIBRARY_DIRS}")
-      endif()
-      if (MAGMA_LIBRARIES_DEP)
-        list(APPEND REQUIRED_LIBS "${MAGMA_LIBRARIES_DEP}")
-      elseif(MAGMA_LIBRARIES)
-        foreach(lib ${MAGMA_LIBRARIES})
-          if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-            list(APPEND REQUIRED_LIBS "${lib}")
-          else()
-            list(APPEND REQUIRED_LIBS "-l${lib}")
-          endif()
-        endforeach()
-      endif()
-      if (MAGMA_LINKER_FLAGS)
-        list(APPEND REQUIRED_LDFLAGS "${MAGMA_LINKER_FLAGS}")
-      endif()
-    endif()
-    # CUDA
-    if (CUDA_FOUND AND STARPU_LOOK_FOR_CUDA)
-      if (CUDA_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${CUDA_INCLUDE_DIRS}")
-      endif()
-      if (CUDA_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${CUDA_LIBRARY_DIRS}")
-      endif()
-      list(APPEND REQUIRED_LIBS "${CUDA_CUBLAS_LIBRARIES};${CUDA_LIBRARIES}")
-    endif()
-    # FXT
-    if (FXT_FOUND AND STARPU_LOOK_FOR_FXT)
-      if (FXT_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${FXT_INCLUDE_DIRS}")
-      endif()
-      if (FXT_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${FXT_LIBRARY_DIRS}")
-      endif()
-      foreach(lib ${FXT_LIBRARIES})
-        if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-          list(APPEND REQUIRED_LIBS "${lib}")
-        else()
-          list(APPEND REQUIRED_LIBS "-l${lib}")
-        endif()
-      endforeach()
-    endif()
-    # SIMGRID
-    if (SIMGRID_FOUND AND STARPU_LOOK_FOR_SIMGRID)
-      if (SIMGRID_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${SIMGRID_INCLUDE_DIRS}")
-      endif()
-      if (SIMGRID_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${SIMGRID_LIBRARY_DIRS}")
-      endif()
-      foreach(lib ${SIMGRID_LIBRARIES})
-        if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-          list(APPEND REQUIRED_LIBS "${lib}")
-        else()
-          list(APPEND REQUIRED_LIBS "-l${lib}")
-        endif()
-      endforeach()
-      list(APPEND REQUIRED_FLAGS "-include starpu_simgrid_wrap.h")
-    endif()
-    # BLAS
-    if (BLAS_FOUND AND STARPU_LOOK_FOR_BLAS)
-      if (BLAS_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${BLAS_INCLUDE_DIRS}")
-      endif()
-      if (BLAS_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${BLAS_LIBRARY_DIRS}")
-      endif()
-      list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
-      if (BLAS_LINKER_FLAGS)
-        list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
-      endif()
-    endif()
-    # Fortran
-    if (CMAKE_C_COMPILER_ID MATCHES "GNU")
-      find_library(
-        FORTRAN_gfortran_LIBRARY
-        NAMES gfortran
-        HINTS ${_lib_env}
-        )
-      mark_as_advanced(FORTRAN_gfortran_LIBRARY)
-      if (FORTRAN_gfortran_LIBRARY AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
-        list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
-      endif()
-    elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
-      find_library(
-        FORTRAN_ifcore_LIBRARY
-        NAMES ifcore
-        HINTS ${_lib_env}
-        )
-      mark_as_advanced(FORTRAN_ifcore_LIBRARY)
-      if (FORTRAN_ifcore_LIBRARY)
-        list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
-      endif()
-    endif()
-    # EXTRA LIBS such that pthread, m, rt
-    list(APPEND REQUIRED_LIBS ${STARPU_EXTRA_LIBRARIES})
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(STARPU_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(starpu_init STARPU_WORKS)
-    mark_as_advanced(STARPU_WORKS)
-
-    if(STARPU_WORKS)
-      # save link with dependencies
-      set(STARPU_LIBRARIES_DEP "${REQUIRED_LIBS}")
-      set(STARPU_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-      set(STARPU_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-      set(STARPU_C_FLAGS "${REQUIRED_FLAGS}")
-      set(STARPU_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
-      list(REMOVE_DUPLICATES STARPU_LIBRARY_DIRS_DEP)
-      list(REMOVE_DUPLICATES STARPU_INCLUDE_DIRS_DEP)
-      list(REMOVE_DUPLICATES STARPU_LINKER_FLAGS)
-    else()
-      if(NOT STARPU_FIND_QUIETLY)
-        message(STATUS "Looking for starpu : test of starpu_init fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-        message(STATUS "Maybe STARPU is linked with specific libraries. "
-          "Have you tried with COMPONENTS (HWLOC, CUDA, MPI, BLAS, MAGMA, FXT, SIMGRID)? "
-          "See the explanation in FindSTARPU.cmake.")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(STARPU_LIBRARIES)
 
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) OR (STARPU_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(STARPU_LIBRARIES)
+
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # STARPU
+  if (STARPU_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${STARPU_INCLUDE_DIRS}")
+  endif()
+  if (STARPU_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${STARPU_CFLAGS_OTHER}")
+  endif()
+  if (STARPU_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${STARPU_LDFLAGS_OTHER}")
+  endif()
+  foreach(libdir ${STARPU_LIBRARY_DIRS})
+    if (libdir)
+      list(APPEND REQUIRED_LIBDIRS "${libdir}")
+    endif()
+  endforeach()
+  set(REQUIRED_LIBS "${STARPU_LIBRARIES}")
+  # HWLOC
+  if (HWLOC_FOUND AND STARPU_LOOK_FOR_HWLOC)
+    if (HWLOC_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
+    endif()
+    if (HWLOC_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
+    endif()
+    foreach(lib ${HWLOC_LIBRARIES})
+      if (EXISTS ${lib} OR ${lib} MATCHES "^-")
+        list(APPEND REQUIRED_LIBS "${lib}")
+      else()
+        list(APPEND REQUIRED_LIBS "-l${lib}")
+      endif()
+    endforeach()
+  endif()
+  # MPI
+  if (MPI_FOUND AND STARPU_LOOK_FOR_MPI)
+    if (MPI_C_INCLUDE_PATH)
+      list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
+    endif()
+    if (MPI_C_LINK_FLAGS)
+      if (${MPI_C_LINK_FLAGS} MATCHES "  -")
+        string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
+      endif()
+      list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
+  endif()
+  # MAGMA
+  if (MAGMA_FOUND AND STARPU_LOOK_FOR_MAGMA)
+    if (MAGMA_INCLUDE_DIRS_DEP)
+      list(APPEND REQUIRED_INCDIRS "${MAGMA_INCLUDE_DIRS_DEP}")
+    elseif(MAGMA_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${MAGMA_INCLUDE_DIRS}")
+    endif()
+    if (MAGMA_LIBRARY_DIRS_DEP)
+      list(APPEND REQUIRED_LIBDIRS "${MAGMA_LIBRARY_DIRS_DEP}")
+    elseif(MAGMA_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${MAGMA_LIBRARY_DIRS}")
+    endif()
+    if (MAGMA_LIBRARIES_DEP)
+      list(APPEND REQUIRED_LIBS "${MAGMA_LIBRARIES_DEP}")
+    elseif(MAGMA_LIBRARIES)
+      foreach(lib ${MAGMA_LIBRARIES})
+        if (EXISTS ${lib} OR ${lib} MATCHES "^-")
+          list(APPEND REQUIRED_LIBS "${lib}")
+        else()
+          list(APPEND REQUIRED_LIBS "-l${lib}")
+        endif()
+      endforeach()
+    endif()
+    if (MAGMA_LINKER_FLAGS)
+      list(APPEND REQUIRED_LDFLAGS "${MAGMA_LINKER_FLAGS}")
+    endif()
+  endif()
+  # CUDA
+  if (CUDA_FOUND AND STARPU_LOOK_FOR_CUDA)
+    if (CUDA_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${CUDA_INCLUDE_DIRS}")
+    endif()
+    if (CUDA_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${CUDA_LIBRARY_DIRS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${CUDA_CUBLAS_LIBRARIES};${CUDA_LIBRARIES}")
+  endif()
+  # FXT
+  if (FXT_FOUND AND STARPU_LOOK_FOR_FXT)
+    if (FXT_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${FXT_INCLUDE_DIRS}")
+    endif()
+    if (FXT_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${FXT_LIBRARY_DIRS}")
+    endif()
+    foreach(lib ${FXT_LIBRARIES})
+      if (EXISTS ${lib} OR ${lib} MATCHES "^-")
+        list(APPEND REQUIRED_LIBS "${lib}")
+      else()
+        list(APPEND REQUIRED_LIBS "-l${lib}")
+      endif()
+    endforeach()
+  endif()
+  # SIMGRID
+  if (SIMGRID_FOUND AND STARPU_LOOK_FOR_SIMGRID)
+    if (SIMGRID_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${SIMGRID_INCLUDE_DIRS}")
+    endif()
+    if (SIMGRID_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${SIMGRID_LIBRARY_DIRS}")
+    endif()
+    foreach(lib ${SIMGRID_LIBRARIES})
+      if (EXISTS ${lib} OR ${lib} MATCHES "^-")
+        list(APPEND REQUIRED_LIBS "${lib}")
+      else()
+        list(APPEND REQUIRED_LIBS "-l${lib}")
+      endif()
+    endforeach()
+    list(APPEND REQUIRED_FLAGS "-include starpu_simgrid_wrap.h")
+  endif()
+  # BLAS
+  if (BLAS_FOUND AND STARPU_LOOK_FOR_BLAS)
+    if (BLAS_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${BLAS_INCLUDE_DIRS}")
+    endif()
+    if (BLAS_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${BLAS_LIBRARY_DIRS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
+    if (BLAS_LINKER_FLAGS)
+      list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
+    endif()
+  endif()
+  # Fortran
+  if (CMAKE_C_COMPILER_ID MATCHES "GNU")
+    find_library(
+      FORTRAN_gfortran_LIBRARY
+      NAMES gfortran
+      HINTS ${_lib_env}
+      )
+    mark_as_advanced(FORTRAN_gfortran_LIBRARY)
+    if (FORTRAN_gfortran_LIBRARY AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
+      list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
+    endif()
+  elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
+    find_library(
+      FORTRAN_ifcore_LIBRARY
+      NAMES ifcore
+      HINTS ${_lib_env}
+      )
+    mark_as_advanced(FORTRAN_ifcore_LIBRARY)
+    if (FORTRAN_ifcore_LIBRARY)
+      list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
+    endif()
+  endif()
+  # EXTRA LIBS such that pthread, m, rt
+  list(APPEND REQUIRED_LIBS ${STARPU_EXTRA_LIBRARIES})
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(STARPU_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(starpu_init STARPU_WORKS)
+  mark_as_advanced(STARPU_WORKS)
+
+  if(STARPU_WORKS)
+    # save link with dependencies
+    set(STARPU_LIBRARIES_DEP "${REQUIRED_LIBS}")
+    set(STARPU_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
+    set(STARPU_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+    list(REMOVE_DUPLICATES STARPU_LIBRARY_DIRS_DEP)
+    list(REMOVE_DUPLICATES STARPU_INCLUDE_DIRS_DEP)
+  else()
+    if(NOT STARPU_FIND_QUIETLY)
+      message(STATUS "Looking for starpu : test of starpu_init fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+      message(STATUS "Maybe STARPU is linked with specific libraries. "
+        "Have you tried with COMPONENTS (HWLOC, CUDA, MPI, BLAS, MAGMA, FXT, SIMGRID)? "
+        "See the explanation in FindSTARPU.cmake.")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(STARPU_LIBRARIES)
 
 if (STARPU_LIBRARIES)
   if (STARPU_LIBRARY_DIRS)
@@ -925,35 +857,6 @@ mark_as_advanced(STARPU_DIR_FOUND)
 # check that STARPU has been found
 # --------------------------------
 include(FindPackageHandleStandardArgs)
-if(NOT STARPU_FIND_QUIETLY)
-  if(STARPU_SHM_FOUND)
-    message(STATUS "StarPU library has been found.")
-    if(STARPU_MPI_LIBRARIES)
-      message(STATUS "The mpi version of StarPU has been found so that we manage"
-        " two lists of libs, one sequential and one parallel (see"
-        " STARPU_SHM_LIBRARIES and STARPU_MPI_LIBRARIES).")
-    endif()
-    message(STATUS "StarPU shared memory libraries stored in STARPU_SHM_LIBRARIES")
-  endif()
-endif()
-if (PKG_CONFIG_EXECUTABLE AND STARPU_SHM_FOUND AND NOT STARPU_GIVEN_BY_USER)
-  find_package_handle_standard_args(STARPU DEFAULT_MSG
-    STARPU_SHM_LIBRARIES)
-else()
-  find_package_handle_standard_args(STARPU DEFAULT_MSG
-    STARPU_SHM_LIBRARIES
-    STARPU_WORKS)
-endif()
-if(STARPU_LOOK_FOR_MPI)
-  if(STARPU_MPI_LIBRARIES AND NOT STARPU_FIND_QUIETLY)
-    message(STATUS "StarPU mpi libraries stored in STARPU_MPI_LIBRARIES")
-  endif()
-  if (PKG_CONFIG_EXECUTABLE AND STARPU_MPI_FOUND AND NOT STARPU_GIVEN_BY_USER)
-    find_package_handle_standard_args(STARPU DEFAULT_MSG
-      STARPU_MPI_LIBRARIES)
-  else()
-    find_package_handle_standard_args(STARPU DEFAULT_MSG
-      STARPU_MPI_LIBRARIES
-      STARPU_WORKS)
-  endif()
-endif()
+find_package_handle_standard_args(STARPU DEFAULT_MSG
+  STARPU_LIBRARIES
+  STARPU_WORKS)

@@ -19,7 +19,20 @@
 #  HQR_INCLUDE_DIRS    - hqr include directories
 #  HQR_LIBRARY_DIRS    - Link directories for hqr libraries
 #  HQR_LIBRARIES       - hqr component libraries to be linked
+#
 #  HQR_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = HQR
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DHQR_DIR=path/to/hqr):
@@ -68,14 +81,10 @@ find_package(PkgConfig QUIET)
 if(PKG_CONFIG_EXECUTABLE AND NOT HQR_GIVEN_BY_USER)
 
   pkg_search_module(HQR hqr)
+
   if (NOT HQR_FIND_QUIETLY)
     if (HQR_FOUND AND HQR_LIBRARIES)
       message(STATUS "Looking for HQR - found using PkgConfig")
-      #if(NOT HQR_INCLUDE_DIRS)
-      #    message("${Magenta}HQR_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to hqr headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for HQR - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing hqr.pc to the"
@@ -84,6 +93,7 @@ if(PKG_CONFIG_EXECUTABLE AND NOT HQR_GIVEN_BY_USER)
   endif()
   if (HQR_FOUND AND HQR_LIBRARIES)
     set(HQR_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(HQR)
   else()
     set(HQR_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -236,51 +246,59 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     list(REMOVE_DUPLICATES HQR_LIBRARY_DIRS)
   endif ()
 
-  # check a function to validate the find
-  if(HQR_LIBRARIES)
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # HQR
-    if (HQR_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${HQR_INCLUDE_DIRS}")
-    endif()
-    if (HQR_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${HQR_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${HQR_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(HQR_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(libhqr_init_hqr HQR_WORKS)
-    mark_as_advanced(HQR_WORKS)
-
-    if(NOT HQR_WORKS)
-      if(NOT HQR_FIND_QUIETLY)
-        message(STATUS "Looking for hqr : test of libhqr_hqr_init with hqr library fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(HQR_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR (HQR_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(HQR_LIBRARIES)
+
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # HQR
+  if (HQR_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${HQR_INCLUDE_DIRS}")
+  endif()
+  if (HQR_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${HQR_CFLAGS_OTHER}")
+  endif()
+  if (HQR_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${HQR_LDFLAGS_OTHER}")
+  endif()
+  if (HQR_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${HQR_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${HQR_LIBRARIES}")
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(HQR_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(libhqr_init_hqr HQR_WORKS)
+  mark_as_advanced(HQR_WORKS)
+
+  if(NOT HQR_WORKS)
+    if(NOT HQR_FIND_QUIETLY)
+      message(STATUS "Looking for hqr : test of libhqr_hqr_init with hqr library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(HQR_LIBRARIES)
 
 if (HQR_LIBRARIES)
   if (HQR_LIBRARY_DIRS)
@@ -303,11 +321,6 @@ mark_as_advanced(HQR_DIR_FOUND)
 # check that HQR has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
-if (PKG_CONFIG_EXECUTABLE AND HQR_FOUND)
-  find_package_handle_standard_args(HQR DEFAULT_MSG
-    HQR_LIBRARIES)
-else()
-  find_package_handle_standard_args(HQR DEFAULT_MSG
-    HQR_LIBRARIES
-    HQR_WORKS)
-endif()
+find_package_handle_standard_args(HQR DEFAULT_MSG
+  HQR_LIBRARIES
+  HQR_WORKS)

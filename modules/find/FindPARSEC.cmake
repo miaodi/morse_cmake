@@ -29,8 +29,6 @@
 #
 # Results are reported in variables:
 #  PARSEC_FOUND                  - True if headers and requested libraries were found
-#  PARSEC_C_FLAGS                - list of required compilation flags (excluding -I)
-#  PARSEC_LINKER_FLAGS           - list of required linker flags (excluding -l and -L)
 #  PARSEC_INCLUDE_DIRS           - parsec include directories
 #  PARSEC_LIBRARY_DIRS           - Link directories for parsec libraries
 #  PARSEC_LIBRARIES              - parsec libraries
@@ -39,7 +37,21 @@
 #  PARSEC_LIBRARIES_DEP          - parsec libraries + dependencies
 #  PARSEC_parsec_ptgpp_BIN_DIR   - path to parsec driver parsec_ptgpp
 #  PARSEC_PARSEC_PTGPP           - parsec jdf compiler
+#
 #  PARSEC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = PARSEC
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
+#
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPARSEC=path/to/parsec):
 #  PARSEC_DIR                    - Where to find the base directory of parsec
@@ -222,25 +234,16 @@ find_package(PkgConfig QUIET)
 if(PKG_CONFIG_EXECUTABLE AND NOT PARSEC_GIVEN_BY_USER)
 
   pkg_search_module(PARSEC parsec)
+
   if (NOT PARSEC_FIND_QUIETLY)
     if (PARSEC_FOUND AND PARSEC_LIBRARIES)
       message(STATUS "Looking for PARSEC - found using PkgConfig")
-      #if(NOT PARSEC_SHM_INCLUDE_DIRS)
-      #    message("${Magenta}PARSEC_SHM_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to parsec headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for PARSEC - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing libparsec.pc"
         "\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
-
-  set(PARSEC_INCLUDE_DIRS_DEP "${PARSEC_INCLUDE_DIRS}")
-  set(PARSEC_LIBRARY_DIRS_DEP "${PARSEC_LIBRARY_DIRS}")
-  set(PARSEC_LIBRARIES_DEP "${PARSEC_LIBRARIES}")
-  set(PARSEC_C_FLAGS "${PARSEC_CFLAGS_OTHER}")
 
   # create list of binaries to find
   set(PARSEC_bins_to_find "parsec_ptgpp")
@@ -262,6 +265,7 @@ if(PKG_CONFIG_EXECUTABLE AND NOT PARSEC_GIVEN_BY_USER)
 
   if (PARSEC_FOUND AND PARSEC_LIBRARIES)
     set(PARSEC_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(PARSEC)
   else()
     set(PARSEC_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -491,137 +495,137 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) 
     endif()
   endif()
 
-  # check a function to validate the find
-  if(PARSEC_LIBRARIES)
-
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_LDFLAGS)
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # PARSEC
-    if (PARSEC_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${PARSEC_INCLUDE_DIRS}")
-    endif()
-    set(CMAKE_REQUIRED_FLAGS)
-    foreach(libdir ${PARSEC_LIBRARY_DIRS})
-      if (libdir)
-        list(APPEND REQUIRED_LIBDIRS "${libdir}")
-      endif()
-    endforeach()
-    set(REQUIRED_LIBS "${PARSEC_LIBRARIES}")
-    # HWLOC
-    if (HWLOC_FOUND AND PARSEC_LOOK_FOR_HWLOC)
-      if (HWLOC_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
-      endif()
-      if (HWLOC_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
-      endif()
-      foreach(lib ${HWLOC_LIBRARIES})
-        if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-          list(APPEND REQUIRED_LIBS "${lib}")
-        else()
-          list(APPEND REQUIRED_LIBS "-l${lib}")
-        endif()
-      endforeach()
-    endif()
-    # MPI
-    if (MPI_FOUND AND PARSEC_LOOK_FOR_MPI)
-      if (MPI_C_INCLUDE_PATH)
-        list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
-      endif()
-      if (MPI_C_LINK_FLAGS)
-        if (${MPI_C_LINK_FLAGS} MATCHES "  -")
-          string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
-        endif()
-        list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
-      endif()
-      list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
-    endif()
-    # CUDA
-    if (CUDA_FOUND AND PARSEC_LOOK_FOR_CUDA)
-      if (CUDA_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${CUDA_INCLUDE_DIRS}")
-      endif()
-      if (CUDA_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${CUDA_LIBRARY_DIRS}")
-      endif()
-      list(APPEND REQUIRED_LIBS "${CUDA_CUBLAS_LIBRARIES};${CUDA_CUDART_LIBRARY};${CUDA_CUDA_LIBRARY}")
-    endif()
-    # Fortran
-    if (CMAKE_C_COMPILER_ID MATCHES "GNU")
-      find_library(
-        FORTRAN_gfortran_LIBRARY
-        NAMES gfortran
-        HINTS ${_lib_env}
-        )
-      mark_as_advanced(FORTRAN_gfortran_LIBRARY)
-      if (FORTRAN_gfortran_LIBRARY)
-        list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
-      endif()
-    elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
-      find_library(
-        FORTRAN_ifcore_LIBRARY
-        NAMES ifcore
-        HINTS ${_lib_env}
-        )
-      mark_as_advanced(FORTRAN_ifcore_LIBRARY)
-      if (FORTRAN_ifcore_LIBRARY)
-        list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
-      endif()
-    endif()
-    # EXTRA LIBS such that pthread, m, rt, dl
-    list(APPEND REQUIRED_LIBS ${PARSEC_EXTRA_LIBRARIES})
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(PARSEC_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(parsec_init PARSEC_WORKS)
-    mark_as_advanced(PARSEC_WORKS)
-
-    if(PARSEC_WORKS)
-      # save link with dependencies
-      if (REQUIRED_FLAGS)
-        set(PARSEC_LIBRARIES_DEP "${REQUIRED_FLAGS};${REQUIRED_LIBS}")
-      else()
-        set(PARSEC_LIBRARIES_DEP "${REQUIRED_LIBS}")
-      endif()
-      set(PARSEC_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-      set(PARSEC_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-      set(PARSEC_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
-      list(REMOVE_DUPLICATES PARSEC_LIBRARY_DIRS_DEP)
-      list(REMOVE_DUPLICATES PARSEC_INCLUDE_DIRS_DEP)
-      list(REMOVE_DUPLICATES PARSEC_LINKER_FLAGS)
-    else()
-      if(NOT PARSEC_FIND_QUIETLY)
-        message(STATUS "Looking for parsec : test of parsec_init fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-        message(STATUS "Maybe PARSEC is linked with specific libraries. "
-          "Have you tried with COMPONENTS (HWLOC, CUDA, MPI)? "
-          "See the explanation in FindPARSEC.cmake.")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(PARSEC_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) OR (PARSEC_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(PARSEC_LIBRARIES)
+
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # PARSEC
+  if (PARSEC_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${PARSEC_INCLUDE_DIRS}")
+  endif()
+  if (PARSEC_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${PARSEC_CFLAGS_OTHER}")
+  endif()
+  if (PARSEC_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${PARSEC_LDFLAGS_OTHER}")
+  endif()
+  foreach(libdir ${PARSEC_LIBRARY_DIRS})
+    if (libdir)
+      list(APPEND REQUIRED_LIBDIRS "${libdir}")
+    endif()
+  endforeach()
+  set(REQUIRED_LIBS "${PARSEC_LIBRARIES}")
+  # HWLOC
+  if (HWLOC_FOUND AND PARSEC_LOOK_FOR_HWLOC)
+    if (HWLOC_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
+    endif()
+    if (HWLOC_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
+    endif()
+    foreach(lib ${HWLOC_LIBRARIES})
+      if (EXISTS ${lib} OR ${lib} MATCHES "^-")
+        list(APPEND REQUIRED_LIBS "${lib}")
+      else()
+        list(APPEND REQUIRED_LIBS "-l${lib}")
+      endif()
+    endforeach()
+  endif()
+  # MPI
+  if (MPI_FOUND AND PARSEC_LOOK_FOR_MPI)
+    if (MPI_C_INCLUDE_PATH)
+      list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
+    endif()
+    if (MPI_C_LINK_FLAGS)
+      if (${MPI_C_LINK_FLAGS} MATCHES "  -")
+        string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
+      endif()
+      list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
+  endif()
+  # CUDA
+  if (CUDA_FOUND AND PARSEC_LOOK_FOR_CUDA)
+    if (CUDA_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${CUDA_INCLUDE_DIRS}")
+    endif()
+    if (CUDA_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${CUDA_LIBRARY_DIRS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${CUDA_CUBLAS_LIBRARIES};${CUDA_CUDART_LIBRARY};${CUDA_CUDA_LIBRARY}")
+  endif()
+  # Fortran
+  if (CMAKE_C_COMPILER_ID MATCHES "GNU")
+    find_library(
+      FORTRAN_gfortran_LIBRARY
+      NAMES gfortran
+      HINTS ${_lib_env}
+      )
+    mark_as_advanced(FORTRAN_gfortran_LIBRARY)
+    if (FORTRAN_gfortran_LIBRARY)
+      list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
+    endif()
+  elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
+    find_library(
+      FORTRAN_ifcore_LIBRARY
+      NAMES ifcore
+      HINTS ${_lib_env}
+      )
+    mark_as_advanced(FORTRAN_ifcore_LIBRARY)
+    if (FORTRAN_ifcore_LIBRARY)
+      list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
+    endif()
+  endif()
+  # EXTRA LIBS such that pthread, m, rt, dl
+  list(APPEND REQUIRED_LIBS ${PARSEC_EXTRA_LIBRARIES})
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(PARSEC_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(parsec_init PARSEC_WORKS)
+  mark_as_advanced(PARSEC_WORKS)
+
+  if(PARSEC_WORKS)
+    # save link with dependencies
+    set(PARSEC_LIBRARIES_DEP "${REQUIRED_LIBS}")
+    set(PARSEC_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
+    set(PARSEC_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+    list(REMOVE_DUPLICATES PARSEC_LIBRARY_DIRS_DEP)
+    list(REMOVE_DUPLICATES PARSEC_INCLUDE_DIRS_DEP)
+  else()
+    if(NOT PARSEC_FIND_QUIETLY)
+      message(STATUS "Looking for parsec : test of parsec_init fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+      message(STATUS "Maybe PARSEC is linked with specific libraries. "
+        "Have you tried with COMPONENTS (HWLOC, CUDA, MPI)? "
+        "See the explanation in FindPARSEC.cmake.")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(PARSEC_LIBRARIES)
 
 if (PARSEC_LIBRARIES)
   if (PARSEC_LIBRARY_DIRS)
@@ -648,16 +652,10 @@ mark_as_advanced(PARSEC_DIR_FOUND)
 # check that PARSEC has been found
 # --------------------------------
 include(FindPackageHandleStandardArgs)
-if (PKG_CONFIG_EXECUTABLE AND PARSEC_FOUND)
-  find_package_handle_standard_args(PARSEC DEFAULT_MSG
-    PARSEC_LIBRARIES
-    PARSEC_parsec_ptgpp_BIN_DIR)
-else()
-  find_package_handle_standard_args(PARSEC DEFAULT_MSG
-    PARSEC_LIBRARIES
-    PARSEC_parsec_ptgpp_BIN_DIR
-    PARSEC_WORKS)
-endif()
+find_package_handle_standard_args(PARSEC DEFAULT_MSG
+  PARSEC_LIBRARIES
+  PARSEC_parsec_ptgpp_BIN_DIR
+  PARSEC_WORKS)
 
 if ( PARSEC_parsec_ptgpp_BIN_DIR )
   find_program(PARSEC_PARSEC_PTGPP

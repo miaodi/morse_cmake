@@ -20,7 +20,7 @@
 #
 ###
 
-# Transform relative path into absolute path for libraries found with the 
+# Transform relative path into absolute path for libraries found with the
 # pkg_search_module cmake macro
 # _prefix: the name of the CMake variable used when pkg_search_module was called
 # e.g. for pkg_search_module(BLAS blas) _prefix would be BLAS
@@ -34,10 +34,19 @@ macro(FIND_PKGCONFIG_LIBRARIES_ABSOLUTE_PATH _prefix)
   endif()
   list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
   list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+  # non static case
   set(${_prefix}_LIBRARIES_COPY "${${_prefix}_LIBRARIES}")
   set(${_prefix}_LIBRARIES "")
   foreach(_library ${${_prefix}_LIBRARIES_COPY})
-      get_filename_component(_library "${_library}" NAME_WE)
+    if(EXISTS "${_library}")
+      list(APPEND ${_prefix}_LIBRARIES ${_library})
+    else()
+      get_filename_component(_ext "${_library}" EXT)
+      set(_lib_extensions ".so" ".a" ".dyld" ".dll")
+      list(FIND _lib_extensions "${_ext}" _index)
+      if (${_index} GREATER -1)
+        get_filename_component(_library "${_library}" NAME_WE)
+      endif()
       find_library(_library_path NAMES ${_library}
           HINTS ${${_prefix}_LIBDIR} ${${_prefix}_LIBRARY_DIRS} ${_lib_env})
       if (_library_path)
@@ -46,22 +55,33 @@ macro(FIND_PKGCONFIG_LIBRARIES_ABSOLUTE_PATH _prefix)
           message(FATAL_ERROR "Dependency of ${_prefix} '${_library}' NOT FOUND")
       endif()
       unset(_library_path CACHE)
-      set (${_prefix}_LIBRARIES "${${_prefix}_LIBRARIES}" CACHE INTERNAL "" FORCE)
+    endif()
   endforeach()
+  set (${_prefix}_LIBRARIES "${${_prefix}_LIBRARIES}" CACHE INTERNAL "" FORCE)
+  # static case
   set(${_prefix}_STATIC_LIBRARIES_COPY "${${_prefix}_STATIC_LIBRARIES}")
   set(${_prefix}_STATIC_LIBRARIES "")
   foreach(_library ${${_prefix}_STATIC_LIBRARIES_COPY})
-      get_filename_component(_library "${_library}" NAME_WE)
+    if(EXISTS "${_library}")
+      list(APPEND ${_prefix}_STATIC_LIBRARIES ${_library})
+    else()
+      get_filename_component(_ext "${_library}" EXT)
+      set(_lib_extensions ".so" ".a" ".dyld" ".dll")
+      list(FIND _lib_extensions "${_ext}" _index)
+      if (${_index} GREATER -1)
+        get_filename_component(_library "${_library}" NAME_WE)
+      endif()
       find_library(_library_path NAMES ${_library}
           HINTS ${${_prefix}_STATIC_LIBDIR} ${${_prefix}_STATIC_LIBRARY_DIRS} ${_lib_env})
       if (_library_path)
-          list(APPEND ${_prefix}_STATIC_LIBRARIES ${_library_path})	
+          list(APPEND ${_prefix}_STATIC_LIBRARIES ${_library_path})
       else()
           message(FATAL_ERROR "Dependency of ${_prefix} '${_library}' NOT FOUND")
       endif()
       unset(_library_path CACHE)
-      set (${_prefix}_STATIC_LIBRARIES "${${_prefix}_STATIC_LIBRARIES}" CACHE INTERNAL "" FORCE)
+    endif()
   endforeach()
+  set (${_prefix}_STATIC_LIBRARIES "${${_prefix}_STATIC_LIBRARIES}" CACHE INTERNAL "" FORCE)
 endmacro()
 
 ##

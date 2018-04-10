@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2015 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -16,11 +16,23 @@
 # This module finds headers and simgrid library.
 # Results are reported in variables:
 #  SIMGRID_FOUND           - True if headers and requested libraries were found
-#  SIMGRID_C_FLAGS         - list of required compilation flags (excluding -I)
 #  SIMGRID_INCLUDE_DIRS    - simgrid include directories
 #  SIMGRID_LIBRARY_DIRS    - Link directories for simgrid libraries
 #  SIMGRID_LIBRARIES       - simgrid component libraries to be linked
+#
 #  SIMGRID_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = SIMGRID
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DSIMGRID_DIR=path/to/simgrid):
@@ -35,7 +47,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -69,14 +81,10 @@ find_package(PkgConfig QUIET)
 if(PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_GIVEN_BY_USER)
 
   pkg_search_module(SIMGRID simgrid)
+
   if (NOT SIMGRID_FIND_QUIETLY)
     if (SIMGRID_FOUND AND SIMGRID_LIBRARIES)
       message(STATUS "Looking for SIMGRID - found using PkgConfig")
-      #if(NOT SIMGRID_INCLUDE_DIRS)
-      #    message("${Magenta}SIMGRID_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to simgrid headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for SIMGRID - not found using PkgConfig."
         "\n   Perhaps you should add the directory containing simgrid.pc to the"
@@ -84,10 +92,9 @@ if(PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_GIVEN_BY_USER)
     endif()
   endif()
 
-  set(SIMGRID_C_FLAGS "${SIMGRID_CFLAGS_OTHER}")
-
   if (SIMGRID_FOUND AND SIMGRID_LIBRARIES)
     set(SIMGRID_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(SIMGRID)
   else()
     set(SIMGRID_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -254,51 +261,59 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
     list(REMOVE_DUPLICATES SIMGRID_LIBRARY_DIRS)
   endif ()
 
-  # check a function to validate the find
-  if(SIMGRID_LIBRARIES)
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-
-    # SIMGRID
-    if (SIMGRID_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${SIMGRID_INCLUDE_DIRS}")
-    endif()
-    if (SIMGRID_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${SIMGRID_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${SIMGRID_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(SIMGRID_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(MSG_main SIMGRID_WORKS)
-    mark_as_advanced(SIMGRID_WORKS)
-
-    if(NOT SIMGRID_WORKS)
-      if(NOT SIMGRID_FIND_QUIETLY)
-        message(STATUS "Looking for simgrid : test of fut_keychange with simgrid library fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif(SIMGRID_LIBRARIES)
-
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND) OR (SIMGRID_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(SIMGRID_LIBRARIES)
+
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # SIMGRID
+  if (SIMGRID_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${SIMGRID_INCLUDE_DIRS}")
+  endif()
+  if (SIMGRID_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${SIMGRID_CFLAGS_OTHER}")
+  endif()
+  if (SIMGRID_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${SIMGRID_LDFLAGS_OTHER}")
+  endif()
+  if (SIMGRID_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${SIMGRID_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${SIMGRID_LIBRARIES}")
+
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  foreach(lib_dir ${REQUIRED_LIBDIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(SIMGRID_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(MSG_main SIMGRID_WORKS)
+  mark_as_advanced(SIMGRID_WORKS)
+
+  if(NOT SIMGRID_WORKS)
+    if(NOT SIMGRID_FIND_QUIETLY)
+      message(STATUS "Looking for simgrid : test of fut_keychange with simgrid library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(SIMGRID_LIBRARIES)
 
 if (SIMGRID_LIBRARIES)
   if (SIMGRID_LIBRARY_DIRS)
@@ -321,11 +336,6 @@ mark_as_advanced(SIMGRID_DIR_FOUND)
 # check that SIMGRID has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
-if (PKG_CONFIG_EXECUTABLE AND SIMGRID_FOUND)
-  find_package_handle_standard_args(SIMGRID DEFAULT_MSG
-    SIMGRID_LIBRARIES)
-else()
-  find_package_handle_standard_args(SIMGRID DEFAULT_MSG
-    SIMGRID_LIBRARIES
-    SIMGRID_WORKS)
-endif()
+find_package_handle_standard_args(SIMGRID DEFAULT_MSG
+  SIMGRID_LIBRARIES
+  SIMGRID_WORKS)

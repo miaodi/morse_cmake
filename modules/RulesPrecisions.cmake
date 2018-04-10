@@ -233,16 +233,21 @@ MACRO(precisions_rules_py)
 
       # We generate a dependency only if a file will be generated
       if( got_file )
+        set( _compile_flags "-DPRECISION_${_dependency_PREC}" )
+        set( _listtmp ${PREC_RULE_PRECISIONS})
+        list(REMOVE_ITEM _listtmp ${_dependency_PREC})
+        foreach( _prec  ${_listtmp})
+          set( _compile_flags "${_compile_flags} -UPRECISION_${_prec}" )
+        endforeach()
 	if( generate_out )
 	  # the custom command is executed in CMAKE_CURRENT_BINARY_DIR
 	  ADD_CUSTOM_COMMAND(
 	    OUTPUT ${_dependency_OUTPUT}
 	    COMMAND ${CMAKE_COMMAND} -E remove -f ${_dependency_OUTPUT} && ${pythoncmd} && chmod a-w ${_dependency_OUTPUT}
 	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY})
-
-          set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 1 IS_IN_BINARY_DIR 1 )
+          set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS ${_compile_flags} GENERATED 1 IS_IN_BINARY_DIR 1 )
 	else( generate_out )
-          set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 0 )
+          set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS ${_compile_flags} GENERATED 0 )
 	endif( generate_out )
 
 	list(APPEND ${OUTPUTLIST} ${_dependency_OUTPUT})

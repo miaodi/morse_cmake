@@ -28,13 +28,16 @@
 # This module finds headers and fftw library.
 # Results are reported in variables:
 #  FFTW_FOUND            - True if headers and requested libraries were found
-#  FFTW_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
-#  FFTW_INCLUDE_DIRS     - fftw include directories
-#  FFTW_LIBRARY_DIRS     - Link directories for fftw libraries
-#  FFTW_LIBRARIES        - fftw component libraries to be linked
-#  FFTW_INCLUDE_DIRS_DEP - fftw + dependencies include directories
-#  FFTW_LIBRARY_DIRS_DEP - fftw + dependencies link directories
-#  FFTW_LIBRARIES_DEP    - fftw libraries + dependencies
+#  FFTW_CFLAGS_OTHER      - fftw compiler flags without headers paths
+#  FFTW_LDFLAGS_OTHER     - fftw linker flags without libraries
+#  FFTW_INCLUDE_DIRS      - fftw include directories
+#  FFTW_LIBRARY_DIRS      - fftw link directories
+#  FFTW_LIBRARIES         - fftw libraries to be linked (absolute path)
+#  FFTW_CFLAGS_OTHER_DEP  - fftw + dependencies compiler flags without headers paths
+#  FFTW_LDFLAGS_OTHER_DEP - fftw + dependencies linker flags without libraries
+#  FFTW_INCLUDE_DIRS_DEP  - fftw + dependencies include directories
+#  FFTW_LIBRARY_DIRS_DEP  - fftw + dependencies link directories
+#  FFTW_LIBRARIES_DEP     - fftw + dependencies libraries
 #
 #  FFTW_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #  if found with pkg-config the following variables are set
@@ -196,10 +199,10 @@ if (FFTW_LOOK_FOR_MKL)
   endif()
   if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
     find_package(Threads REQUIRED)
-    find_package(BLASEXT REQUIRED)
+    find_package(BLAS REQUIRED)
   else()
     find_package(Threads)
-    find_package(BLASEXT)
+    find_package(BLAS)
   endif()
 endif()
 
@@ -213,9 +216,9 @@ if (FFTW_LOOK_FOR_ESSL)
     set(BLA_VENDOR "IBMESSL")
   endif()
   if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_ESSL)
-    find_package(BLASEXT REQUIRED)
+    find_package(BLAS REQUIRED)
   else()
-    find_package(BLASEXT)
+    find_package(BLAS)
   endif()
 endif()
 
@@ -749,12 +752,22 @@ if(FFTW_LIBRARIES)
 
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
   list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
@@ -774,11 +787,11 @@ if(FFTW_LIBRARIES)
     set(FFTW_LIBRARIES_DEP "${REQUIRED_LIBS}")
     set(FFTW_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
     set(FFTW_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(FFTW_C_FLAGS "${REQUIRED_FLAGS}")
-    set(FFTW_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
+    set(FFTW_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+    set(FFTW_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
     list(REMOVE_DUPLICATES FFTW_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES FFTW_INCLUDE_DIRS_DEP)
-    list(REMOVE_DUPLICATES FFTW_LINKER_FLAGS)
+    list(REMOVE_DUPLICATES FFTW_CFLAGS_OTHER_DEP)
+    list(REMOVE_DUPLICATES FFTW_LDFLAGS_OTHER_DEP)
   else()
     if(NOT FFTW_FIND_QUIETLY)
       message(STATUS "Looking for FFTW : test of ${FFTW_PREC_TESTFUNC}fftw_execute_ with fftw library fails")

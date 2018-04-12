@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -20,10 +20,17 @@
 #
 # This module finds headers and pampa library.
 # Results are reported in variables:
-#  PAMPA_FOUND           - True if headers and requested libraries were found
-#  PAMPA_INCLUDE_DIRS    - pampa include directories
-#  PAMPA_LIBRARY_DIRS    - Link directories for pampa libraries
-#  PAMPA_LIBRARIES       - pampa component libraries to be linked
+#  PAMPA_FOUND             - True if headers and requested libraries were found
+#  PAMPA_CFLAGS_OTHER      - pampa compiler flags without headers paths
+#  PAMPA_LDFLAGS_OTHER     - pampa linker flags without libraries
+#  PAMPA_INCLUDE_DIRS      - pampa include directories
+#  PAMPA_LIBRARY_DIRS      - pampa link directories
+#  PAMPA_LIBRARIES         - pampa libraries to be linked (absolute path)
+#  PAMPA_CFLAGS_OTHER_DEP  - pampa + dependencies compiler flags without headers paths
+#  PAMPA_LDFLAGS_OTHER_DEP - pampa + dependencies linker flags without libraries
+#  PAMPA_INCLUDE_DIRS_DEP  - pampa + dependencies include directories
+#  PAMPA_LIBRARY_DIRS_DEP  - pampa + dependencies link directories
+#  PAMPA_LIBRARIES_DEP     - pampa + dependencies libraries
 #  PAMPA_INTSIZE         - Number of octets occupied by a PAMPA_Num
 #
 # The user can give specific paths where to find the libraries adding cmake
@@ -35,11 +42,11 @@
 # are not given as cmake variable: PAMPA_DIR, PAMPA_INCDIR, PAMPA_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2016 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -59,21 +66,17 @@ if (NOT PAMPA_FOUND)
 endif()
 
 # PAMPA depends on MPI, try to find it
-if (NOT MPI_FOUND)
-  if (PAMPA_FIND_REQUIRED)
-    find_package(MPI REQUIRED)
-  else()
-    find_package(MPI)
-  endif()
+if (PAMPA_FIND_REQUIRED)
+  find_package(MPI REQUIRED)
+else()
+  find_package(MPI)
 endif()
 
 # PAMPA depends on PAMPA, try to find it
-if (NOT PTSCOTCH_FOUND)
-  if (PAMPA_FIND_REQUIRED)
-    find_package(PTSCOTCH REQUIRED)
-  else()
-    find_package(PTSCOTCH)
-  endif()
+if (PAMPA_FIND_REQUIRED)
+  find_package(PTSCOTCH REQUIRED)
+else()
+  find_package(PTSCOTCH)
 endif()
 
 # Looking for include
@@ -243,8 +246,9 @@ list(REMOVE_DUPLICATES PAMPA_LIBRARY_DIRS)
 # check a function to validate the find
 if(PAMPA_LIBRARIES)
 
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_INCDIRS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
 
@@ -272,10 +276,16 @@ if(PAMPA_LIBRARIES)
     list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
   endif()
   # PTSCOTCH
-  if (PTSCOTCH_INCLUDE_DIRS)
-    list(APPEND REQUIRED_INCDIRS "${PTSCOTCH_INCLUDE_DIRS}")
+  if (PTSCOTCH_INCLUDE_DIRS_DEP)
+    list(APPEND REQUIRED_INCDIRS "${PTSCOTCH_INCLUDE_DIRS_DEP}")
   endif()
-  foreach(libdir ${PTSCOTCH_LIBRARY_DIRS})
+  if (PTSCOTCH_CFLAGS_OTHER_DEP)
+    list(APPEND REQUIRED_FLAGS "${PTSCOTCH_CFLAGS_OTHER_DEP}")
+  endif()
+  if (PTSCOTCH_LDFLAGS_OTHER_DEP)
+    list(APPEND REQUIRED_LDFLAGS "${PTSCOTCH_LDFLAGS_OTHER_DEP}")
+  endif()
+  foreach(libdir ${PTSCOTCH_LIBRARY_DIRS_DEP})
     if (libdir)
       list(APPEND REQUIRED_LIBDIRS "${libdir}")
     endif()
@@ -283,13 +293,23 @@ if(PAMPA_LIBRARIES)
   list(APPEND REQUIRED_LIBS "${PTSCOTCH_LIBRARIES_DEP}")
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-  list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
   # test link
@@ -303,15 +323,17 @@ if(PAMPA_LIBRARIES)
     set(PAMPA_LIBRARIES_DEP "${REQUIRED_LIBS}")
     set(PAMPA_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
     set(PAMPA_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(PAMPA_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
+    set(PAMPA_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+    set(PAMPA_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
     list(REMOVE_DUPLICATES PAMPA_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES PAMPA_INCLUDE_DIRS_DEP)
-    list(REMOVE_DUPLICATES PAMPA_LINKER_FLAGS)
+    list(REMOVE_DUPLICATES PAMPA_CFLAGS_OTHER_DEP)
+    list(REMOVE_DUPLICATES PAMPA_LDFLAGS_OTHER_DEP)
   else()
     if(NOT PAMPA_FIND_QUIETLY)
       message(STATUS "Looking for PAMPA : test of PAMPA_dmeshInit with PAMPA library fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
     endif()
   endif()

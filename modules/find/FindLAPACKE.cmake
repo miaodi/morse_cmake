@@ -26,13 +26,16 @@
 # This module finds headers and lapacke library.
 # Results are reported in variables:
 #  LAPACKE_FOUND            - True if headers and requested libraries were found
-#  LAPACKE_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
-#  LAPACKE_INCLUDE_DIRS     - lapacke include directories
-#  LAPACKE_LIBRARY_DIRS     - Link directories for lapacke libraries
-#  LAPACKE_LIBRARIES        - lapacke component libraries to be linked
-#  LAPACKE_INCLUDE_DIRS_DEP - lapacke + dependencies include directories
-#  LAPACKE_LIBRARY_DIRS_DEP - lapacke + dependencies link directories
-#  LAPACKE_LIBRARIES_DEP    - lapacke libraries + dependencies
+#  LAPACKE_CFLAGS_OTHER      - lapacke compiler flags without headers paths
+#  LAPACKE_LDFLAGS_OTHER     - lapacke linker flags without libraries
+#  LAPACKE_INCLUDE_DIRS      - lapacke include directories
+#  LAPACKE_LIBRARY_DIRS      - lapacke link directories
+#  LAPACKE_LIBRARIES         - lapacke libraries to be linked (absolute path)
+#  LAPACKE_CFLAGS_OTHER_DEP  - lapacke + dependencies compiler flags without headers paths
+#  LAPACKE_LDFLAGS_OTHER_DEP - lapacke + dependencies linker flags without libraries
+#  LAPACKE_INCLUDE_DIRS_DEP  - lapacke + dependencies include directories
+#  LAPACKE_LIBRARY_DIRS_DEP  - lapacke + dependencies link directories
+#  LAPACKE_LIBRARIES_DEP     - lapacke + dependencies libraries
 #
 #  LAPACKE_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #  if found with pkg-config the following variables may be set
@@ -98,12 +101,10 @@ if( LAPACKE_FIND_COMPONENTS )
 endif()
 
 # LAPACKE depends on LAPACK anyway, try to find it
-if (NOT LAPACK_FOUND)
-  if(LAPACKE_FIND_REQUIRED)
-    find_package(LAPACKEXT REQUIRED)
-  else()
-    find_package(LAPACKEXT)
-  endif()
+if(LAPACKE_FIND_REQUIRED)
+  find_package(LAPACK REQUIRED)
+else()
+  find_package(LAPACK)
 endif()
 
 # LAPACKE depends on LAPACK
@@ -112,7 +113,9 @@ if (LAPACK_FOUND)
   if (NOT LAPACKE_STANDALONE)
     # check if a lapacke function exists in the LAPACK lib
     include(CheckFunctionExists)
-    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
+    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER_DEP};${LAPACK_LIBRARIES_DEP}")
+    set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS_DEP}")
+    set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
     unset(LAPACKE_WORKS CACHE)
     check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
     mark_as_advanced(LAPACKE_WORKS)
@@ -124,17 +127,6 @@ if (LAPACK_FOUND)
       endif()
       # test succeeds: LAPACKE is in LAPACK
       set(LAPACKE_LIBRARIES "${LAPACK_LIBRARIES}")
-      set(LAPACKE_LIBRARIES_DEP "${LAPACK_LIBRARIES}")
-      if (LAPACK_LIBRARY_DIRS)
-        set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
-      endif()
-      if(LAPACK_INCLUDE_DIRS)
-        set(LAPACKE_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
-        set(LAPACKE_INCLUDE_DIRS_DEP "${LAPACK_INCLUDE_DIRS}")
-      endif()
-      if (LAPACK_LINKER_FLAGS)
-        set(LAPACKE_LINKER_FLAGS "${LAPACK_LINKER_FLAGS}")
-      endif()
     endif()
   endif (NOT LAPACKE_STANDALONE)
 
@@ -158,7 +150,25 @@ if (LAPACK_FOUND)
     find_package(PkgConfig QUIET)
     if( PKG_CONFIG_EXECUTABLE AND NOT LAPACKE_GIVEN_BY_USER)
 
-      pkg_search_module(LAPACKE lapacke)
+      if (BLA_STATIC)
+        set(MKL_STR_BLA_STATIC "static")
+      else()
+        set(MKL_STR_BLA_STATIC "dynamic")
+      endif()
+      # try different blas
+      if (BLA_VENDOR STREQUAL "Intel10_64lp")
+        pkg_search_module(LAPACKE mkl-${MKL_STR_BLA_STATIC}-lp64-iomp)
+      elseif(BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+        pkg_search_module(LAPACKE mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+      elseif(BLA_VENDOR STREQUAL "Open")
+        pkg_search_module(LAPACKE openblas)
+      elseif(BLA_VENDOR STREQUAL "Generic")
+        pkg_search_module(LAPACKE lapacke)
+      else()
+        pkg_search_module(LAPACKE lapacke)
+        pkg_search_module(LAPACKE openblas)
+        pkg_search_module(LAPACKE mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+      endif()
 
       if (NOT LAPACKE_FIND_QUIETLY)
         if (LAPACKE_FOUND AND LAPACKE_LIBRARIES)
@@ -327,8 +337,9 @@ if (LAPACK_FOUND)
   # check a function to validate the find
   if(LAPACKE_LIBRARIES)
 
-    set(REQUIRED_LDFLAGS)
     set(REQUIRED_INCDIRS)
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_LDFLAGS)
     set(REQUIRED_LIBDIRS)
     set(REQUIRED_LIBS)
 
@@ -347,19 +358,19 @@ if (LAPACK_FOUND)
     endif()
     set(REQUIRED_LIBS "${LAPACKE_LIBRARIES}")
     # LAPACK
-    if (LAPACK_INCLUDE_DIRS)
-      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
+    if (LAPACK_INCLUDE_DIRS_DEP)
+      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS_DEP}")
     endif()
-    if (LAPACK_COMPILER_FLAGS)
-      list(APPEND REQUIRED_FLAGS "${LAPACK_COMPILER_FLAGS}")
+    if (LAPACK_CFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
     endif()
-    if (LAPACK_LINKER_FLAGS)
-      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
+    if (LAPACK_LDFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER_DEP}")
     endif()
-    if (LAPACK_LIBRARY_DIRS)
-      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
+    if (LAPACK_LIBRARY_DIRS_DEP)
+      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS_DEP}")
     endif()
-    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
+    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES_DEP}")
     # Fortran
     if (CMAKE_C_COMPILER_ID MATCHES "GNU")
       find_library(
@@ -390,12 +401,22 @@ if (LAPACK_FOUND)
     endif()
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+    if (REQUIRED_FLAGS)
+      set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+      set(REQUIRED_FLAGS)
+      set(REQUIRED_DEFINITIONS)
+      foreach(_flag ${REQUIRED_FLAGS_COPY})
+        if (_flag MATCHES "^-D")
+         list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+        endif()
+        string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+        list(APPEND REQUIRED_FLAGS "${_flag}")
+      endforeach()
+    endif()
+    set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
     set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
     set(CMAKE_REQUIRED_LIBRARIES)
     list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
     list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
     string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
@@ -414,13 +435,17 @@ if (LAPACK_FOUND)
       set(LAPACKE_LIBRARIES_DEP "${REQUIRED_LIBS}")
       set(LAPACKE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
       set(LAPACKE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+      set(LAPACKE_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+      set(LAPACKE_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
       list(REMOVE_DUPLICATES LAPACKE_LIBRARY_DIRS_DEP)
-      list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS_DEP)
+      list(REMOVE_DUPLICATES LAPACKE_CFLAGS_OTHER_DEP)
+      list(REMOVE_DUPLICATES LAPACKE_LDFLAGS_OTHER_DEP)
     else()
       if(NOT LAPACKE_FIND_QUIETLY)
         message(STATUS "Looking for lapacke: test of LAPACKE_dgeqrf with lapacke and lapack libraries fails")
         message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
         message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
         message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
     endif()

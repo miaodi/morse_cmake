@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2017 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -20,28 +20,32 @@
 #
 # This module finds headers and parmetis library.
 # Results are reported in variables:
-#  PARMETIS_FOUND           - True if headers and requested libraries were found
-#  PARMETIS_INCLUDE_DIRS    - parmetis include directories
-#  PARMETIS_LIBRARY_DIRS    - Link directories for parmetis libraries
-#  PARMETIS_LIBRARIES       - parmetis component libraries to be linked
+#  PARMETIS_FOUND             - True if headers and requested libraries were found
+#  PARMETIS_CFLAGS_OTHER      - parmetis compiler flags without headers paths
+#  PARMETIS_LDFLAGS_OTHER     - parmetis linker flags without libraries
+#  PARMETIS_INCLUDE_DIRS      - parmetis include directories
+#  PARMETIS_LIBRARY_DIRS      - parmetis link directories
+#  PARMETIS_LIBRARIES         - parmetis libraries to be linked (absolute path)
+#  PARMETIS_CFLAGS_OTHER_DEP  - parmetis + dependencies compiler flags without headers paths
+#  PARMETIS_LDFLAGS_OTHER_DEP - parmetis + dependencies linker flags without libraries
+#  PARMETIS_INCLUDE_DIRS_DEP  - parmetis + dependencies include directories
+#  PARMETIS_LIBRARY_DIRS_DEP  - parmetis + dependencies link directories
+#  PARMETIS_LIBRARIES_DEP     - parmetis + dependencies libraries
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPARMETIS_DIR=path/to/parmetis):
 #  PARMETIS_DIR              - Where to find the base directory of parmetis
 #  PARMETIS_INCDIR           - Where to find the header files
 #  PARMETIS_LIBDIR           - Where to find the library files
-#  PARMETIS_INCLUDE_DIRS_DEP - parmetis + dependencies include directories
-#  PARMETIS_LIBRARY_DIRS_DEP - parmetis + dependencies link directories
-#  PARMETIS_LIBRARIES_DEP    - parmetis libraries + dependencies
 # The module can also look for the following environment variables if paths
 # are not given as cmake variable: PARMETIS_DIR, PARMETIS_INCDIR, PARMETIS_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2017      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -61,21 +65,17 @@ if (NOT PARMETIS_FOUND)
 endif()
 
 # PARMETIS depends on METIS, try to find it
-if (NOT METIS_FOUND)
-  if(PARMETIS_FIND_REQUIRED)
-    find_package(METIS REQUIRED)
-  else()
-    find_package(METIS)
-  endif()
+if(PARMETIS_FIND_REQUIRED)
+  find_package(METIS REQUIRED)
+else()
+  find_package(METIS)
 endif()
 
 # PARMETIS depends on MPI, try to find it
-if (NOT MPI_FOUND)
-  if(PARMETIS_FIND_REQUIRED)
-    find_package(MPI REQUIRED)
-  else()
-    find_package(MPI)
-  endif()
+if(PARMETIS_FIND_REQUIRED)
+  find_package(MPI REQUIRED)
+else()
+  find_package(MPI)
 endif()
 
 # Looking for include
@@ -218,6 +218,8 @@ endif ()
 if(PARMETIS_LIBRARIES)
 
   set(REQUIRED_INCDIRS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
 
@@ -258,15 +260,27 @@ if(PARMETIS_LIBRARIES)
   find_library(M_LIBRARY NAMES m)
   mark_as_advanced(M_LIBRARY)
   if(M_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lm")
+    list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
   endif()
 
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
@@ -281,15 +295,17 @@ if(PARMETIS_LIBRARIES)
     set(PARMETIS_LIBRARIES_DEP "${REQUIRED_LIBS}")
     set(PARMETIS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
     set(PARMETIS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(PARMETIS_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
+    set(PARMETIS_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+    set(PARMETIS_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
     list(REMOVE_DUPLICATES PARMETIS_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES PARMETIS_INCLUDE_DIRS_DEP)
-    list(REMOVE_DUPLICATES PARMETIS_LINKER_FLAGS)
+    list(REMOVE_DUPLICATES PARMETIS_CFLAGS_OTHER_DEP)
+    list(REMOVE_DUPLICATES PARMETIS_LDFLAGS_OTHER_DEP)
   else()
     if(NOT PARMETIS_FIND_QUIETLY)
       message(STATUS "Looking for PARMETIS : test of ParMETIS_V3_NodeND with PARMETIS library fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
     endif()
   endif()

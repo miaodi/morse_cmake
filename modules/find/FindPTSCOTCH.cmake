@@ -25,13 +25,16 @@
 # This module finds headers and ptscotch library.
 # Results are reported in variables:
 #  PTSCOTCH_FOUND            - True if headers and requested libraries were found
-#  PTSCOTCH_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
-#  PTSCOTCH_INCLUDE_DIRS     - ptscotch include directories
-#  PTSCOTCH_LIBRARY_DIRS     - Link directories for ptscotch libraries
-#  PTSCOTCH_LIBRARIES        - ptscotch component libraries to be linked
-#  PTSCOTCH_INCLUDE_DIRS_DEP - ptscotch + dependencies include directories
-#  PTSCOTCH_LIBRARY_DIRS_DEP - ptscotch + dependencies link directories
-#  PTSCOTCH_LIBRARIES_DEP    - ptscotch libraries + dependencies
+#  PTSCOTCH_CFLAGS_OTHER      - ptscotch compiler flags without headers paths
+#  PTSCOTCH_LDFLAGS_OTHER     - ptscotch linker flags without libraries
+#  PTSCOTCH_INCLUDE_DIRS      - ptscotch include directories
+#  PTSCOTCH_LIBRARY_DIRS      - ptscotch link directories
+#  PTSCOTCH_LIBRARIES         - ptscotch libraries to be linked (absolute path)
+#  PTSCOTCH_CFLAGS_OTHER_DEP  - ptscotch + dependencies compiler flags without headers paths
+#  PTSCOTCH_LDFLAGS_OTHER_DEP - ptscotch + dependencies linker flags without libraries
+#  PTSCOTCH_INCLUDE_DIRS_DEP  - ptscotch + dependencies include directories
+#  PTSCOTCH_LIBRARY_DIRS_DEP  - ptscotch + dependencies link directories
+#  PTSCOTCH_LIBRARIES_DEP     - ptscotch + dependencies libraries
 #  PTSCOTCH_INTSIZE          - Number of octets occupied by a SCOTCH_Num
 #
 # The user can give specific paths where to find the libraries adding cmake
@@ -79,21 +82,17 @@ if( PTSCOTCH_FIND_COMPONENTS )
 endif()
 
 # PTSCOTCH depends on Threads, try to find it
-if (NOT THREADS_FOUND)
-  if (PTSCOTCH_FIND_REQUIRED)
-    find_package(Threads REQUIRED)
-  else()
-    find_package(Threads)
-  endif()
+if (PTSCOTCH_FIND_REQUIRED)
+  find_package(Threads REQUIRED)
+else()
+  find_package(Threads)
 endif()
 
 # PTSCOTCH depends on MPI, try to find it
-if (NOT MPI_FOUND)
-  if (PTSCOTCH_FIND_REQUIRED)
-    find_package(MPI REQUIRED)
-  else()
-    find_package(MPI)
-  endif()
+if (PTSCOTCH_FIND_REQUIRED)
+  find_package(MPI REQUIRED)
+else()
+  find_package(MPI)
 endif()
 
 # Looking for include
@@ -269,14 +268,15 @@ list(REMOVE_DUPLICATES PTSCOTCH_LIBRARY_DIRS)
 # check a function to validate the find
 if(PTSCOTCH_LIBRARIES)
 
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_INCDIRS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
 
   # PTSCOTCH
   if (PTSCOTCH_INCLUDE_DIRS)
-    set(REQUIRED_INCDIRS  "${PTSCOTCH_INCLUDE_DIRS}")
+    set(REQUIRED_INCDIRS "${PTSCOTCH_INCLUDE_DIRS}")
   endif()
   if (PTSCOTCH_LIBRARY_DIRS)
     set(REQUIRED_LIBDIRS "${PTSCOTCH_LIBRARY_DIRS}")
@@ -303,30 +303,40 @@ if(PTSCOTCH_LIBRARIES)
   find_library(Z_LIBRARY NAMES z)
   mark_as_advanced(Z_LIBRARY)
   if(Z_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lz")
+    list(APPEND REQUIRED_LIBS "${Z_LIBRARY}")
   endif()
   set(M_LIBRARY "M_LIBRARY-NOTFOUND")
   find_library(M_LIBRARY NAMES m)
   mark_as_advanced(M_LIBRARY)
   if(M_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lm")
+    list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
   endif()
   set(RT_LIBRARY "RT_LIBRARY-NOTFOUND")
   find_library(RT_LIBRARY NAMES rt)
   mark_as_advanced(RT_LIBRARY)
   if(RT_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lrt")
+    list(APPEND REQUIRED_LIBS "${RT_LIBRARY}")
   endif()
 
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-  list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
   # test link
@@ -340,15 +350,17 @@ if(PTSCOTCH_LIBRARIES)
     set(PTSCOTCH_LIBRARIES_DEP "${REQUIRED_LIBS}")
     set(PTSCOTCH_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
     set(PTSCOTCH_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(PTSCOTCH_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
+    set(PTSCOTCH_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+    set(PTSCOTCH_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
     list(REMOVE_DUPLICATES PTSCOTCH_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES PTSCOTCH_INCLUDE_DIRS_DEP)
-    list(REMOVE_DUPLICATES PTSCOTCH_LINKER_FLAGS)
+    list(REMOVE_DUPLICATES PTSCOTCH_CFLAGS_OTHER_DEP)
+    list(REMOVE_DUPLICATES PTSCOTCH_LDFLAGS_OTHER_DEP)
   else()
     if(NOT PTSCOTCH_FIND_QUIETLY)
       message(STATUS "Looking for PTSCOTCH : test of SCOTCH_dgraphInit with PTSCOTCH library fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
     endif()
   endif()

@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -25,13 +25,17 @@
 #
 # This module finds headers and quark library.
 # Results are reported in variables:
-#  QUARK_FOUND            - True if headers and requested libraries were found
-#  QUARK_INCLUDE_DIRS     - quark include directories
-#  QUARK_LIBRARY_DIRS     - Link directories for quark libraries
-#  QUARK_LIBRARIES        - quark component libraries to be linked
-#  QUARK_INCLUDE_DIRS_DEP - quark + dependencies include directories
-#  QUARK_LIBRARY_DIRS_DEP - quark + dependencies link directories
-#  QUARK_LIBRARIES_DEP    - quark libraries + dependencies
+#  QUARK_FOUND             - True if headers and requested libraries were found
+#  QUARK_CFLAGS_OTHER      - quark compiler flags without headers paths
+#  QUARK_LDFLAGS_OTHER     - quark linker flags without libraries
+#  QUARK_INCLUDE_DIRS      - quark include directories
+#  QUARK_LIBRARY_DIRS      - quark link directories
+#  QUARK_LIBRARIES         - quark libraries to be linked (absolute path)
+#  QUARK_CFLAGS_OTHER_DEP  - quark + dependencies compiler flags without headers paths
+#  QUARK_LDFLAGS_OTHER_DEP - quark + dependencies linker flags without libraries
+#  QUARK_INCLUDE_DIRS_DEP  - quark + dependencies include directories
+#  QUARK_LIBRARY_DIRS_DEP  - quark + dependencies link directories
+#  QUARK_LIBRARIES_DEP     - quark + dependencies libraries
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DQUARK=path/to/quark):
@@ -42,11 +46,11 @@
 # are not given as cmake variable: QUARK_DIR, QUARK_INCDIR, QUARK_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -79,16 +83,14 @@ if( QUARK_FIND_COMPONENTS )
 endif()
 
 # QUARK may depend on Threads, try to find it
-if (NOT Threads_FOUND)
-  if (QUARK_FIND_REQUIRED)
-    find_package(Threads REQUIRED)
-  else()
-    find_package(Threads)
-  endif()
+if (QUARK_FIND_REQUIRED)
+  find_package(Threads REQUIRED)
+else()
+  find_package(Threads)
 endif()
 
 # QUARK may depend on HWLOC, try to find it
-if (NOT HWLOC_FOUND AND QUARK_LOOK_FOR_HWLOC)
+if (QUARK_LOOK_FOR_HWLOC)
   if (QUARK_FIND_REQUIRED AND QUARK_FIND_REQUIRED_HWLOC)
     find_package(HWLOC REQUIRED)
   else()
@@ -237,6 +239,8 @@ endif ()
 if(QUARK_LIBRARIES)
 
   set(REQUIRED_INCDIRS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
 
@@ -253,26 +257,38 @@ if(QUARK_LIBRARIES)
     if (HWLOC_INCLUDE_DIRS)
       list(APPEND REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
     endif()
+    if (HWLOC_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${HWLOC_CFLAGS_OTHER}")
+    endif()
+    if (HWLOC_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${HWLOC_LDFLAGS_OTHER}")
+    endif()
     if (HWLOC_LIBRARY_DIRS)
       list(APPEND REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
     endif()
-    foreach(lib ${HWLOC_LIBRARIES})
-      if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-        list(APPEND REQUIRED_LIBS "${lib}")
-      else()
-        list(APPEND REQUIRED_LIBS "-l${lib}")
-      endif()
-    endforeach()
+    list(APPEND REQUIRED_LIBS "${HWLOC_LIBRARIES}")
   endif()
   # THREADS
   list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
@@ -287,13 +303,17 @@ if(QUARK_LIBRARIES)
     set(QUARK_LIBRARIES_DEP "${REQUIRED_LIBS}")
     set(QUARK_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
     set(QUARK_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+    set(QUARK_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+    set(QUARK_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
     list(REMOVE_DUPLICATES QUARK_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES QUARK_INCLUDE_DIRS_DEP)
+    list(REMOVE_DUPLICATES QUARK_CFLAGS_OTHER_DEP)
+    list(REMOVE_DUPLICATES QUARK_LDFLAGS_OTHER_DEP)
   else()
     if(NOT QUARK_FIND_QUIETLY)
       message(STATUS "Looking for QUARK : test of QUARK_New with QUARK library fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       message(STATUS "Maybe QUARK is linked with specific libraries like. "
         "Have you tried with COMPONENTS (HWLOC)? See the explanation in FindQUARK.cmake.")

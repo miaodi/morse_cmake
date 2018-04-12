@@ -16,10 +16,9 @@
 # This module finds headers and fxt library.
 # Results are reported in variables:
 #  FXT_FOUND           - True if headers and requested libraries were found
-#  FXT_C_FLAGS         - list of required compilation flags (excluding -I)
 #  FXT_INCLUDE_DIRS    - fxt include directories
-#  FXT_LIBRARY_DIRS    - Link directories for fxt libraries
-#  FXT_LIBRARIES       - fxt component libraries to be linked
+#  FXT_LIBRARY_DIRS    - fxt link directories
+#  FXT_LIBRARIES       - fxt libraries to be linked (absolute path)
 #
 #  FXT_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #  if found with pkg-config the following variables are set
@@ -92,8 +91,6 @@ if(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
         "\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
-
-  set(FXT_C_FLAGS "${FXT_CFLAGS_OTHER}")
 
   if (FXT_FOUND AND FXT_LIBRARIES)
     set(FXT_FOUND_WITH_PKGCONFIG "TRUE")
@@ -260,6 +257,8 @@ endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) 
 if(FXT_LIBRARIES)
 
   set(REQUIRED_INCDIRS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
 
@@ -280,12 +279,22 @@ if(FXT_LIBRARIES)
 
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
@@ -300,6 +309,7 @@ if(FXT_LIBRARIES)
       message(STATUS "Looking for fxt : test of fut_keychange with fxt library fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
     endif()
   endif()

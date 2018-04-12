@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -17,13 +17,16 @@
 # This module finds headers and tmg library.
 # Results are reported in variables:
 #  TMG_FOUND            - True if headers and requested libraries were found
-#  TMG_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
-#  TMG_INCLUDE_DIRS     - tmg include directories
-#  TMG_LIBRARY_DIRS     - Link directories for tmg libraries
-#  TMG_LIBRARIES        - tmg component libraries to be linked
-#  TMG_INCLUDE_DIRS_DEP - tmg + dependencies include directories
-#  TMG_LIBRARY_DIRS_DEP - tmg + dependencies link directories
-#  TMG_LIBRARIES_DEP    - tmg libraries + dependencies
+#  TMG_CFLAGS_OTHER      - tmglib compiler flags without headers paths
+#  TMG_LDFLAGS_OTHER     - tmglib linker flags without libraries
+#  TMG_INCLUDE_DIRS      - tmglib include directories
+#  TMG_LIBRARY_DIRS      - tmglib link directories
+#  TMG_LIBRARIES         - tmglib libraries to be linked (absolute path)
+#  TMG_CFLAGS_OTHER_DEP  - tmglib + dependencies compiler flags without headers paths
+#  TMG_LDFLAGS_OTHER_DEP - tmglib + dependencies linker flags without libraries
+#  TMG_INCLUDE_DIRS_DEP  - tmglib + dependencies include directories
+#  TMG_LIBRARY_DIRS_DEP  - tmglib + dependencies link directories
+#  TMG_LIBRARIES_DEP     - tmglib + dependencies libraries
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DTMG=path/to/tmg):
@@ -34,11 +37,11 @@
 # are not given as cmake variable: TMG_DIR, TMG_INCDIR, TMG_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2016 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -68,19 +71,19 @@ else (NOT _LANGUAGES_ MATCHES Fortran)
 endif (NOT _LANGUAGES_ MATCHES Fortran)
 
 # TMG depends on LAPACK anyway, try to find it
-if (NOT LAPACK_FOUND)
-  if(TMG_FIND_REQUIRED)
-    find_package(LAPACKEXT REQUIRED)
-  else()
-    find_package(LAPACKEXT)
-  endif()
+if(TMG_FIND_REQUIRED)
+  find_package(LAPACK REQUIRED)
+else()
+  find_package(LAPACK)
 endif()
 
 # TMG depends on LAPACK
 if (LAPACK_FOUND)
 
   # check if a tmg function exists in the LAPACK lib
-  set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
+  set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER_DEP};${LAPACK_LIBRARIES_DEP}")
+  set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS_DEP}")
+  set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
   include(CheckFunctionExists)
   include(CheckFortranFunctionExists)
   unset(TMG_WORKS CACHE)
@@ -98,23 +101,15 @@ if (LAPACK_FOUND)
     endif (NOT _LANGUAGES_ MATCHES Fortran)
     mark_as_advanced(TMG_WORKS)
   endif()
-  set(CMAKE_REQUIRED_LIBRARIES)
 
   if(TMG_WORKS)
+
     if(NOT TMG_FIND_QUIETLY)
       message(STATUS "Looking for tmg: test with lapack succeeds")
     endif()
     # test succeeds: TMG is in LAPACK
     set(TMG_LIBRARIES "${LAPACK_LIBRARIES}")
-    if (LAPACK_LIBRARY_DIRS)
-      set(TMG_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
-    endif()
-    if(LAPACK_INCLUDE_DIRS)
-      set(TMG_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
-    endif()
-    if (LAPACK_LINKER_FLAGS)
-      set(TMG_LINKER_FLAGS "${LAPACK_LINKER_FLAGS}")
-    endif()
+
   else()
 
     if(NOT TMG_FIND_QUIETLY)
@@ -195,86 +190,109 @@ if (LAPACK_FOUND)
       list(REMOVE_DUPLICATES TMG_LIBRARY_DIRS)
     endif ()
 
-    # check a function to validate the find
-    if(TMG_LIBRARIES)
+  endif(TMG_WORKS)
 
-      set(REQUIRED_LDFLAGS)
-      set(REQUIRED_INCDIRS)
-      set(REQUIRED_LIBDIRS)
-      set(REQUIRED_LIBS)
+  # check a function to validate the find
+  if(TMG_LIBRARIES)
 
-      # TMG
-      if (TMG_INCLUDE_DIRS)
-        set(REQUIRED_INCDIRS "${TMG_INCLUDE_DIRS}")
-      endif()
-      if (TMG_LIBRARY_DIRS)
-        set(REQUIRED_LIBDIRS "${TMG_LIBRARY_DIRS}")
-      endif()
-      set(REQUIRED_LIBS "${TMG_LIBRARIES}")
-      # LAPACK
-      if (LAPACK_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
-      endif()
-      if (LAPACK_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
-      endif()
-      list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
-      if (LAPACK_LINKER_FLAGS)
-        list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
-      endif()
+    set(REQUIRED_INCDIRS)
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_LDFLAGS)
+    set(REQUIRED_LIBDIRS)
+    set(REQUIRED_LIBS)
 
-      # set required libraries for link
-      set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-      set(CMAKE_REQUIRED_LIBRARIES)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-      foreach(lib_dir ${REQUIRED_LIBDIRS})
-        list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-      endforeach()
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-      string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+    # TMG
+    if (TMG_INCLUDE_DIRS)
+      set(REQUIRED_INCDIRS "${TMG_INCLUDE_DIRS}")
+    endif()
+    if (TMG_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${TMG_CFLAGS_OTHER}")
+    endif()
+    if (TMG_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${TMG_LDFLAGS_OTHER}")
+    endif()
+    if (TMG_LIBRARY_DIRS)
+      set(REQUIRED_LIBDIRS "${TMG_LIBRARY_DIRS}")
+    endif()
+    set(REQUIRED_LIBS "${TMG_LIBRARIES}")
+    # LAPACK
+    if (LAPACK_INCLUDE_DIRS_DEP)
+      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS_DEP}")
+    endif()
+    if (LAPACK_CFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
+    endif()
+    if (LAPACK_LDFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER_DEP}")
+    endif()
+    if (LAPACK_LIBRARY_DIRS_DEP)
+      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS_DEP}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES_DEP}")
 
-      # test link
-      unset(TMG_WORKS CACHE)
-      include(CheckFunctionExists)
-      include(CheckFortranFunctionExists)
-      if (NOT _LANGUAGES_ MATCHES Fortran)
-        check_function_exists(dlarnv TMG_WORKS)
-      else (NOT _LANGUAGES_ MATCHES Fortran)
-        check_fortran_function_exists(dlarnv TMG_WORKS)
-      endif (NOT _LANGUAGES_ MATCHES Fortran)
-      if (TMG_WORKS)
-        unset(TMG_WORKS CACHE)
-        if (NOT _LANGUAGES_ MATCHES Fortran)
-          check_function_exists(dlagsy TMG_WORKS)
-        else (NOT _LANGUAGES_ MATCHES Fortran)
-          check_fortran_function_exists(dlagsy TMG_WORKS)
-        endif (NOT _LANGUAGES_ MATCHES Fortran)
-        mark_as_advanced(TMG_WORKS)
-      endif()
-
-      if(TMG_WORKS)
-        # save link with dependencies
-        set(TMG_LIBRARIES_DEP "${REQUIRED_LIBS}")
-        set(TMG_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-        set(TMG_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-        set(TMG_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
-        list(REMOVE_DUPLICATES TMG_LIBRARY_DIRS_DEP)
-        list(REMOVE_DUPLICATES TMG_INCLUDE_DIRS_DEP)
-        list(REMOVE_DUPLICATES TMG_LINKER_FLAGS)
-      else()
-        if(NOT TMG_FIND_QUIETLY)
-          message(STATUS "Looking for tmg: test of dlarnv and dlagsy with tmg and lapack libraries fails")
-          message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-          message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-          message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    # set required libraries for link
+    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+    if (REQUIRED_FLAGS)
+      set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+      set(REQUIRED_FLAGS)
+      set(REQUIRED_DEFINITIONS)
+      foreach(_flag ${REQUIRED_FLAGS_COPY})
+        if (_flag MATCHES "^-D")
+         list(APPEND REQUIRED_DEFINITIONS "${_flag}")
         endif()
-      endif()
-      set(CMAKE_REQUIRED_INCLUDES)
-      set(CMAKE_REQUIRED_FLAGS)
-      set(CMAKE_REQUIRED_LIBRARIES)
-    endif(TMG_LIBRARIES)
+        string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+        list(APPEND REQUIRED_FLAGS "${_flag}")
+      endforeach()
+    endif()
+    set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+    set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+    set(CMAKE_REQUIRED_LIBRARIES)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
-  endif()
+    # test link
+    unset(TMG_WORKS CACHE)
+    include(CheckFunctionExists)
+    include(CheckFortranFunctionExists)
+    if (NOT _LANGUAGES_ MATCHES Fortran)
+      check_function_exists(dlarnv TMG_WORKS)
+    else (NOT _LANGUAGES_ MATCHES Fortran)
+      check_fortran_function_exists(dlarnv TMG_WORKS)
+    endif (NOT _LANGUAGES_ MATCHES Fortran)
+    if (TMG_WORKS)
+      unset(TMG_WORKS CACHE)
+      if (NOT _LANGUAGES_ MATCHES Fortran)
+        check_function_exists(dlagsy TMG_WORKS)
+      else (NOT _LANGUAGES_ MATCHES Fortran)
+        check_fortran_function_exists(dlagsy TMG_WORKS)
+      endif (NOT _LANGUAGES_ MATCHES Fortran)
+      mark_as_advanced(TMG_WORKS)
+    endif()
+
+    if(TMG_WORKS)
+      # save link with dependencies
+      set(TMG_LIBRARIES_DEP "${REQUIRED_LIBS}")
+      set(TMG_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
+      set(TMG_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+      set(TMG_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+      set(TMG_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+      list(REMOVE_DUPLICATES TMG_LIBRARY_DIRS_DEP)
+      list(REMOVE_DUPLICATES TMG_CFLAGS_OTHER_DEP)
+      list(REMOVE_DUPLICATES TMG_LDFLAGS_OTHER_DEP)
+    else()
+      if(NOT TMG_FIND_QUIETLY)
+        message(STATUS "Looking for tmg: test of dlarnv and dlagsy with tmg and lapack libraries fails")
+        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
+        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+      endif()
+    endif()
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_FLAGS)
+    set(CMAKE_REQUIRED_LIBRARIES)
+  endif(TMG_LIBRARIES)
 
 else()
 

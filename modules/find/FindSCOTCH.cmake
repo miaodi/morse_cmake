@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -35,11 +35,11 @@
 # are not given as cmake variable: SCOTCH_DIR, SCOTCH_INCDIR, SCOTCH_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -71,12 +71,10 @@ if( SCOTCH_FIND_COMPONENTS )
 endif()
 
 # SCOTCH may depend on Threads, try to find it
-if (NOT THREADS_FOUND)
-  if (SCOTCH_FIND_REQUIRED)
-    find_package(Threads REQUIRED)
-  else()
-    find_package(Threads)
-  endif()
+if (SCOTCH_FIND_REQUIRED)
+  find_package(Threads REQUIRED)
+else()
+  find_package(Threads)
 endif()
 
 # Looking for include
@@ -257,27 +255,24 @@ if(SCOTCH_LIBRARIES)
   find_library(Z_LIBRARY NAMES z)
   mark_as_advanced(Z_LIBRARY)
   if(Z_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lz")
+    list(APPEND REQUIRED_LIBS "${Z_LIBRARY}")
   endif()
   set(M_LIBRARY "M_LIBRARY-NOTFOUND")
   find_library(M_LIBRARY NAMES m)
   mark_as_advanced(M_LIBRARY)
   if(M_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lm")
+    list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
   endif()
   set(RT_LIBRARY "RT_LIBRARY-NOTFOUND")
   find_library(RT_LIBRARY NAMES rt)
   mark_as_advanced(RT_LIBRARY)
   if(RT_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lrt")
+    list(APPEND REQUIRED_LIBS "${RT_LIBRARY}")
   endif()
 
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
   set(CMAKE_REQUIRED_LIBRARIES)
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
@@ -295,6 +290,7 @@ if(SCOTCH_LIBRARIES)
       message(STATUS "Looking for SCOTCH : test of SCOTCH_graphInit with SCOTCH library fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
     endif()
   endif()

@@ -18,12 +18,13 @@
 # This module sets the following variables:
 #  BLAS_FOUND - set to true if a library implementing the BLAS interface
 #    is found
-#  BLAS_LINKER_FLAGS - uncached list of required linker flags (excluding -l
+#  BLAS_LDFLAGS_OTHER - list of required linker flags (excluding -l
 #    and -L).
-#  BLAS_COMPILER_FLAGS - uncached list of required compiler flags (including -I).
-#  BLAS_LIBRARIES - uncached list of libraries (using full path name) to
+#  BLAS_CFLAGS_OTHER - list of required compiler flags (excluding -I).
+#  BLAS_INCLUDE_DIRS - include directories
+#  BLAS_LIBRARIES - list of libraries (using full path name) to
 #    link against to use BLAS
-#  BLAS95_LIBRARIES - uncached list of libraries (using full path name)
+#  BLAS95_LIBRARIES - list of libraries (using full path name)
 #    to link against to use BLAS95 interface
 #  BLAS95_FOUND - set to true if a library implementing the BLAS f95 interface
 #    is found
@@ -294,7 +295,8 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
       list(APPEND ${LIBRARIES} "-Wl,--end-group")
     endif()
     set(CMAKE_REQUIRED_LIBRARIES "${_flags};${${LIBRARIES}};${_thread}")
-    set(CMAKE_REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
+    set(CMAKE_REQUIRED_INCLUDES "${BLAS_INCLUDE_DIRS}")
+    set(CMAKE_REQUIRED_FLAGS "${BLAS_CFLAGS_OTHER}")
     if (BLAS_VERBOSE)
       message("${Cyan}BLAS libs found for BLA_VENDOR ${BLA_VENDOR}."
         "Try to compile symbol ${_name} with following libraries:"
@@ -331,7 +333,7 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
 endmacro(Check_Fortran_Libraries)
 
 
-set(BLAS_LINKER_FLAGS)
+set(BLAS_LDFLAGS_OTHER)
 set(BLAS_LIBRARIES)
 set(BLAS95_LIBRARIES)
 if ($ENV{BLA_VENDOR} MATCHES ".+")
@@ -354,9 +356,27 @@ endif()
 # -------------------------------------------------------------------------------------
 include(FindPkgConfig)
 find_package(PkgConfig QUIET)
-if( PKG_CONFIG_EXECUTABLE AND NOT BLAS_GIVEN_BY_USER AND BLA_VENDOR STREQUAL "All")
+if( PKG_CONFIG_EXECUTABLE AND NOT BLAS_GIVEN_BY_USER )
 
-  pkg_search_module(BLAS blas)
+  if (BLA_STATIC)
+    set(MKL_STR_BLA_STATIC "static")
+  else()
+    set(MKL_STR_BLA_STATIC "dynamic")
+  endif()
+  # try different blas
+  if (BLA_VENDOR STREQUAL "Intel10_64lp")
+    pkg_search_module(BLAS mkl-${MKL_STR_BLA_STATIC}-lp64-iomp)
+  elseif(BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+    pkg_search_module(BLAS mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+  elseif(BLA_VENDOR STREQUAL "Open")
+    pkg_search_module(BLAS openblas)
+  elseif(BLA_VENDOR STREQUAL "Generic")
+    pkg_search_module(BLAS blas)
+  else()
+    pkg_search_module(BLAS blas)
+    pkg_search_module(BLAS openblas)
+    pkg_search_module(BLAS mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+  endif()
 
   if (NOT BLAS_FIND_QUIETLY)
     if (BLAS_FOUND AND BLAS_LIBRARIES)
@@ -371,14 +391,6 @@ if( PKG_CONFIG_EXECUTABLE AND NOT BLAS_GIVEN_BY_USER AND BLA_VENDOR STREQUAL "Al
   if (BLAS_FOUND AND BLAS_LIBRARIES)
     set(BLAS_FOUND_WITH_PKGCONFIG "TRUE")
     find_pkgconfig_libraries_absolute_path(BLAS)
-    if (BLA_STATIC)
-      set(BLAS_LINKER_FLAGS "${BLAS_STATIC_LDFLAGS_OTHER}")
-      set(BLAS_COMPILER_FLAGS "${BLAS_STATIC_CFLAGS_OTHER}")
-      set(BLAS_LIBRARIES "${BLAS_STATIC_LIBRARIES}")
-    else()
-      set(BLAS_LINKER_FLAGS "${BLAS_LDFLAGS_OTHER}")
-      set(BLAS_COMPILER_FLAGS "${BLAS_CFLAGS_OTHER}")
-    endif()
   else()
     set(BLAS_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
@@ -536,7 +548,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
             set(LGFORTRAN "{FORTRAN_ifcore_LIBRARY}")
           endif()
         endif()
-        set(BLAS_COMPILER_FLAGS "")
+        set(BLAS_CFLAGS_OTHER "")
         if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
           if(BLAS_FIND_REQUIRED)
             find_package(OpenMP REQUIRED)
@@ -544,20 +556,17 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
             find_package(OpenMP)
           endif()
           if(OPENMP_C_FLAGS)
-            list(APPEND BLAS_COMPILER_FLAGS "${OPENMP_C_FLAGS}")
+            list(APPEND BLAS_CFLAGS_OTHER "${OPENMP_C_FLAGS}")
           endif()
         endif()
         if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
           if (BLA_VENDOR STREQUAL "Intel10_32")
-            list(APPEND BLAS_COMPILER_FLAGS "-m32")
+            list(APPEND BLAS_CFLAGS_OTHER "-m32")
           else()
-            list(APPEND BLAS_COMPILER_FLAGS "-m64")
+            list(APPEND BLAS_CFLAGS_OTHER "-m64")
           endif()
           if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
             list(APPEND OMP_LIB "-ldl")
-          endif()
-          if (ENV_MKLROOT)
-            list(APPEND BLAS_COMPILER_FLAGS "-I${ENV_MKLROOT}/include")
           endif()
         endif()
 
@@ -744,7 +753,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               "${OMP_LIB};${CMAKE_THREAD_LIBS_INIT};${LM}"
               )
             if(_LIBRARIES)
-              set(BLAS_LINKER_FLAGS "${additional_flags}")
+              set(BLAS_LDFLAGS_OTHER "${additional_flags}")
             endif()
           endif()
         endforeach ()
@@ -990,7 +999,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         ""
         )
       if(BLAS_LIBRARIES)
-        set(BLAS_LINKER_FLAGS "-xlic_lib=sunperf")
+        set(BLAS_LDFLAGS_OTHER "-xlic_lib=sunperf")
       endif()
       if(NOT BLAS_FIND_QUIETLY)
         if(BLAS_LIBRARIES)

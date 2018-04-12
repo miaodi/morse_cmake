@@ -71,8 +71,17 @@ macro(FIND_PKGCONFIG_LIBRARIES_ABSOLUTE_PATH _prefix)
       if (${_index} GREATER -1)
         get_filename_component(_library "${_library}" NAME_WE)
       endif()
+      # try static first
+      set (default_find_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+      set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
       find_library(_library_path NAMES ${_library}
           HINTS ${${_prefix}_STATIC_LIBDIR} ${${_prefix}_STATIC_LIBRARY_DIRS} ${_lib_env})
+      set (CMAKE_FIND_LIBRARY_SUFFIXES ${default_find_library_suffixes})
+      # if not found try dynamic
+      if (NOT _library_path)
+        find_library(_library_path NAMES ${_library}
+            HINTS ${${_prefix}_STATIC_LIBDIR} ${${_prefix}_STATIC_LIBRARY_DIRS} ${_lib_env})
+      endif()
       if (_library_path)
           list(APPEND ${_prefix}_STATIC_LIBRARIES ${_library_path})
       else()

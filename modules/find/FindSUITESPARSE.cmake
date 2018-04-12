@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -21,14 +21,17 @@
 ##
 # This module finds headers and suitesparse library.
 # Results are reported in variables:
-#  SUITESPARSE_FOUND            - True if headers and requested libraries were found
-#  SUITESPARSE_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
-#  SUITESPARSE_INCLUDE_DIRS     - suitesparse include directories
-#  SUITESPARSE_LIBRARY_DIRS     - Link directories for suitesparse libraries
-#  SUITESPARSE_LIBRARIES        - suitesparse libraries
-#  SUITESPARSE_INCLUDE_DIRS_DEP - suitesparse + dependencies include directories
-#  SUITESPARSE_LIBRARY_DIRS_DEP - suitesparse + dependencies link directories
-#  SUITESPARSE_LIBRARIES_DEP    - suitesparse libraries + dependencies
+#  SUITESPARSE_FOUND             - True if headers and requested libraries were found
+#  SUITESPARSE_CFLAGS_OTHER      - suitesparse compiler flags without headers paths
+#  SUITESPARSE_LDFLAGS_OTHER     - suitesparse linker flags without libraries
+#  SUITESPARSE_INCLUDE_DIRS      - suitesparse include directories
+#  SUITESPARSE_LIBRARY_DIRS      - suitesparse link directories
+#  SUITESPARSE_LIBRARIES         - suitesparse libraries to be linked (absolute path)
+#  SUITESPARSE_CFLAGS_OTHER_DEP  - suitesparse + dependencies compiler flags without headers paths
+#  SUITESPARSE_LDFLAGS_OTHER_DEP - suitesparse + dependencies linker flags without libraries
+#  SUITESPARSE_INCLUDE_DIRS_DEP  - suitesparse + dependencies include directories
+#  SUITESPARSE_LIBRARY_DIRS_DEP  - suitesparse + dependencies link directories
+#  SUITESPARSE_LIBRARIES_DEP     - suitesparse + dependencies libraries
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DSUITESPARSE_DIR=path/to/suitesparse):
@@ -37,11 +40,11 @@
 # are not given as cmake variable: SUITESPARSE_DIR
 
 #=============================================================================
-# Copyright 2012-2016 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2016      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -75,25 +78,10 @@ endif()
 if (NOT SUITESPARSE_FIND_QUIETLY)
   message(STATUS "Looking for SUITESPARSE - Try to detect metis")
 endif()
-if (NOT METIS_FOUND)
-  if (SUITESPARSE_FIND_REQUIRED)
-    find_package(METIS REQUIRED)
-  else()
-    find_package(METIS)
-  endif()
-endif()
-
-# SUITESPARSE depends on BLAS
-#----------------------------
-if (NOT SUITESPARSE_FIND_QUIETLY)
-  message(STATUS "Looking for SUITESPARSE - Try to detect BLAS")
-endif()
-if (NOT BLASEXT_FOUND)
-  if (SUITESPARSE_FIND_REQUIRED)
-    find_package(BLASEXT REQUIRED)
-  else()
-    find_package(BLASEXT)
-  endif()
+if (SUITESPARSE_FIND_REQUIRED)
+  find_package(METIS REQUIRED)
+else()
+  find_package(METIS)
 endif()
 
 # SUITESPARSE depends on LAPACK
@@ -101,12 +89,10 @@ endif()
 if (NOT SUITESPARSE_FIND_QUIETLY)
   message(STATUS "Looking for SUITESPARSE - Try to detect LAPACK")
 endif()
-if (NOT LAPACKEXT_FOUND)
-  if (SUITESPARSE_FIND_REQUIRED)
-    find_package(LAPACKEXT REQUIRED)
-  else()
-    find_package(LAPACKEXT)
-  endif()
+if (SUITESPARSE_FIND_REQUIRED)
+  find_package(LAPACK REQUIRED)
+else()
+  find_package(LAPACK)
 endif()
 
 # Looking for SUITESPARSE
@@ -308,8 +294,9 @@ list(REMOVE_DUPLICATES SUITESPARSE_INCLUDE_DIRS)
 # check a function to validate the find
 if(SUITESPARSE_LIBRARIES)
 
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_INCDIRS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
 
@@ -337,49 +324,46 @@ if(SUITESPARSE_LIBRARIES)
   endif()
   # LAPACK
   if (LAPACK_FOUND)
-    if (LAPACK_INCLUDE_DIRS)
-      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
+    if (LAPACK_INCLUDE_DIRS_DEP)
+      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS_DEP}")
     endif()
-    foreach(libdir ${LAPACK_LIBRARY_DIRS})
-      if (libdir)
-        list(APPEND REQUIRED_LIBDIRS "${libdir}")
-      endif()
-    endforeach()
-    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
-    if (LAPACK_LINKER_FLAGS)
-      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
+    if (LAPACK_CFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
     endif()
-  endif()
-  # BLAS
-  if (BLAS_FOUND)
-    if (BLAS_INCLUDE_DIRS)
-      list(APPEND REQUIRED_INCDIRS "${BLAS_INCLUDE_DIRS}")
+    if (LAPACK_LDFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER_DEP}")
     endif()
-    foreach(libdir ${BLAS_LIBRARY_DIRS})
-      if (libdir)
-        list(APPEND REQUIRED_LIBDIRS "${libdir}")
-      endif()
-    endforeach()
-    list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
-    if (BLAS_LINKER_FLAGS)
-      list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
+    if (LAPACK_LIBRARY_DIRS_DEP)
+      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS_DEP}")
     endif()
+    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES_DEP}")
   endif()
   # others
   set(M_LIBRARY "M_LIBRARY-NOTFOUND")
   find_library(M_LIBRARY NAMES m)
   mark_as_advanced(M_LIBRARY)
   if(M_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lm")
+    list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
   endif()
 
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
@@ -394,15 +378,17 @@ if(SUITESPARSE_LIBRARIES)
     set(SUITESPARSE_LIBRARIES_DEP "${REQUIRED_LIBS}")
     set(SUITESPARSE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
     set(SUITESPARSE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(SUITESPARSE_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
+    set(SUITESPARSE_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+    set(SUITESPARSE_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
     list(REMOVE_DUPLICATES SUITESPARSE_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES SUITESPARSE_INCLUDE_DIRS_DEP)
-    list(REMOVE_DUPLICATES SUITESPARSE_LINKER_FLAGS)
+    list(REMOVE_DUPLICATES SUITESPARSE_CFLAGS_OTHER_DEP)
+    list(REMOVE_DUPLICATES SUITESPARSE_LDFLAGS_OTHER_DEP)
   else()
     if(NOT SUITESPARSE_FIND_QUIETLY)
       message(STATUS "Looking for SUITESPARSE : test of symbol SuiteSparse_start fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       message(STATUS "Maybe SUITESPARSE is linked with specific libraries. ")
     endif()

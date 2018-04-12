@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -15,10 +15,17 @@
 # This module sets the following variables:
 #  SCALAPACK_FOUND - set to true if a library implementing the SCALAPACK interface
 #    is found
-#  SCALAPACK_LINKER_FLAGS - uncached list of required linker flags (excluding -l
-#    and -L).
-#  SCALAPACK_LIBRARIES - uncached list of libraries (using full path name) to
-#    link against to use SCALAPACK
+#  SCALAPACK_CFLAGS_OTHER      - scalapack compiler flags without headers paths
+#  SCALAPACK_LDFLAGS_OTHER     - scalapack linker flags without libraries
+#  SCALAPACK_INCLUDE_DIRS      - scalapack include directories
+#  SCALAPACK_LIBRARY_DIRS      - scalapack link directories
+#  SCALAPACK_LIBRARIES         - scalapack libraries to be linked (absolute path)
+#  SCALAPACK_CFLAGS_OTHER_DEP  - scalapack + dependencies compiler flags without headers paths
+#  SCALAPACK_LDFLAGS_OTHER_DEP - scalapack + dependencies linker flags without libraries
+#  SCALAPACK_INCLUDE_DIRS_DEP  - scalapack + dependencies include directories
+#  SCALAPACK_LIBRARY_DIRS_DEP  - scalapack + dependencies link directories
+#  SCALAPACK_LIBRARIES_DEP     - scalapack + dependencies libraries
+#
 #  SCALAPACK95_LIBRARIES - uncached list of libraries (using full path name) to
 #    link against to use SCALAPACK95
 #  SCALAPACK95_FOUND - set to true if a library implementing the SCALAPACK f95
@@ -257,6 +264,8 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
     else(UNIX AND BLA_STATIC)
       set(CMAKE_REQUIRED_LIBRARIES ${_flags} ${${LIBRARIES}} ${_blaslapack} ${_mpi} ${_threads})
     endif(UNIX AND BLA_STATIC)
+    set(CMAKE_REQUIRED_INCLUDES "${SCALAPACK_INCLUDE_DIRS}")
+    set(CMAKE_REQUIRED_FLAGS "${SCALAPACK_CFLAGS_OTHER}")
     if (SCALAPACK_VERBOSE)
       message("${Cyan}SCALAPACK libs found. Try to compile symbol ${_name} with"
         "following libraries: ${CMAKE_REQUIRED_LIBRARIES}")
@@ -283,37 +292,30 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
 endmacro(Check_Scalapack_Libraries)
 
 
-set(SCALAPACK_LINKER_FLAGS)
+set(SCALAPACK_LDFLAGS_OTHER)
 set(SCALAPACK_LIBRARIES)
 set(SCALAPACK95_LIBRARIES)
 
-if (NOT BLAS_FOUND)
-  if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
-    find_package(BLASEXT)
-  else()
-    find_package(BLASEXT REQUIRED)
-  endif()
-endif ()
+if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
+  find_package(BLAS)
+else()
+  find_package(BLAS REQUIRED)
+endif()
 
-if (NOT LAPACK_FOUND)
-  if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
-    find_package(LAPACKEXT)
-  else()
-    find_package(LAPACKEXT REQUIRED)
-  endif()
-endif ()
+if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
+  find_package(LAPACK)
+else()
+  find_package(LAPACK REQUIRED)
+endif()
 
-if (NOT MPI_FOUND)
-  if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
-    find_package(MPI)
-  else()
-    find_package(MPI REQUIRED)
-  endif()
-endif ()
+if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
+  find_package(MPI)
+else()
+  find_package(MPI REQUIRED)
+endif()
 
 if(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
-  set(SCALAPACK_LINKER_FLAGS ${BLAS_LINKER_FLAGS})
-  list(APPEND SCALAPACK_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
+  set(SCALAPACK_LDFLAGS_OTHER ${LAPACK_LDFLAGS_OTHER_DEP})
   if ($ENV{BLA_VENDOR} MATCHES ".+")
     set(BLA_VENDOR $ENV{BLA_VENDOR})
   else ($ENV{BLA_VENDOR} MATCHES ".+")
@@ -383,10 +385,8 @@ if(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
         endif ()
       endforeach ()
     endif ()
-  endif()
-  # Generic SCALAPACK library
-  if (BLA_VENDOR STREQUAL "Generic" OR
-      BLA_VENDOR STREQUAL "All")
+  else()
+    # Generic SCALAPACK library
     if ( NOT SCALAPACK_LIBRARIES )
       check_scalapack_libraries(
         SCALAPACK_LIBRARIES
@@ -411,7 +411,7 @@ if(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
         ""          # threads libs
         )
     endif ( NOT SCALAPACK_LIBRARIES )
-  endif ()
+  endif()
 else(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
   message(STATUS "SCALAPACK requires BLAS, LAPACK, and MPI")
 endif(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
@@ -499,6 +499,15 @@ if (SCALAPACK_LIBRARIES)
   else()
     set(SCALAPACK_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of SCALAPACK library" FORCE)
   endif()
+  set(SCALAPACK_CFLAGS_OTHER_DEP "${SCALAPACK_CFLAGS_OTHER}" "${LAPACK_CFLAGS_OTHER_DEP}")
+  set(SCALAPACK_LDFLAGS_OTHER_DEP "${SCALAPACK_LDFLAGS_OTHER}" "${LAPACK_LDFLAGS_OTHER_DEP}")
+  set(SCALAPACK_INCLUDE_DIRS_DEP "${SCALAPACK_INCLUDE_DIRS}" "${LAPACK_INCLUDE_DIRS_DEP}")
+  set(SCALAPACK_LIBRARY_DIRS_DEP "${SCALAPACK_LIBRARY_DIRS}" "${LAPACK_LIBRARY_DIRS_DEP}")
+  set(SCALAPACK_LIBRARIES_DEP "${SCALAPACK_LIBRARIES}" "${LAPACK_LIBRARIES_DEP}" "${MPI_Fortran_LIBRARIES}")
+  list(REMOVE_DUPLICATES LAPACK_CFLAGS_OTHER_DEP)
+  list(REMOVE_DUPLICATES LAPACK_LDFLAGS_OTHER_DEP)
+  list(REMOVE_DUPLICATES LAPACK_INCLUDE_DIRS_DEP)
+  list(REMOVE_DUPLICATES LAPACK_LIBRARY_DIRS_DEP)
 endif()
 mark_as_advanced(SCALAPACK_DIR)
 mark_as_advanced(SCALAPACK_DIR_FOUND)

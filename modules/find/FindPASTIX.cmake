@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -39,15 +39,33 @@
 #
 # This module finds headers and pastix library.
 # Results are reported in variables:
-#  PASTIX_FOUND            - True if headers and requested libraries were found
-#  PASTIX_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
-#  PASTIX_INCLUDE_DIRS     - pastix include directories
-#  PASTIX_LIBRARY_DIRS     - Link directories for pastix libraries
-#  PASTIX_LIBRARIES        - pastix libraries
-#  PASTIX_INCLUDE_DIRS_DEP - pastix + dependencies include directories
-#  PASTIX_LIBRARY_DIRS_DEP - pastix + dependencies link directories
-#  PASTIX_LIBRARIES_DEP    - pastix libraries + dependencies
-#  PASTIX_INTSIZE          - Number of octets occupied by a pastix_int_t
+#  PASTIX_FOUND             - True if headers and requested libraries were found
+#  PASTIX_CFLAGS_OTHER      - pastix compiler flags without headers paths
+#  PASTIX_LDFLAGS_OTHER     - pastix linker flags without libraries
+#  PASTIX_INCLUDE_DIRS      - pastix include directories
+#  PASTIX_LIBRARY_DIRS      - pastix link directories
+#  PASTIX_LIBRARIES         - pastix libraries to be linked (absolute path)
+#  PASTIX_CFLAGS_OTHER_DEP  - pastix + dependencies compiler flags without headers paths
+#  PASTIX_LDFLAGS_OTHER_DEP - pastix + dependencies linker flags without libraries
+#  PASTIX_INCLUDE_DIRS_DEP  - pastix + dependencies include directories
+#  PASTIX_LIBRARY_DIRS_DEP  - pastix + dependencies link directories
+#  PASTIX_LIBRARIES_DEP     - pastix + dependencies libraries
+#  PASTIX_INTSIZE           - Number of octets occupied by a pastix_int_t
+#  PASTIX_VERSION_MAJOR     - pastix Version, first (major) number
+#
+#  PASTIX_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = PASTIX
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPASTIX_DIR=path/to/pastix):
@@ -62,7 +80,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -135,7 +153,6 @@ endif()
 
 # Dependencies detection
 # ----------------------
-
 
 # Required dependencies
 # ---------------------
@@ -215,9 +232,9 @@ if (NOT PASTIX_FIND_QUIETLY)
   message(STATUS "Looking for PASTIX - Try to detect BLAS")
 endif()
 if (PASTIX_FIND_REQUIRED)
-  find_package(BLASEXT REQUIRED)
+  find_package(BLAS REQUIRED)
 else()
-  find_package(BLASEXT)
+  find_package(BLAS)
 endif()
 
 # Optional dependencies
@@ -225,7 +242,7 @@ endif()
 
 # PASTIX may depend on MPI
 #-------------------------
-if (NOT MPI_FOUND AND PASTIX_LOOK_FOR_MPI)
+if (PASTIX_LOOK_FOR_MPI)
   if (NOT PASTIX_FIND_QUIETLY)
     message(STATUS "Looking for PASTIX - Try to detect MPI")
   endif()
@@ -244,11 +261,11 @@ if (NOT MPI_FOUND AND PASTIX_LOOK_FOR_MPI)
     mark_as_advanced(MPI_LIBRARY)
     mark_as_advanced(MPI_EXTRA_LIBRARY)
   endif()
-endif (NOT MPI_FOUND AND PASTIX_LOOK_FOR_MPI)
+endif (PASTIX_LOOK_FOR_MPI)
 
 # PASTIX may depends on SCOTCH
 #-----------------------------
-if (NOT PARSEC_FOUND AND PASTIX_LOOK_FOR_PARSEC)
+if (PASTIX_LOOK_FOR_PARSEC)
   if (NOT PASTIX_FIND_QUIETLY)
     message(STATUS "Looking for PASTIX - Try to detect PARSEC")
   endif()
@@ -261,7 +278,7 @@ endif()
 
 # PASTIX may depend on STARPU
 #----------------------------
-if( NOT STARPU_FOUND AND PASTIX_LOOK_FOR_STARPU)
+if(PASTIX_LOOK_FOR_STARPU)
 
   if (NOT PASTIX_FIND_QUIETLY)
     message(STATUS "Looking for PASTIX - Try to detect StarPU")
@@ -298,11 +315,11 @@ if( NOT STARPU_FOUND AND PASTIX_LOOK_FOR_STARPU)
       COMPONENTS ${STARPU_COMPONENT_LIST})
   endif()
 
-endif( NOT STARPU_FOUND AND PASTIX_LOOK_FOR_STARPU)
+endif(PASTIX_LOOK_FOR_STARPU)
 
 # PASTIX may depends on SCOTCH
 #-----------------------------
-if (NOT SCOTCH_FOUND AND PASTIX_LOOK_FOR_SCOTCH)
+if (PASTIX_LOOK_FOR_SCOTCH)
   if (NOT PASTIX_FIND_QUIETLY)
     message(STATUS "Looking for PASTIX - Try to detect SCOTCH")
   endif()
@@ -315,7 +332,7 @@ endif()
 
 # PASTIX may depends on PTSCOTCH
 #-------------------------------
-if (NOT PTSCOTCH_FOUND AND PASTIX_LOOK_FOR_PTSCOTCH)
+if (PASTIX_LOOK_FOR_PTSCOTCH)
   if (NOT PASTIX_FIND_QUIETLY)
     message(STATUS "Looking for PASTIX - Try to detect PTSCOTCH")
   endif()
@@ -328,7 +345,7 @@ endif()
 
 # PASTIX may depends on METIS
 #----------------------------
-if (NOT METIS_FOUND AND PASTIX_LOOK_FOR_METIS)
+if (PASTIX_LOOK_FOR_METIS)
   if (NOT PASTIX_FIND_QUIETLY)
     message(STATUS "Looking for PASTIX - Try to detect METIS")
   endif()
@@ -339,190 +356,245 @@ if (NOT METIS_FOUND AND PASTIX_LOOK_FOR_METIS)
   endif()
 endif()
 
-# Error if pastix required and no partitioning lib found
-if (PASTIX_FIND_REQUIRED AND NOT SCOTCH_FOUND AND NOT PTSCOTCH_FOUND AND NOT METIS_FOUND)
-  message(FATAL_ERROR "Could NOT find any partitioning library on your system"
-    " (install scotch, ptscotch or metis)")
-endif()
-
-
-# Looking for PaStiX
-# ------------------
-
-# Looking for include
-# -------------------
-
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
 set(ENV_PASTIX_DIR "$ENV{PASTIX_DIR}")
 set(ENV_PASTIX_INCDIR "$ENV{PASTIX_INCDIR}")
-if(ENV_PASTIX_INCDIR)
-  list(APPEND _inc_env "${ENV_PASTIX_INCDIR}")
-elseif(ENV_PASTIX_DIR)
-  list(APPEND _inc_env "${ENV_PASTIX_DIR}")
-  list(APPEND _inc_env "${ENV_PASTIX_DIR}/include")
-  list(APPEND _inc_env "${ENV_PASTIX_DIR}/include/pastix")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-
-# Try to find the pastix header in the given paths
-# ---------------------------------------------------
-# call cmake macro to find the header path
-if(PASTIX_INCDIR)
-  set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
-  find_path(PASTIX_pastix.h_DIRS
-    NAMES pastix.h
-    HINTS ${PASTIX_INCDIR})
-else()
-  if(PASTIX_DIR)
-    set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
-    find_path(PASTIX_pastix.h_DIRS
-      NAMES pastix.h
-      HINTS ${PASTIX_DIR}
-      PATH_SUFFIXES "include" "include/pastix")
-  else()
-    set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
-    find_path(PASTIX_pastix.h_DIRS
-      NAMES pastix.h
-      HINTS ${_inc_env}
-      PATH_SUFFIXES "pastix")
-  endif()
-endif()
-mark_as_advanced(PASTIX_pastix.h_DIRS)
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (PASTIX_pastix.h_DIRS)
-  set(PASTIX_INCLUDE_DIRS "${PASTIX_pastix.h_DIRS}")
-else ()
-  set(PASTIX_INCLUDE_DIRS "PASTIX_INCLUDE_DIRS-NOTFOUND")
-  if(NOT PASTIX_FIND_QUIETLY)
-    message(STATUS "Looking for pastix -- pastix.h not found")
-  endif()
-endif()
-
-
-# Looking for lib
-# ---------------
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
 set(ENV_PASTIX_LIBDIR "$ENV{PASTIX_LIBDIR}")
-if(ENV_PASTIX_LIBDIR)
-  list(APPEND _lib_env "${ENV_PASTIX_LIBDIR}")
-elseif(ENV_PASTIX_DIR)
-  list(APPEND _lib_env "${ENV_PASTIX_DIR}")
-  list(APPEND _lib_env "${ENV_PASTIX_DIR}/lib")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
-  else()
-    if(APPLE)
-      string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
-    else()
-      string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
-    endif()
-    list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-    list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-  endif()
+set(PASTIX_GIVEN_BY_USER "FALSE")
+if ( PASTIX_DIR OR ( PASTIX_INCDIR AND PASTIX_LIBDIR) OR ENV_PASTIX_DIR OR (ENV_PASTIX_INCDIR AND ENV_PASTIX_LIBDIR) )
+  set(PASTIX_GIVEN_BY_USER "TRUE")
 endif()
-list(REMOVE_DUPLICATES _lib_env)
 
-# Try to find the pastix lib in the given paths
-# ------------------------------------------------
+# Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
+# -------------------------------------------------------------------------------------
+include(FindPkgConfig)
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_EXECUTABLE AND NOT PASTIX_GIVEN_BY_USER)
 
-# create list of libs to find
-set(PASTIX_libs_to_find_v5 "pastix_murge;pastix")
-set(PASTIX_libs_to_find_v6 "pastix;pastix_kernels;pastix_spm;pastix_bcsc")
-foreach(v 5 6)
-  set(V_FOUND TRUE)
-  set(PASTIX_libs_to_find ${PASTIX_libs_to_find_v${v}})
-  message(STATUS "Looking for pastix -- Testing is version ${v}")
-  # call cmake macro to find the lib path
-  foreach(pastix_lib ${PASTIX_libs_to_find})
-    set(PASTIX_${pastix_lib}_LIBRARY "PASTIX_${pastix_lib}_LIBRARY-NOTFOUND")
-    if(PASTIX_LIBDIR)
-      find_library(PASTIX_${pastix_lib}_LIBRARY
-        NAMES ${pastix_lib}
-        HINTS ${PASTIX_LIBDIR})
+  pkg_search_module(PASTIX pastix)
+
+  if (NOT PASTIX_FIND_QUIETLY)
+    if (PASTIX_FOUND AND PASTIX_LIBRARIES)
+      message(STATUS "Looking for PASTIX - found using PkgConfig")
     else()
-      if(PASTIX_DIR)
-        find_library(PASTIX_${pastix_lib}_LIBRARY
-          NAMES ${pastix_lib}
-          HINTS ${PASTIX_DIR}
-          PATH_SUFFIXES lib lib32 lib64)
-      else()
-        find_library(PASTIX_${pastix_lib}_LIBRARY
-          NAMES ${pastix_lib}
-          HINTS ${_lib_env})
-      endif()
+      message(STATUS "${Magenta}Looking for PASTIX - not found using PkgConfig."
+        "\n   Perhaps you should add the directory containing pastix.pc"
+        "\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
-    if (NOT PASTIX_${pastix_lib}_LIBRARY)
-      set (V_FOUND FALSE)
+  endif()
+
+  if (PASTIX_FOUND AND PASTIX_LIBRARIES)
+    set(PASTIX_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(PASTIX)
+  else()
+    set(PASTIX_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
+
+  set(PASTIX_VERSION_MAJOR)
+  foreach(_lib ${PASTIX_LIBRARIES})
+    if (_lib MATCHES "pastix_murge")
+      set(PASTIX_VERSION_MAJOR "5")
+    endif()
+    if (_lib MATCHES "pastix_kernels")
+      set(PASTIX_VERSION_MAJOR "6")
+    endif()
+  endforeach()
+
+endif(PKG_CONFIG_EXECUTABLE AND NOT PASTIX_GIVEN_BY_USER)
+
+# Error if pastix required and no partitioning lib found
+if (PASTIX_FIND_REQUIRED AND NOT SCOTCH_FOUND AND NOT PTSCOTCH_FOUND AND NOT METIS_FOUND)
+  message(FATAL_ERROR "Could NOT find any partitioning library on your system (install scotch, ptscotch or metis)")
+endif()
+
+if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PASTIX_FOUND) OR (PASTIX_GIVEN_BY_USER) )
+
+  # Looking for PaStiX
+  # ------------------
+
+  # Looking for include
+  # -------------------
+
+  # Add system include paths to search include
+  # ------------------------------------------
+  unset(_inc_env)
+  set(ENV_PASTIX_DIR "$ENV{PASTIX_DIR}")
+  set(ENV_PASTIX_INCDIR "$ENV{PASTIX_INCDIR}")
+  if(ENV_PASTIX_INCDIR)
+    list(APPEND _inc_env "${ENV_PASTIX_INCDIR}")
+  elseif(ENV_PASTIX_DIR)
+    list(APPEND _inc_env "${ENV_PASTIX_DIR}")
+    list(APPEND _inc_env "${ENV_PASTIX_DIR}/include")
+    list(APPEND _inc_env "${ENV_PASTIX_DIR}/include/pastix")
+  else()
+    if(WIN32)
+      string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+    else()
+      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+      list(APPEND _inc_env "${_path_env}")
+    endif()
+  endif()
+  list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
+  list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+  list(REMOVE_DUPLICATES _inc_env)
+
+
+  # Try to find the pastix header in the given paths
+  # ---------------------------------------------------
+  # call cmake macro to find the header path
+  if(PASTIX_INCDIR)
+    set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
+    find_path(PASTIX_pastix.h_DIRS
+      NAMES pastix.h
+      HINTS ${PASTIX_INCDIR})
+  else()
+    if(PASTIX_DIR)
+      set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
+      find_path(PASTIX_pastix.h_DIRS
+        NAMES pastix.h
+        HINTS ${PASTIX_DIR}
+        PATH_SUFFIXES "include" "include/pastix")
+    else()
+      set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
+      find_path(PASTIX_pastix.h_DIRS
+        NAMES pastix.h
+        HINTS ${_inc_env}
+        PATH_SUFFIXES "pastix")
+    endif()
+  endif()
+  mark_as_advanced(PASTIX_pastix.h_DIRS)
+
+  # If found, add path to cmake variable
+  # ------------------------------------
+  if (PASTIX_pastix.h_DIRS)
+    set(PASTIX_INCLUDE_DIRS "${PASTIX_pastix.h_DIRS}")
+  else ()
+    set(PASTIX_INCLUDE_DIRS "PASTIX_INCLUDE_DIRS-NOTFOUND")
+    if(NOT PASTIX_FIND_QUIETLY)
+      message(STATUS "Looking for pastix -- pastix.h not found")
+    endif()
+  endif()
+
+
+  # Looking for lib
+  # ---------------
+
+  # Add system library paths to search lib
+  # --------------------------------------
+  unset(_lib_env)
+  set(ENV_PASTIX_LIBDIR "$ENV{PASTIX_LIBDIR}")
+  if(ENV_PASTIX_LIBDIR)
+    list(APPEND _lib_env "${ENV_PASTIX_LIBDIR}")
+  elseif(ENV_PASTIX_DIR)
+    list(APPEND _lib_env "${ENV_PASTIX_DIR}")
+    list(APPEND _lib_env "${ENV_PASTIX_DIR}/lib")
+  else()
+    if(WIN32)
+      string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    else()
+      if(APPLE)
+        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+      else()
+        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+      endif()
+      list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+      list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+    endif()
+  endif()
+  list(REMOVE_DUPLICATES _lib_env)
+
+  # Try to find the pastix lib in the given paths
+  # ------------------------------------------------
+
+  # create list of libs to find
+  set(PASTIX_libs_to_find_v5 "pastix_murge;pastix")
+  set(PASTIX_libs_to_find_v6 "pastix;pastix_kernels;pastix_spm;pastix_bcsc")
+  foreach(v 5 6)
+    set(V_FOUND TRUE)
+    set(PASTIX_libs_to_find ${PASTIX_libs_to_find_v${v}})
+    message(STATUS "Looking for pastix -- Testing is version ${v}")
+    # call cmake macro to find the lib path
+    foreach(pastix_lib ${PASTIX_libs_to_find})
+      set(PASTIX_${pastix_lib}_LIBRARY "PASTIX_${pastix_lib}_LIBRARY-NOTFOUND")
+      if(PASTIX_LIBDIR)
+        find_library(PASTIX_${pastix_lib}_LIBRARY
+          NAMES ${pastix_lib}
+          HINTS ${PASTIX_LIBDIR})
+      else()
+        if(PASTIX_DIR)
+          find_library(PASTIX_${pastix_lib}_LIBRARY
+            NAMES ${pastix_lib}
+            HINTS ${PASTIX_DIR}
+            PATH_SUFFIXES lib lib32 lib64)
+        else()
+          find_library(PASTIX_${pastix_lib}_LIBRARY
+            NAMES ${pastix_lib}
+            HINTS ${_lib_env})
+        endif()
+      endif()
+      if (NOT PASTIX_${pastix_lib}_LIBRARY)
+        set (V_FOUND FALSE)
+        break()
+      endif()
+    endforeach()
+    if (V_FOUND)
+      set(PASTIX_VERSION_MAJOR ${v})
+      message(STATUS "Looking for pastix -- major version detected: ${PASTIX_VERSION_MAJOR}")
+      if (PASTIX_FIND_VERSION)
+        if (NOT ${PASTIX_VERSION_MAJOR} EQUAL ${PASTIX_FIND_VERSION_MAJOR})
+          message(FATAL_ERROR "Looking for pastix -- PaStiX version found differ from required")
+        endif()
+      endif()
       break()
     endif()
   endforeach()
-  if (V_FOUND)
-    set(PASTIX_VERSION_MAJOR ${v})
-    message(STATUS "Looking for pastix -- major version detected: ${PASTIX_VERSION_MAJOR}")
-    if (PASTIX_FIND_VERSION)
-      if (NOT ${PASTIX_VERSION_MAJOR} EQUAL ${PASTIX_FIND_VERSION_MAJOR})
-        message(FATAL_ERROR "Looking for pastix -- PaStiX version found differ from required")
-      endif()
+
+  # If found, add path to cmake variable
+  # ------------------------------------
+  foreach(pastix_lib ${PASTIX_libs_to_find})
+
+    get_filename_component(${pastix_lib}_lib_path ${PASTIX_${pastix_lib}_LIBRARY} PATH)
+    # set cmake variables (respects naming convention)
+    if (PASTIX_LIBRARIES)
+      list(APPEND PASTIX_LIBRARIES "${PASTIX_${pastix_lib}_LIBRARY}")
+    else()
+      set(PASTIX_LIBRARIES "${PASTIX_${pastix_lib}_LIBRARY}")
     endif()
-    break()
-  endif()
-endforeach()
+    if (PASTIX_LIBRARY_DIRS)
+      list(APPEND PASTIX_LIBRARY_DIRS "${${pastix_lib}_lib_path}")
+    else()
+      set(PASTIX_LIBRARY_DIRS "${${pastix_lib}_lib_path}")
+    endif()
+    mark_as_advanced(PASTIX_${pastix_lib}_LIBRARY)
 
-# If found, add path to cmake variable
-# ------------------------------------
-foreach(pastix_lib ${PASTIX_libs_to_find})
+  endforeach(pastix_lib ${PASTIX_libs_to_find})
 
-  get_filename_component(${pastix_lib}_lib_path ${PASTIX_${pastix_lib}_LIBRARY} PATH)
-  # set cmake variables (respects naming convention)
-  if (PASTIX_LIBRARIES)
-    list(APPEND PASTIX_LIBRARIES "${PASTIX_${pastix_lib}_LIBRARY}")
-  else()
-    set(PASTIX_LIBRARIES "${PASTIX_${pastix_lib}_LIBRARY}")
-  endif()
-  if (PASTIX_LIBRARY_DIRS)
-    list(APPEND PASTIX_LIBRARY_DIRS "${${pastix_lib}_lib_path}")
-  else()
-    set(PASTIX_LIBRARY_DIRS "${${pastix_lib}_lib_path}")
-  endif()
-  mark_as_advanced(PASTIX_${pastix_lib}_LIBRARY)
+endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PASTIX_FOUND) OR (PASTIX_GIVEN_BY_USER) )
 
-endforeach(pastix_lib ${PASTIX_libs_to_find})
 
 # check a function to validate the find
 if(PASTIX_LIBRARIES)
 
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_INCDIRS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
 
   # PASTIX
   if (PASTIX_INCLUDE_DIRS)
     set(REQUIRED_INCDIRS "${PASTIX_INCLUDE_DIRS}")
+  endif()
+  if (PASTIX_CFLAGS_OTHER)
+    list(APPEND REQUIRED_FLAGS "${PASTIX_CFLAGS_OTHER}")
+  endif()
+  if (PASTIX_LDFLAGS_OTHER)
+    list(APPEND REQUIRED_LDFLAGS "${PASTIX_LDFLAGS_OTHER}")
   endif()
   foreach(libdir ${PASTIX_LIBRARY_DIRS})
     if (libdir)
@@ -534,48 +606,36 @@ if(PASTIX_LIBRARIES)
   if (PASTIX_LOOK_FOR_PARSEC AND PARSEC_FOUND)
     if (PARSEC_INCLUDE_DIRS_DEP)
       list(APPEND REQUIRED_INCDIRS "${PARSEC_INCLUDE_DIRS_DEP}")
-    elseif (PARSEC_INCLUDE_DIRS)
-      list(APPEND REQUIRED_INCDIRS "${PARSEC_INCLUDE_DIRS}")
+    endif()
+    if (PARSEC_CFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_FLAGS "${PARSEC_CFLAGS_OTHER_DEP}")
+    endif()
+    if (PARSEC_LDFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_LDFLAGS "${PARSEC_LDFLAGS_OTHER_DEP}")
     endif()
     if(PARSEC_LIBRARY_DIRS_DEP)
       list(APPEND REQUIRED_LIBDIRS "${PARSEC_LIBRARY_DIRS_DEP}")
-    elseif(PARSEC_LIBRARY_DIRS)
-      list(APPEND REQUIRED_LIBDIRS "${PARSEC_LIBRARY_DIRS}")
     endif()
     if (PARSEC_LIBRARIES_DEP)
       list(APPEND REQUIRED_LIBS "${PARSEC_LIBRARIES_DEP}")
-    elseif (PARSEC_LIBRARIES)
-      foreach(lib ${PARSEC_LIBRARIES})
-        if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-          list(APPEND REQUIRED_LIBS "${lib}")
-        else()
-          list(APPEND REQUIRED_LIBS "-l${lib}")
-        endif()
-      endforeach()
     endif()
   endif()
   # STARPU
   if (PASTIX_LOOK_FOR_STARPU AND STARPU_FOUND)
     if (STARPU_INCLUDE_DIRS_DEP)
       list(APPEND REQUIRED_INCDIRS "${STARPU_INCLUDE_DIRS_DEP}")
-    elseif (STARPU_INCLUDE_DIRS)
-      list(APPEND REQUIRED_INCDIRS "${STARPU_INCLUDE_DIRS}")
+    endif()
+    if (STARPU_CFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_FLAGS "${STARPU_CFLAGS_OTHER_DEP}")
+    endif()
+    if (STARPU_LDFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_LDFLAGS "${STARPU_LDFLAGS_OTHER_DEP}")
     endif()
     if(STARPU_LIBRARY_DIRS_DEP)
       list(APPEND REQUIRED_LIBDIRS "${STARPU_LIBRARY_DIRS_DEP}")
-    elseif(STARPU_LIBRARY_DIRS)
-      list(APPEND REQUIRED_LIBDIRS "${STARPU_LIBRARY_DIRS}")
     endif()
     if (STARPU_LIBRARIES_DEP)
       list(APPEND REQUIRED_LIBS "${STARPU_LIBRARIES_DEP}")
-    elseif (STARPU_LIBRARIES)
-      foreach(lib ${STARPU_LIBRARIES})
-        if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-          list(APPEND REQUIRED_LIBS "${lib}")
-        else()
-          list(APPEND REQUIRED_LIBS "-l${lib}")
-        endif()
-      endforeach()
     endif()
   endif()
   # CUDA
@@ -608,33 +668,32 @@ if(PASTIX_LIBRARIES)
     if (HWLOC_INCLUDE_DIRS)
       list(APPEND REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
     endif()
-    foreach(libdir ${HWLOC_LIBRARY_DIRS})
-      if (libdir)
-        list(APPEND REQUIRED_LIBDIRS "${libdir}")
-      endif()
-    endforeach()
-    foreach(lib ${HWLOC_LIBRARIES})
-      if (EXISTS ${lib} OR ${lib} MATCHES "^-")
-        list(APPEND REQUIRED_LIBS "${lib}")
-      else()
-        list(APPEND REQUIRED_LIBS "-l${lib}")
-      endif()
-    endforeach()
+    if (HWLOC_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${HWLOC_CFLAGS_OTHER}")
+    endif()
+    if (HWLOC_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${HWLOC_LDFLAGS_OTHER}")
+    endif()
+    if (HWLOC_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${HWLOC_LIBRARIES}")
   endif()
   # BLAS
   if (BLAS_FOUND)
     if (BLAS_INCLUDE_DIRS)
       list(APPEND REQUIRED_INCDIRS "${BLAS_INCLUDE_DIRS}")
     endif()
-    foreach(libdir ${BLAS_LIBRARY_DIRS})
-      if (libdir)
-        list(APPEND REQUIRED_LIBDIRS "${libdir}")
-      endif()
-    endforeach()
-    list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
-    if (BLAS_LINKER_FLAGS)
-      list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
+    if (BLAS_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${BLAS_CFLAGS_OTHER}")
     endif()
+    if (BLAS_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${BLAS_LDFLAGS_OTHER}")
+    endif()
+    if (BLAS_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${BLAS_LIBRARY_DIRS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
   endif()
   # SCOTCH
   if (PASTIX_LOOK_FOR_SCOTCH AND SCOTCH_FOUND)
@@ -699,13 +758,23 @@ if(PASTIX_LIBRARIES)
 
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-  foreach(lib_dir ${REQUIRED_LIBDIRS})
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-  endforeach()
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-  list(APPEND CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
   # test link
@@ -719,15 +788,17 @@ if(PASTIX_LIBRARIES)
     set(PASTIX_LIBRARIES_DEP "${REQUIRED_LIBS}")
     set(PASTIX_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
     set(PASTIX_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(PASTIX_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
+    set(PASTIX_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+    set(PASTIX_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
     list(REMOVE_DUPLICATES PASTIX_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES PASTIX_INCLUDE_DIRS_DEP)
-    list(REMOVE_DUPLICATES PASTIX_LINKER_FLAGS)
+    list(REMOVE_DUPLICATES PASTIX_CFLAGS_OTHER_DEP)
+    list(REMOVE_DUPLICATES PASTIX_LDFLAGS_OTHER_DEP)
   else()
     if(NOT PASTIX_FIND_QUIETLY)
       message(STATUS "Looking for PASTIX : test of pastix() fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       message(STATUS "Maybe PASTIX is linked with specific libraries. "
         "Have you tried with COMPONENTS (MPI/SEQ, PARSEC, STARPU, STARPU_CUDA, SCOTCH, PTSCOTCH, METIS)? "
@@ -742,7 +813,7 @@ endif(PASTIX_LIBRARIES)
 
 # Check the size of pastix_int_t
 # ---------------------------------
-set(CMAKE_REQUIRED_INCLUDES ${PASTIX_INCLUDE_DIRS} ${PASTIX_INCLUDE_DIRS_DEP})
+set(CMAKE_REQUIRED_INCLUDES ${PASTIX_INCLUDE_DIRS_DEP})
 
 include(CheckCSourceRuns)
 #mpi.h should be included by pastix.h directly

@@ -1,165 +1,420 @@
-# - Try to find fabulous (C-api)
+###
 #
-# If this script have difficulties to find fabulous, you can try to help
-# it by setting the variable FABULOUS_DIR to the prefix path where fabulous
-# was installed
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 #
-# Once done this will define
-#  FABULOUS_FOUND - System has fabulous
-#  FABULOUS_INCLUDE_DIRS - The fabulous include directories
-#  FABULOUS_MODULE_DIRS - The fabulous module directories for Fortran API
-#  FABULOUS_LIBRARIES - The libraries needed to use fabulous
-#  FABULOUS_DEFINITIONS - Compiler switches required for using fabulous
+###
 #
-include(FindPackageHandleStandardArgs)
+# - Find FABULOUS include dirs and libraries
+# Use this module by invoking find_package with the form:
+#  find_package(FABULOUS
+#               [REQUIRED]) # Fail with error if fabulous is not found
+#
+#  FABULOUS depends on the following libraries:
+#   - CBLAS
+#   - LAPACKE
+#
+# This module finds headers and fabulous library.
+# Results are reported in variables:
+#  FABULOUS_FOUND             - True if headers and requested libraries were found
+#  FABULOUS_CFLAGS_OTHER      - fabulous compiler flags without headers paths
+#  FABULOUS_LDFLAGS_OTHER     - fabulous linker flags without libraries
+#  FABULOUS_INCLUDE_DIRS      - fabulous include directories
+#  FABULOUS_LIBRARY_DIRS      - fabulous link directories
+#  FABULOUS_LIBRARIES         - fabulous libraries to be linked (absolute path)
+#  FABULOUS_CFLAGS_OTHER_DEP  - fabulous + dependencies compiler flags without headers paths
+#  FABULOUS_LDFLAGS_OTHER_DEP - fabulous + dependencies linker flags without libraries
+#  FABULOUS_INCLUDE_DIRS_DEP  - fabulous + dependencies include directories
+#  FABULOUS_LIBRARY_DIRS_DEP  - fabulous + dependencies link directories
+#  FABULOUS_LIBRARIES_DEP     - fabulous + dependencies libraries
+#
+#  FABULOUS_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+#  if found with pkg-config the following variables are set
+#  <PREFIX>  = FABULOUS
+#  <XPREFIX> = <PREFIX>        for common case
+#  <XPREFIX> = <PREFIX>_STATIC for static linking
+#  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
+#  <XPREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+#  <XPREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+#  <XPREFIX>_LDFLAGS        ... all required linker flags
+#  <XPREFIX>_LDFLAGS_OTHER  ... all other linker flags
+#  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+#  <XPREFIX>_CFLAGS         ... all required cflags
+#  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
+#
+# The user can give specific paths where to find the libraries adding cmake
+# options at configure (ex: cmake path/to/project -DFABULOUS_DIR=path/to/fabulous):
+#  FABULOUS_DIR             - Where to find the base directory of fabulous
+#  FABULOUS_INCDIR          - Where to find the header files
+#  FABULOUS_LIBDIR          - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: FABULOUS_DIR, FABULOUS_INCDIR, FABULOUS_LIBDIR
 
-macro(FABULOUS_FIND_LIBRARIES_FROM_PKGCONFIG_RESULTS _prefix _pc_xprefix)
-    foreach(_library ${${_pc_xprefix}_LIBRARIES})
-        get_filename_component(_library ${_library} NAME_WE)
-        unset(_library_path)
-        unset(_library_path CACHE)
-        find_library(_library_path NAMES ${_library}
-            HINTS ${${_pc_xprefix}_LIBDIR} ${${_pc_xprefix}_LIBRARY_DIRS} )
-        if (_library_path)
-            list(APPEND ${_prefix}_LIBRARIES ${_library_path})
-        else()
-            message(FATAL_ERROR "Dependency of ${_prefix} '${_library}' NOT FOUND")
-        endif()
-        unset(_library_path CACHE)
-    endforeach()
-endmacro()
+#=============================================================================
+# Copyright 2012-2018 Inria
+# Copyright 2013-2018 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 
-macro(FABULOUS_CHECK_FUNCTION_EXISTS _prefix _function)
-    include(CheckFunctionExists)
-    unset(${_prefix}_WORKS)
-    unset(${_prefix}_WORKS CACHE)
-    set(CMAKE_REQUIRED_LIBRARIES ${${_prefix}_LIBRARIES})
-    set(CMAKE_REQUIRED_INCLUDES ${${_prefix}_INCLUDE_DIRS})
-    set(CMAKE_REQUIRED_DEFINITIONS ${${_prefix}_DEFINITIONS})
-    check_function_exists(${_function} ${_prefix}_WORKS)
-    set(CMAKE_REQUIRED_LIBRARIES "")
-    set(CMAKE_REQUIRED_INCLUDES "")
-    set(CMAKE_REQUIRED_DEFINITIONS "")
-    mark_as_advanced(${_prefix}_WORKS)
-endmacro()
+if (NOT FABULOUS_FOUND)
+  set(FABULOUS_DIR "" CACHE PATH "Installation directory of FABULOUS library")
+  if (NOT FABULOUS_FIND_QUIETLY)
+    message(STATUS "A cache variable, namely FABULOUS_DIR, has been set to specify the install directory of FABULOUS")
+  endif()
+endif()
 
-find_package(PkgConfig QUIET)
+# FABULOUS depends on CBLAS
+#---------------------------
+if (NOT FABULOUS_FIND_QUIETLY)
+  message(STATUS "Looking for FABULOUS - Try to detect CBLAS (depends on BLAS)")
+endif()
+if (FABULOUS_FIND_REQUIRED)
+  find_package(CBLAS REQUIRED)
+else()
+  find_package(CBLAS)
+endif()
 
+# FABULOUS depends on LAPACKE
+#-----------------------------
+if (NOT FABULOUS_FIND_QUIETLY)
+  message(STATUS "Looking for FABULOUS - Try to detect LAPACKE (depends on LAPACK)")
+endif()
+if (FABULOUS_FIND_REQUIRED)
+  find_package(LAPACKE REQUIRED)
+else()
+  find_package(LAPACKE)
+endif()
+  
 set(ENV_FABULOUS_DIR "$ENV{FABULOUS_DIR}")
 set(ENV_FABULOUS_INCDIR "$ENV{FABULOUS_INCDIR}")
 set(ENV_FABULOUS_LIBDIR "$ENV{FABULOUS_LIBDIR}")
 set(FABULOUS_GIVEN_BY_USER "FALSE")
-if ( FABULOUS_DIR OR ENV_FABULOUS_DIR
-        OR ( FABULOUS_INCDIR AND FABULOUS_LIBDIR )
-        OR ( ENV_FABULOUS_INCDIR AND ENV_FABULOUS_LIBDIR ) )
-    set(FABULOUS_GIVEN_BY_USER "TRUE")
+if ( FABULOUS_DIR OR ( FABULOUS_INCDIR AND FABULOUS_LIBDIR) OR ENV_FABULOUS_DIR OR (ENV_FABULOUS_INCDIR AND ENV_FABULOUS_LIBDIR) )
+  set(FABULOUS_GIVEN_BY_USER "TRUE")
 endif()
 
-set(FABULOUS_STATIC_FIND_QUIETLY "TRUE")
-set(FABULOUS_SHARED_FIND_QUIETLY "TRUE")
+# Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
+# -------------------------------------------------------------------------------------
+include(FindPkgConfig)
+find_package(PkgConfig QUIET)
+if( PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_GIVEN_BY_USER )
 
-if ((NOT FABULOUS_FOUND) AND (NOT FABULOUS_GIVEN_BY_USER) AND PKG_CONFIG_FOUND)
-    pkg_check_modules(PC_FABULOUS QUIET fabulous)
+  pkg_search_module(FABULOUS fabulous_c_api)
 
-    find_path(FABULOUS_STATIC_INCLUDE_DIR NAMES fabulous.h
-        HINTS ${PC_FABULOUS_STATIC_INCLUDEDIR} ${PC_FABULOUS_STATIC_INCLUDE_DIRS} )
-    find_library(FABULOUS_STATIC_LIBRARY NAMES libfabulous.a
-        HINTS ${PC_FABULOUS_STATIC_LIBDIR} ${PC_FABULOUS_STATIC_LIBRARY_DIRS} )
-
-    find_path(FABULOUS_SHARED_INCLUDE_DIR NAMES fabulous.h
-        HINTS ${PC_FABULOUS_INCLUDEDIR} ${PC_FABULOUS_INCLUDE_DIRS} )
-    find_library(FABULOUS_SHARED_LIBRARY NAMES libfabulous.so
-        HINTS ${PC_FABULOUS_LIBDIR} ${PC_FABULOUS_LIBRARY_DIRS} )
-
-    # handle the QUIETLY and REQUIRED arguments and set FABULOUS_FOUND to TRUE
-    # if all listed variables are TRUE
-
-    find_package_handle_standard_args(
-        FABULOUS_STATIC DEFAULT_MSG
-        FABULOUS_STATIC_LIBRARY FABULOUS_STATIC_INCLUDE_DIR)
-    mark_as_advanced(FABULOUS_STATIC_INCLUDE_DIR FABULOUS_STATIC_LIBRARY)
-
-    find_package_handle_standard_args(
-        FABULOUS_SHARED DEFAULT_MSG
-        FABULOUS_SHARED_LIBRARY FABULOUS_SHARED_INCLUDE_DIR)
-    mark_as_advanced(FABULOUS_SHARED_INCLUDE_DIR FABULOUS_SHARED_LIBRARY)
-
-    if (FABULOUS_STATIC_FOUND AND NOT FABULOUS_SHARED_FOUND)
-        set(FABULOUS_INCLUDE_DIRS ${FABULOUS_STATIC_INCLUDE_DIR} )
-        set(FABULOUS_DEFINITIONS ${PC_FABULOUS_STATIC_CFLAGS_OTHER} )
-        set(FABULOUS_LIBRARIES "")
-        fabulous_find_libraries_from_pkgconfig_results(FABULOUS PC_FABULOUS_STATIC)
-    elseif(FABULOUS_SHARED_FOUND)
-        set(FABULOUS_INCLUDE_DIRS ${FABULOUS_INCLUDE_DIR} )
-        set(FABULOUS_DEFINITIONS ${PC_FABULOUS_CFLAGS_OTHER} )
-        set(FABULOUS_LIBRARIES "")
-        fabulous_find_libraries_from_pkgconfig_results(FABULOUS PC_FABULOUS)
-    endif()
-    fabulous_check_function_exists(FABULOUS fabulous_create)
-    find_package_handle_standard_args(
-        FABULOUS DEFAULT_MSG
-        FABULOUS_LIBRARIES FABULOUS_INCLUDE_DIRS FABULOUS_WORKS)
-endif()
-
-if ((NOT FABULOUS_FOUND) AND (FABULOUS_GIVEN_BY_USER OR (NOT PKG_CONFIG_FOUND)))
-
-    # Currently the C-api (compiled version) does not depent on chameleon
-    # so the library only depends on CBLAS AND LAPACKE
-
-    set(FABULOUS_DEFINITIONS "")
-    if ( ( FABULOUS_INCDIR AND FABULOUS_LIBDIR ) OR ( ENV_FABULOUS_INCDIR AND ENV_FABULOUS_LIBDIR ) )
-
-        if ((NOT FABULOUS_LIBDIR) AND (NOT FABULOUS_INCDIR)
-                AND (ENV_FABULOUS_INCDIR AND ENV_FABULOUS_LIBDIR) )
-            set(FABULOUS_LIBDIR ${ENV_FABULOUS_LIBDIR})
-            set(FABULOUS_INCDIR ${ENV_FABULOUS_INCDIR})
-        endif()
-
-        find_path(FABULOUS_INCLUDE_DIRS NAMES fabulous.h HINTS ${FABULOUS_INCDIR})
-        find_path(FABULOUS_MODULE_DIRS NAMES fabulous_mod.mod HINTS ${FABULOUS_INCDIR}
-          PATH_SUFFIXES fabulous)
-        find_library(FABULOUS_STATIC_LIBRARY NAMES libfabulous.a HINTS ${FABULOUS_LIBDIR})
-        find_library(FABULOUS_SHARED_LIBRARY NAMES libfabulous.so HINTS ${FABULOUS_LIBDIR})
+  if (NOT FABULOUS_FIND_QUIETLY)
+    if (FABULOUS_FOUND AND FABULOUS_LIBRARIES)
+      message(STATUS "Looking for FABULOUS - found using PkgConfig")
     else()
-        if (ENV_FABULOUS_DIR AND NOT FABULOUS_DIR)
-            set(FABULOUS_DIR "${ENV_FABULOUS_DIR}" CACHE PATH "Installation prefix where fabulous is installed")
-        else()
-            set(FABULOUS_DIR "${FABULOUS_DIR}" CACHE PATH "Installation prefix where fabulous is installed")
-        endif()
-
-        find_path(FABULOUS_INCLUDE_DIRS NAMES fabulous.h
-            HINTS ${FABULOUS_DIR}
-            PATH_SUFFIXES include include/fabulous)
-        find_path(FABULOUS_MODULE_DIRS NAMES fabulous_mod.mod
-            HINTS ${FABULOUS_DIR}
-            PATH_SUFFIXES include include/fabulous)
-        find_library(FABULOUS_STATIC_LIBRARY NAMES libfabulous.a
-            HINTS ${FABULOUS_DIR}
-            PATH_SUFFIXES lib lib32 lib64 lib/fabulous lib32/fabulous lib64/fabulous)
-        find_library(FABULOUS_SHARED_LIBRARY NAMES libfabulous.so
-            HINTS ${FABULOUS_DIR}
-            PATH_SUFFIXES lib lib32 lib64 lib/fabulous lib32/fabulous lib64/fabulous)
+      message(STATUS "${Magenta}Looking for FABULOUS - not found using PkgConfig."
+        "\n   Perhaps you should add the directory containing fabulous.pc to"
+        "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
+  endif()
 
-    find_package_handle_standard_args(FABULOUS_STATIC DEFAULT_MSG FABULOUS_STATIC_LIBRARY)
-    find_package_handle_standard_args(FABULOUS_SHARED DEFAULT_MSG FABULOUS_SHARED_LIBRARY)
-    mark_as_advanced(FABULOUS_STATIC_LIBRARY FABULOUS_SHARED_LIBRARY)
+  if (FABULOUS_FOUND AND FABULOUS_LIBRARIES)
+    set(FABULOUS_FOUND_WITH_PKGCONFIG "TRUE")
+    find_pkgconfig_libraries_absolute_path(FABULOUS)
+  else()
+    set(FABULOUS_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 
-    if (FABULOUS_FIND_REQUIRED)
-      find_package(CBLAS REQUIRED)
-      find_package(LAPACKE REQUIRED)
+endif( PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_GIVEN_BY_USER )
+
+if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_FOUND) OR (FABULOUS_GIVEN_BY_USER) )
+
+  if (NOT FABULOUS_FIND_QUIETLY)
+    message(STATUS "Looking for FABULOUS - PkgConfig not used")
+  endif()
+
+  # Looking for include
+  # -------------------
+
+  # Add system include paths to search include
+  # ------------------------------------------
+  unset(_inc_env)
+  if(ENV_FABULOUS_INCDIR)
+    list(APPEND _inc_env "${ENV_FABULOUS_INCDIR}")
+  elseif(ENV_FABULOUS_DIR)
+    list(APPEND _inc_env "${ENV_FABULOUS_DIR}")
+    list(APPEND _inc_env "${ENV_FABULOUS_DIR}/include")
+    list(APPEND _inc_env "${ENV_FABULOUS_DIR}/include/fabulous")
+  else()
+    if(WIN32)
+      string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
     else()
-      find_package(CBLAS)
-      find_package(LAPACKE)
+      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+      list(APPEND _inc_env "${_path_env}")
     endif()
+  endif()
+  list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
+  list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+  list(REMOVE_DUPLICATES _inc_env)
 
-    if (FABULOUS_STATIC_FOUND AND NOT FABULOUS_SHARED_FOUND)
-        set(FABULOUS_LIBRARIES ${FABULOUS_STATIC_LIBRARY} ${CBLAS_LIBRARIES} ${LAPACKE_LIBRARIES} "-lstdc++" "-lm")
-    elseif(FABULOUS_SHARED_FOUND)
-        set(FABULOUS_LIBRARIES ${FABULOUS_SHARED_LIBRARY} ${CBLAS_LIBRARIES} ${LAPACKE_LIBRARIES})
+  # set paths where to look for
+  set(PATH_TO_LOOK_FOR "${_inc_env}")
+
+  # Try to find the fabulous header in the given paths
+  # -------------------------------------------------
+  # call cmake macro to find the header path
+  if(FABULOUS_INCDIR)
+    set(FABULOUS_fabulous.h_DIRS "FABULOUS_fabulous.h_DIRS-NOTFOUND")
+    find_path(FABULOUS_fabulous.h_DIRS
+      NAMES fabulous.h
+      HINTS ${FABULOUS_INCDIR})
+  else()
+    if(FABULOUS_DIR)
+      set(FABULOUS_fabulous.h_DIRS "FABULOUS_fabulous.h_DIRS-NOTFOUND")
+      find_path(FABULOUS_fabulous.h_DIRS
+        NAMES fabulous.h
+        HINTS ${FABULOUS_DIR}
+        PATH_SUFFIXES "include" "include/fabulous")
+    else()
+      set(FABULOUS_fabulous.h_DIRS "FABULOUS_fabulous.h_DIRS-NOTFOUND")
+      find_path(FABULOUS_fabulous.h_DIRS
+        NAMES fabulous.h
+        HINTS ${PATH_TO_LOOK_FOR}
+        PATH_SUFFIXES "fabulous")
     endif()
-    fabulous_check_function_exists(FABULOUS fabulous_create)
-    find_package_handle_standard_args(
-        FABULOUS DEFAULT_MSG
-        FABULOUS_LIBRARIES FABULOUS_INCLUDE_DIRS FABULOUS_WORKS)
+  endif()
+  mark_as_advanced(FABULOUS_fabulous.h_DIRS)
+
+  # Add path to cmake variable
+  # ------------------------------------
+  if (FABULOUS_fabulous.h_DIRS)
+    set(FABULOUS_INCLUDE_DIRS "${FABULOUS_fabulous.h_DIRS}")
+  else ()
+    set(FABULOUS_INCLUDE_DIRS "FABULOUS_INCLUDE_DIRS-NOTFOUND")
+    if(NOT FABULOUS_FIND_QUIETLY)
+      message(STATUS "Looking for fabulous -- fabulous.h not found")
+    endif()
+  endif ()
+
+  if (FABULOUS_INCLUDE_DIRS)
+    list(REMOVE_DUPLICATES FABULOUS_INCLUDE_DIRS)
+  endif ()
+
+
+  # Looking for lib
+  # ---------------
+
+  # Add system library paths to search lib
+  # --------------------------------------
+  unset(_lib_env)
+  if(ENV_FABULOUS_LIBDIR)
+    list(APPEND _lib_env "${ENV_FABULOUS_LIBDIR}")
+  elseif(ENV_FABULOUS_DIR)
+    list(APPEND _lib_env "${ENV_FABULOUS_DIR}")
+    list(APPEND _lib_env "${ENV_FABULOUS_DIR}/lib")
+  else()
+    if(WIN32)
+      string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    else()
+      if(APPLE)
+        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+      else()
+        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+      endif()
+      list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+      list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+    endif()
+  endif()
+  list(REMOVE_DUPLICATES _lib_env)
+
+  # set paths where to look for
+  set(PATH_TO_LOOK_FOR "${_lib_env}")
+
+  # Try to find the fabulous lib in the given paths
+  # ----------------------------------------------
+
+  # call cmake macro to find the lib path
+  if(FABULOUS_LIBDIR)
+    set(FABULOUS_fabulous_LIBRARY "FABULOUS_fabulous_LIBRARY-NOTFOUND")
+    find_library(FABULOUS_fabulous_LIBRARY
+      NAMES fabulous
+      HINTS ${FABULOUS_LIBDIR})
+  else()
+    if(FABULOUS_DIR)
+      set(FABULOUS_fabulous_LIBRARY "FABULOUS_fabulous_LIBRARY-NOTFOUND")
+      find_library(FABULOUS_fabulous_LIBRARY
+        NAMES fabulous
+        HINTS ${FABULOUS_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
+    else()
+      set(FABULOUS_fabulous_LIBRARY "FABULOUS_fabulous_LIBRARY-NOTFOUND")
+      find_library(FABULOUS_fabulous_LIBRARY
+        NAMES fabulous
+        HINTS ${PATH_TO_LOOK_FOR})
+    endif()
+  endif()
+  mark_as_advanced(FABULOUS_fabulous_LIBRARY)
+
+  # If found, add path to cmake variable
+  # ------------------------------------
+  if (FABULOUS_fabulous_LIBRARY)
+    get_filename_component(fabulous_lib_path ${FABULOUS_fabulous_LIBRARY} PATH)
+    # set cmake variables (respects naming convention)
+    set(FABULOUS_LIBRARIES    "${FABULOUS_fabulous_LIBRARY}")
+    set(FABULOUS_LIBRARY_DIRS "${fabulous_lib_path}")
+  else ()
+    set(FABULOUS_LIBRARIES    "FABULOUS_LIBRARIES-NOTFOUND")
+    set(FABULOUS_LIBRARY_DIRS "FABULOUS_LIBRARY_DIRS-NOTFOUND")
+    if(NOT FABULOUS_FIND_QUIETLY)
+      message(STATUS "Looking for fabulous -- lib fabulous not found")
+    endif()
+  endif ()
+
+  if (FABULOUS_LIBRARY_DIRS)
+    list(REMOVE_DUPLICATES FABULOUS_LIBRARY_DIRS)
+  endif ()
+
+endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_FOUND) OR (FABULOUS_GIVEN_BY_USER) )
+
+# check a function to validate the find
+if(FABULOUS_LIBRARIES)
+
+  set(REQUIRED_INCDIRS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
+  set(REQUIRED_LIBDIRS)
+  set(REQUIRED_LIBS)
+
+  # FABULOUS
+  if (FABULOUS_INCLUDE_DIRS)
+    set(REQUIRED_INCDIRS "${FABULOUS_INCLUDE_DIRS}")
+  endif()
+  if (FABULOUS_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS "${FABULOUS_CFLAGS_OTHER}")
+  endif()
+  if (FABULOUS_LDFLAGS_OTHER)
+    set(REQUIRED_LDFLAGS "${FABULOUS_LDFLAGS_OTHER}")
+  endif()
+  if (FABULOUS_LIBRARY_DIRS)
+    set(REQUIRED_LIBDIRS "${FABULOUS_LIBRARY_DIRS}")
+  endif()
+  set(REQUIRED_LIBS "${FABULOUS_LIBRARIES}")
+  # LAPACKE
+  if (LAPACKE_FOUND)
+    if (LAPACKE_INCLUDE_DIRS_DEP)
+      list(APPEND REQUIRED_INCDIRS "${LAPACKE_INCLUDE_DIRS_DEP}")
+    endif()
+    if (LAPACKE_CFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_FLAGS "${LAPACKE_CFLAGS_OTHER_DEP}")
+    endif()
+    if (LAPACKE_LDFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACKE_LDFLAGS_OTHER_DEP}")
+    endif()
+    if(LAPACKE_LIBRARY_DIRS_DEP)
+      list(APPEND REQUIRED_LIBDIRS "${LAPACKE_LIBRARY_DIRS_DEP}")
+    endif()
+    if (LAPACKE_LIBRARIES_DEP)
+      list(APPEND REQUIRED_LIBS "${LAPACKE_LIBRARIES_DEP}")
+    endif()
+  endif()
+  # CBLAS
+  if (CBLAS_FOUND)
+    if (CBLAS_INCLUDE_DIRS_DEP)
+      list(APPEND REQUIRED_INCDIRS "${CBLAS_INCLUDE_DIRS_DEP}")
+    endif()
+    if (CBLAS_CFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_FLAGS "${CBLAS_CFLAGS_OTHER_DEP}")
+    endif()
+    if (CBLAS_LDFLAGS_OTHER_DEP)
+      list(APPEND REQUIRED_LDFLAGS "${CBLAS_LDFLAGS_OTHER_DEP}")
+    endif()
+    if(CBLAS_LIBRARY_DIRS_DEP)
+      list(APPEND REQUIRED_LIBDIRS "${CBLAS_LIBRARY_DIRS_DEP}")
+    endif()
+    if (CBLAS_LIBRARIES_DEP)
+      list(APPEND REQUIRED_LIBS "${CBLAS_LIBRARIES_DEP}")
+    endif()
+  endif()
+  
+  # set required libraries for link
+  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+  if (REQUIRED_FLAGS)
+    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_LIBRARIES)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+
+  # test link
+  unset(FABULOUS_WORKS CACHE)
+  include(CheckFunctionExists)
+  check_function_exists(fabulous_solve FABULOUS_WORKS)
+  mark_as_advanced(FABULOUS_WORKS)
+
+  if(FABULOUS_WORKS)
+    # save link with dependencies
+    set(FABULOUS_LIBRARIES_DEP "${REQUIRED_LIBS}")
+    set(FABULOUS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
+    set(FABULOUS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+    set(FABULOUS_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+    set(FABULOUS_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+    list(REMOVE_DUPLICATES FABULOUS_LIBRARY_DIRS_DEP)
+    list(REMOVE_DUPLICATES FABULOUS_CFLAGS_OTHER_DEP)
+    list(REMOVE_DUPLICATES FABULOUS_LDFLAGS_OTHER_DEP)
+  else()
+    if(NOT FABULOUS_FIND_QUIETLY)
+      message(STATUS "Looking for fabulous : test of fabulous_topology_init with fabulous library fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endif(FABULOUS_LIBRARIES)
+
+if (FABULOUS_LIBRARIES)
+  if (FABULOUS_LIBRARY_DIRS)
+    list(GET FABULOUS_LIBRARY_DIRS 0 first_lib_path)
+  else()
+    list(GET FABULOUS_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+    set(FABULOUS_LIBRARY_DIRS "${first_lib_path}")
+  endif()
+  if (${first_lib_path} MATCHES "/lib(32|64)?$")
+    string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+    set(FABULOUS_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of FABULOUS library" FORCE)
+  else()
+    set(FABULOUS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of FABULOUS library" FORCE)
+  endif()
 endif()
+mark_as_advanced(FABULOUS_DIR)
+mark_as_advanced(FABULOUS_DIR_FOUND)
+
+# check that FABULOUS has been found
+# -------------------------------
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(FABULOUS DEFAULT_MSG
+  FABULOUS_LIBRARIES
+  FABULOUS_WORKS)
+

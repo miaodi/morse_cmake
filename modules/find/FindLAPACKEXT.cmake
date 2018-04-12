@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2017 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -28,11 +28,11 @@
 #  LAPACKEXT_LIBRARY_DIRS - Idem LAPACK_LIBRARY_DIRS
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2017 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -63,13 +63,11 @@ macro(find_package_lapack required)
 endmacro()
 
 # LAPACKEXT depends on BLAS
-if (NOT BLAS_FOUND)
-  if(LAPACKEXT_FIND_QUIETLY)
-    find_package(BLAS QUIET)
-  else()
-    find_package(BLAS)
-  endif()
-endif ()
+if(LAPACKEXT_FIND_QUIETLY)
+  find_package(BLASEXT QUIET)
+else()
+  find_package(BLASEXT)
+endif()
 
 if(NOT LAPACKEXT_FIND_QUIETLY)
   message(STATUS "In FindLAPACKEXT")
@@ -217,8 +215,6 @@ else()
   # This module sets the following variables:
   #  LAPACK_FOUND - set to true if a library implementing the LAPACK interface
   #    is found
-  #  LAPACK_LINKER_FLAGS - uncached list of required linker flags (excluding -l
-  #    and -L).
   #  LAPACK_LIBRARIES - uncached list of libraries (using full path name) to
   #    link against to use LAPACK
   #  LAPACK95_LIBRARIES - uncached list of libraries (using full path name)

@@ -18,20 +18,18 @@
 #
 # The following variables have been added to manage links with sequential or multithreaded
 # versions:
-#  BLAS_INCLUDE_DIRS       - BLAS include directories
-#  BLAS_LIBRARY_DIRS       - Link directories for BLAS libraries
-#  BLAS_SEQ_LIBRARIES      - BLAS component libraries to be linked (sequential)
-#  BLAS_SEQ_COMPILER_FLAGS - uncached list of required compiler flags (including -I for mkl headers).
-#  BLAS_SEQ_LINKER_FLAGS   - uncached list of required linker flags (excluding -l
-#    and -L)
-#  BLAS_PAR_LIBRARIES      - BLAS component libraries to be linked (multithreaded)
-#  BLAS_PAR_COMPILER_FLAGS - uncached list of required compiler flags (including -I for mkl headers)
-#  BLAS_PAR_LINKER_FLAGS   - uncached list of required linker flags (excluding -l
-#    and -L)
-#  BLASEXT_FOUND           - if a BLAS has been found
-#  BLASEXT_LIBRARIES       - Idem BLAS_LIBRARIES
-#  BLASEXT_INCLUDE_DIRS    - Idem BLAS_INCLUDE_DIRS
-#  BLASEXT_LIBRARY_DIRS    - Idem BLAS_LIBRARY_DIRS
+#  BLAS_INCLUDE_DIRS      - BLAS include directories
+#  BLAS_LIBRARY_DIRS      - Link directories for BLAS libraries
+#  BLAS_SEQ_LIBRARIES     - BLAS component libraries to be linked (sequential)
+#  BLAS_SEQ_CFLAGS_OTHER  - compiler flags without headers paths
+#  BLAS_SEQ_LDFLAGS_OTHER - linker flags without libraries
+#  BLAS_PAR_LIBRARIES     - BLAS component libraries to be linked (multithreaded)
+#  BLAS_PAR_CFLAGS_OTHER  - compiler flags without headers paths
+#  BLAS_PAR_LDFLAGS_OTHER - linker flags without libraries
+#  BLASEXT_FOUND          - if a BLAS has been found
+#  BLASEXT_LIBRARIES      - Idem BLAS_LIBRARIES
+#  BLASEXT_INCLUDE_DIRS   - Idem BLAS_INCLUDE_DIRS
+#  BLASEXT_LIBRARY_DIRS   - Idem BLAS_LIBRARY_DIRS
 
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -90,11 +88,9 @@ if(NOT BLASEXT_FIND_QUIETLY)
     "\n   ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic")
 endif()
 
-if (NOT BLAS_FOUND)
-  # First blas detection in order to decide if we should look for a
-  # multitheaded version
-  find_package_blas(0)
-endif ()
+# First blas detection in order to decide if we should look for a
+# multitheaded version
+find_package_blas(0)
 
 # detect the cases where SEQ and PAR libs are handled
 if(BLA_VENDOR STREQUAL "All" AND
@@ -206,11 +202,11 @@ if(BLA_VENDOR MATCHES "Intel*")
     find_package_blas(0)
     if(BLAS_FOUND)
       set(BLAS_SEQ_LIBRARIES "${BLAS_LIBRARIES}")
-      if (BLAS_COMPILER_FLAGS)
-        set (BLAS_SEQ_COMPILER_FLAGS "${BLAS_COMPILER_FLAGS}")
+      if (BLAS_CFLAGS_OTHER)
+        set (BLAS_SEQ_CFLAGS_OTHER "${BLAS_CFLAGS_OTHER}")
       endif()
-      if (BLAS_LINKER_FLAGS)
-        set (BLAS_SEQ_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
+      if (BLAS_LDFLAGS_OTHER)
+        set (BLAS_SEQ_LDFLAGS_OTHER "${BLAS_LDFLAGS_OTHER}")
       endif()
     else()
       set(BLAS_SEQ_LIBRARIES "${BLAS_SEQ_LIBRARIES-NOTFOUND}")
@@ -224,11 +220,11 @@ if(BLA_VENDOR MATCHES "Intel*")
     find_package_blas(0)
     if(BLAS_FOUND)
       set(BLAS_PAR_LIBRARIES "${BLAS_LIBRARIES}")
-      if (BLAS_COMPILER_FLAGS)
-        set (BLAS_PAR_COMPILER_FLAGS "${BLAS_COMPILER_FLAGS}")
+      if (BLAS_CFLAGS_OTHER)
+        set (BLAS_PAR_CFLAGS_OTHER "${BLAS_CFLAGS_OTHER}")
       endif()
-      if (BLAS_LINKER_FLAGS)
-        set (BLAS_PAR_LINKER_FLAGS "${BLAS_LINKER_FLAGS}")
+      if (BLAS_LDFLAGS_OTHER)
+        set (BLAS_PAR_LDFLAGS_OTHER "${BLAS_LDFLAGS_OTHER}")
       endif()
     else()
       set(BLAS_PAR_LIBRARIES "${BLAS_PAR_LIBRARIES-NOTFOUND}")
@@ -301,8 +297,8 @@ endif()
 # Reset pure BLAS cmake variables to the sequential case (arbitrary default)
 if(BLAS_SEQ_LIBRARIES)
   set(BLAS_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
-  set(BLAS_COMPILER_FLAGS "${BLAS_SEQ_COMPILER_FLAGS}")
-  set(BLAS_LINKER_FLAGS "${BLAS_SEQ_LINKER_FLAGS}")
+  set(BLAS_CFLAGS_OTHER "${BLAS_SEQ_CFLAGS_OTHER}")
+  set(BLAS_LDFLAGS_OTHER "${BLAS_SEQ_LDFLAGS_OTHER}")
 endif()
 
 # extract libs paths if not given by find_package(BLAS)

@@ -20,14 +20,18 @@
 #
 # This module finds headers and cblas library.
 # Results are reported in variables:
-#  CBLAS_FOUND            - True if headers and requested libraries were found
-#  CBLAS_INCLUDE_DIRS     - cblas include directories
-#  CBLAS_LIBRARY_DIRS     - Link directories for cblas libraries
-#  CBLAS_LIBRARIES        - cblas component libraries to be linked
-#  CBLAS_INCLUDE_DIRS_DEP - cblas + dependencies include directories
-#  CBLAS_LIBRARY_DIRS_DEP - cblas + dependencies link directories
-#  CBLAS_LIBRARIES_DEP    - cblas libraries + dependencies
-#  CBLAS_HAS_ZGEMM3M      - True if cblas contains zgemm3m fast complex mat-mat product
+#  CBLAS_FOUND             - True if headers and requested libraries were found
+#  CBLAS_CFLAGS_OTHER      - cblas compiler flags without headers paths
+#  CBLAS_LDFLAGS_OTHER     - cblas linker flags without libraries
+#  CBLAS_INCLUDE_DIRS      - cblas include directories
+#  CBLAS_LIBRARY_DIRS      - cblas link directories
+#  CBLAS_LIBRARIES         - cblas libraries to be linked (absolute path)
+#  CBLAS_CFLAGS_OTHER_DEP  - cblas + dependencies compiler flags without headers paths
+#  CBLAS_LDFLAGS_OTHER_DEP - cblas + dependencies linker flags without libraries
+#  CBLAS_INCLUDE_DIRS_DEP  - cblas + dependencies include directories
+#  CBLAS_LIBRARY_DIRS_DEP  - cblas + dependencies link directories
+#  CBLAS_LIBRARIES_DEP     - cblas + dependencies libraries
+#  CBLAS_HAS_ZGEMM3M       - True if cblas contains zgemm3m fast complex mat-mat product
 #
 #  CBLAS_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #  if found with pkg-config the following variables are set
@@ -98,12 +102,10 @@ endif()
 
 
 # CBLAS depends on BLAS anyway, try to find it
-if (NOT BLAS_FOUND)
-  if(CBLAS_FIND_REQUIRED)
-    find_package(BLASEXT REQUIRED)
-  else()
-    find_package(BLASEXT)
-  endif()
+if(CBLAS_FIND_REQUIRED)
+  find_package(BLAS REQUIRED)
+else()
+  find_package(BLAS)
 endif()
 
 
@@ -114,8 +116,9 @@ if (BLAS_FOUND)
     # check if a cblas function exists in the BLAS lib
     # this can be the case with libs such as MKL, ACML
     include(CheckFunctionExists)
-    set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LINKER_FLAGS};${BLAS_LIBRARIES}")
-    set(CMAKE_REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
+    set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LDFLAGS_OTHER};${BLAS_LIBRARIES}")
+    set(CMAKE_REQUIRED_FLAGS "${BLAS_CFLAGS_OTHER}")
+    set(CMAKE_REQUIRED_INCLUDES "${BLAS_INCLUDE_DIRS}")
     unset(CBLAS_WORKS CACHE)
     check_function_exists(cblas_dscal CBLAS_WORKS)
     check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
@@ -135,15 +138,9 @@ if (BLAS_FOUND)
       endif()
       # test succeeds: CBLAS is in BLAS
       set(CBLAS_LIBRARIES "${BLAS_LIBRARIES}")
-      set(CBLAS_LIBRARIES_DEP "${BLAS_LIBRARIES}")
-      if (BLAS_LIBRARY_DIRS)
-        set(CBLAS_LIBRARY_DIRS "${BLAS_LIBRARY_DIRS}")
-      endif()
-      if(BLAS_INCLUDE_DIRS)
-        set(CBLAS_INCLUDE_DIRS "${BLAS_INCLUDE_DIRS}")
-        set(CBLAS_INCLUDE_DIRS_DEP "${BLAS_INCLUDE_DIRS_DEP}")
-      endif()
+
     endif()
+
   endif (NOT CBLAS_STANDALONE)
 
   # test fails with blas: try to find CBLAS lib exterior to BLAS
@@ -166,7 +163,25 @@ if (BLAS_FOUND)
     find_package(PkgConfig QUIET)
     if( PKG_CONFIG_EXECUTABLE AND NOT CBLAS_GIVEN_BY_USER)
 
-      pkg_search_module(CBLAS cblas)
+      if (BLA_STATIC)
+        set(MKL_STR_BLA_STATIC "static")
+      else()
+        set(MKL_STR_BLA_STATIC "dynamic")
+      endif()
+      # try different blas
+      if (BLA_VENDOR STREQUAL "Intel10_64lp")
+        pkg_search_module(CBLAS mkl-${MKL_STR_BLA_STATIC}-lp64-iomp)
+      elseif(BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+        pkg_search_module(CBLAS mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+      elseif(BLA_VENDOR STREQUAL "Open")
+        pkg_search_module(CBLAS openblas)
+      elseif(BLA_VENDOR STREQUAL "Generic")
+        pkg_search_module(CBLAS cblas)
+      else()
+        pkg_search_module(CBLAS cblas)
+        pkg_search_module(CBLAS openblas)
+        pkg_search_module(CBLAS mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+      endif()
 
       if (NOT CBLAS_FIND_QUIETLY)
         if (CBLAS_FOUND AND CBLAS_LIBRARIES)
@@ -336,6 +351,7 @@ if (BLAS_FOUND)
   if(CBLAS_LIBRARIES)
 
     set(REQUIRED_INCDIRS)
+    set(REQUIRED_FLAGS)
     set(REQUIRED_LDFLAGS)
     set(REQUIRED_LIBDIRS)
     set(REQUIRED_LIBS)
@@ -345,10 +361,10 @@ if (BLAS_FOUND)
       set(REQUIRED_INCDIRS "${CBLAS_INCLUDE_DIRS}")
     endif()
     if (CBLAS_CFLAGS_OTHER)
-      list(APPEND REQUIRED_FLAGS "${CBLAS_CFLAGS_OTHER}")
+      set(REQUIRED_FLAGS "${CBLAS_CFLAGS_OTHER}")
     endif()
     if (CBLAS_LDFLAGS_OTHER)
-      list(APPEND REQUIRED_LDFLAGS "${CBLAS_LDFLAGS_OTHER}")
+      set(REQUIRED_LDFLAGS "${CBLAS_LDFLAGS_OTHER}")
     endif()
     if (CBLAS_LIBRARY_DIRS)
       set(REQUIRED_LIBDIRS "${CBLAS_LIBRARY_DIRS}")
@@ -358,11 +374,11 @@ if (BLAS_FOUND)
     if (BLAS_INCLUDE_DIRS)
       list(APPEND REQUIRED_INCDIRS "${BLAS_INCLUDE_DIRS}")
     endif()
-    if (BLAS_COMPILER_FLAGS)
-      list(APPEND REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
+    if (BLAS_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${BLAS_CFLAGS_OTHER}")
     endif()
-    if (BLAS_LINKER_FLAGS)
-      list(APPEND REQUIRED_LDFLAGS "${BLAS_LINKER_FLAGS}")
+    if (BLAS_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${BLAS_LDFLAGS_OTHER}")
     endif()
     if (BLAS_LIBRARY_DIRS)
       list(APPEND REQUIRED_LIBDIRS "${BLAS_LIBRARY_DIRS}")
@@ -371,12 +387,22 @@ if (BLAS_FOUND)
 
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+    if (REQUIRED_FLAGS)
+      set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
+      set(REQUIRED_FLAGS)
+      set(REQUIRED_DEFINITIONS)
+      foreach(_flag ${REQUIRED_FLAGS_COPY})
+        if (_flag MATCHES "^-D")
+         list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+        endif()
+        string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+        list(APPEND REQUIRED_FLAGS "${_flag}")
+      endforeach()
+    endif()
+    set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
     set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
     set(CMAKE_REQUIRED_LIBRARIES)
     list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-    foreach(lib_dir ${REQUIRED_LIBDIRS})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
     list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
     string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
@@ -399,13 +425,17 @@ if (BLAS_FOUND)
       set(CBLAS_LIBRARIES_DEP "${REQUIRED_LIBS}")
       set(CBLAS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
       set(CBLAS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+      set(CBLAS_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
+      set(CBLAS_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
       list(REMOVE_DUPLICATES CBLAS_LIBRARY_DIRS_DEP)
-      list(REMOVE_DUPLICATES CBLAS_INCLUDE_DIRS_DEP)
+      list(REMOVE_DUPLICATES CBLAS_CFLAGS_OTHER_DEP)
+      list(REMOVE_DUPLICATES CBLAS_LDFLAGS_OTHER_DEP)
     else()
       if(NOT CBLAS_FIND_QUIETLY)
         message(STATUS "Looking for cblas : test of cblas_dscal with cblas and blas libraries fails")
         message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
         message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
         message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
     endif()

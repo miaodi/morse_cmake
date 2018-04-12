@@ -18,14 +18,16 @@
 # This module sets the following variables:
 #  LAPACK_FOUND - set to true if a library implementing the LAPACK interface
 #    is found
-#  LAPACK_LINKER_FLAGS - uncached list of required linker flags (excluding -l
-#    and -L).
-#  LAPACK_LIBRARIES - uncached list of libraries (using full path name) to
-#    link against to use LAPACK
-#  LAPACK95_LIBRARIES - uncached list of libraries (using full path name) to
-#    link against to use LAPACK95
-#  LAPACK95_FOUND - set to true if a library implementing the LAPACK f95
-#    interface is found
+#  LAPACK_CFLAGS_OTHER      - lapack compiler flags without headers paths
+#  LAPACK_LDFLAGS_OTHER     - lapack linker flags without libraries
+#  LAPACK_INCLUDE_DIRS      - lapack include directories
+#  LAPACK_LIBRARY_DIRS      - lapack link directories
+#  LAPACK_LIBRARIES         - lapack libraries to be linked (absolute path)
+#  LAPACK_CFLAGS_OTHER_DEP  - lapack + dependencies compiler flags without headers paths
+#  LAPACK_LDFLAGS_OTHER_DEP - lapack + dependencies linker flags without libraries
+#  LAPACK_INCLUDE_DIRS_DEP  - lapack + dependencies include directories
+#  LAPACK_LIBRARY_DIRS_DEP  - lapack + dependencies link directories
+#  LAPACK_LIBRARIES_DEP     - lapack + dependencies libraries
 #  BLA_STATIC  if set on this determines what kind of linkage we do (static)
 #  BLA_VENDOR  if set checks only the specified vendor, if not set checks
 #     all the possibilities
@@ -282,6 +284,8 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
     else(UNIX AND BLA_STATIC)
       set(CMAKE_REQUIRED_LIBRARIES ${_flags} ${${LIBRARIES}} ${_blas} ${_threads})
     endif(UNIX AND BLA_STATIC)
+    set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
+    set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
     if (LAPACK_VERBOSE)
       message("${Cyan}LAPACK libs found. Try to compile symbol ${_name} with"
         "following libraries: ${CMAKE_REQUIRED_LIBRARIES}")
@@ -308,20 +312,18 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
 endmacro(Check_Lapack_Libraries)
 
 
-set(LAPACK_LINKER_FLAGS)
+set(LAPACK_LDFLAGS_OTHER)
 set(LAPACK_LIBRARIES)
 set(LAPACK95_LIBRARIES)
 
-if (NOT BLAS_FOUND)
-  if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
-    find_package(BLASEXT)
-  else(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
-    find_package(BLASEXT REQUIRED)
-  endif(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
-endif ()
+if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
+  find_package(BLAS)
+else(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
+  find_package(BLAS REQUIRED)
+endif(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
 
 if(BLAS_FOUND)
-  set(LAPACK_LINKER_FLAGS ${BLAS_LINKER_FLAGS})
+  set(LAPACK_INCLUDE_DIRS ${BLAS_INCLUDE_DIRS})
   if ($ENV{BLA_VENDOR} MATCHES ".+")
     set(BLA_VENDOR $ENV{BLA_VENDOR})
   else ($ENV{BLA_VENDOR} MATCHES ".+")
@@ -386,7 +388,25 @@ if(BLAS_FOUND)
   find_package(PkgConfig QUIET)
   if( PKG_CONFIG_EXECUTABLE AND NOT LAPACK_GIVEN_BY_USER AND BLA_VENDOR STREQUAL "All")
 
-    pkg_search_module(LAPACK lapack)
+    if (BLA_STATIC)
+      set(MKL_STR_BLA_STATIC "static")
+    else()
+      set(MKL_STR_BLA_STATIC "dynamic")
+    endif()
+    # try different blas
+    if (BLA_VENDOR STREQUAL "Intel10_64lp")
+      pkg_search_module(LAPACK mkl-${MKL_STR_BLA_STATIC}-lp64-iomp)
+    elseif(BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+      pkg_search_module(LAPACK mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+    elseif(BLA_VENDOR STREQUAL "Open")
+      pkg_search_module(LAPACK openblas)
+    elseif(BLA_VENDOR STREQUAL "Generic")
+      pkg_search_module(LAPACK lapack)
+    else()
+      pkg_search_module(LAPACK lapack)
+      pkg_search_module(LAPACK openblas)
+      pkg_search_module(LAPACK mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+    endif()
 
     if (NOT LAPACK_FIND_QUIETLY)
       if (LAPACK_FOUND AND LAPACK_LIBRARIES)
@@ -401,14 +421,6 @@ if(BLAS_FOUND)
     if (LAPACK_FOUND AND LAPACK_LIBRARIES)
       set(LAPACK_FOUND_WITH_PKGCONFIG "TRUE")
       find_pkgconfig_libraries_absolute_path(LAPACK)
-      if (BLA_STATIC)
-        set(LAPACK_LINKER_FLAGS "${LAPACK_STATIC_LDFLAGS_OTHER}")
-        set(LAPACK_COMPILER_FLAGS "${LAPACK_STATIC_CFLAGS_OTHER}")
-        set(LAPACK_LIBRARIES "${LAPACK_STATIC_LIBRARIES}")
-      else()
-        set(LAPACK_LINKER_FLAGS "${LAPACK_LDFLAGS_OTHER}")
-        set(LAPACK_COMPILER_FLAGS "${LAPACK_CFLAGS_OTHER}")
-      endif()
     else()
       set(LAPACK_FOUND_WITH_PKGCONFIG "FALSE")
     endif()
@@ -473,7 +485,7 @@ if(BLAS_FOUND)
                   "${CMAKE_THREAD_LIBS_INIT};${LM}"
                   )
                 if(_LIBRARIES)
-                  set(LAPACK_LINKER_FLAGS "${additional_flags}")
+                  set(LAPACK_LDFLAGS_OTHER "${additional_flags}")
                 endif()
           endif ()
           # Then try the search libs
@@ -489,7 +501,7 @@ if(BLAS_FOUND)
                     "${CMAKE_THREAD_LIBS_INIT};${LM}"
                     )
                   if(_LIBRARIES)
-                    set(LAPACK_LINKER_FLAGS "${additional_flags}")
+                    set(LAPACK_LDFLAGS_OTHER "${additional_flags}")
                   endif()
                 endif ()
           endforeach ()
@@ -789,6 +801,15 @@ if (LAPACK_FOUND)
   else()
     set(LAPACK_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of LAPACK library" FORCE)
   endif()
+  set(LAPACK_CFLAGS_OTHER_DEP "${LAPACK_CFLAGS_OTHER}" "${BLAS_CFLAGS_OTHER}")
+  set(LAPACK_LDFLAGS_OTHER_DEP "${LAPACK_LDFLAGS_OTHER}" "${BLAS_LDFLAGS_OTHER}")
+  set(LAPACK_INCLUDE_DIRS_DEP "${LAPACK_INCLUDE_DIRS}" "${BLAS_INCLUDE_DIRS}")
+  set(LAPACK_LIBRARY_DIRS_DEP "${LAPACK_LIBRARY_DIRS}" "${BLAS_LIBRARY_DIRS}")
+  set(LAPACK_LIBRARIES_DEP "${LAPACK_LIBRARIES}" "${BLAS_LIBRARIES}")
+  list(REMOVE_DUPLICATES LAPACK_CFLAGS_OTHER_DEP)
+  list(REMOVE_DUPLICATES LAPACK_LDFLAGS_OTHER_DEP)
+  list(REMOVE_DUPLICATES LAPACK_INCLUDE_DIRS_DEP)
+  list(REMOVE_DUPLICATES LAPACK_LIBRARY_DIRS_DEP)
 endif()
 mark_as_advanced(LAPACK_DIR)
 mark_as_advanced(LAPACK_DIR_FOUND)

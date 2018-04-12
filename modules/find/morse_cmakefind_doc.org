@@ -38,19 +38,13 @@ active users so that they know very well how the library is built how
 it is installed, etc.
 
 * How CMake is aware of these specific modules?
-~find_package(LIBNAME)~ rely on a CMake module file called
-/FindLIBNAME.cmake/ which should lies in a directory set in the CMake
-variable ~CMAKE_MODULE_PATH~. For example, ~FindLIBNAME.cmake~ is in the
-relative path ~./cmake_modules/FindLIBNAME.cmake~
+To use MORSE modules you should call the *MorseInit* module as follows:
 #+BEGIN_EXAMPLE
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(LIBNAME)
-#+END_EXAMPLE
-
-To use MORSE modules you can add the path to the modules in your CMake
-project like this
-#+BEGIN_EXAMPLE
-list(APPEND CMAKE_MODULE_PATH "${MORSE_DISTRIB_DIR}/cmake_modules/morse/find" )
+# For example if Morse CMake modules are located in ./cmake_modules/morse_cmake
+# append this directory to the list of directories containing CMake modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/morse_cmake/modules" )
+# Include the init module
+include(MorseInit)
 #+END_EXAMPLE
 
 * Internal mechanism: what a "find" mainly do, what are the paths scanned?
@@ -72,18 +66,18 @@ etc, sub-directories). The priority order is the following:
 4) Look into the following paths
    a) for headers:
       - scan the paths present in the following environment variables
-	~INCLUDE~, ~C_INCLUDE_PATH~, ~CPATH~, ~INCLUDE_PATH~
+        ~INCLUDE~, ~C_INCLUDE_PATH~, ~CPATH~, ~INCLUDE_PATH~
       - scan the system paths for headers: look into path present in
-	the CMake variables
-	~CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES~ and
-	~CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES~
+        the CMake variables
+        ~CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES~ and
+        ~CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES~
    b) for libraries:
       - scan the paths present in the following environment variables
-	~LIB~ (Windows), ~DYLD_LIBRARY_PATH~ (Mac OS X), ~LD_LIBRARY_PATH~ (Linux)
+        ~LIB~ (Windows), ~DYLD_LIBRARY_PATH~ (Mac OS X), ~LD_LIBRARY_PATH~ (Linux)
       - scan the system paths for headers: look into path present in
-	the CMake variables
-	~CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES~,
-	~CMAKE_C_IMPLICIT_LINK_DIRECTORIES~
+        the CMake variables
+        ~CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES~,
+        ~CMAKE_C_IMPLICIT_LINK_DIRECTORIES~
 
 When it is possible, compiler flags are also given to users. This last
 point suggest that the information can be found in the library

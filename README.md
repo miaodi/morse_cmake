@@ -23,17 +23,18 @@ See the file [morse_cmakefind_doc.org](modules/find/morse_cmakefind_doc.org).
 Installation
 ---------------------
 
+We recommend to use this project as a `git submodule` of your project.
+
+    # Example if morse_cmake is defined as a git submodule in ./cmake_modules/
+    git submodule add https://gitlab.inria.fr/solverstack/morse_cmake.git cmake_modules/morse_cmake
+
 To use MORSE modules you have to add the path to the modules in your
 CMake project and include the MorseInit module:
 
-    # Define where are located module files on your system
-    set(MORSE_CMAKE_MODULE_PATH "/where/is/morse_cmake" CACHE PATH "Path to morse_cmake sources")
-    # Append this directory to the list of directories containing CMake modules
-    list(APPEND CMAKE_MODULE_PATH "${MORSE_CMAKE_MODULE_PATH}/modules/" )
+    # Example if Morse CMake modules are located in ./cmake_modules/morse_cmake/modules
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/morse_cmake/modules" )
     # Include the init module
     include(MorseInit)
-
-We recommend to use this project as a `git submodule` of your project.
 
 Testing
 ---------------------

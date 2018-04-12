@@ -385,33 +385,32 @@ if(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
         endif ()
       endforeach ()
     endif ()
-  else()
-    # Generic SCALAPACK library
-    if ( NOT SCALAPACK_LIBRARIES )
-      check_scalapack_libraries(
-        SCALAPACK_LIBRARIES
-        SCALAPACK
-        pdgemm
-        ""
-        "scalapack" # scalapack lib to look for
-        "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}" # blas and lapack libs
-        "${MPI_Fortran_LIBRARIES}" # mpi libs
-        ""          # threads libs
-        )
-    endif ( NOT SCALAPACK_LIBRARIES )
-    if ( NOT SCALAPACK_LIBRARIES )
-      check_scalapack_libraries(
-        SCALAPACK_LIBRARIES
-        SCALAPACK
-        pdgemm
-        ""
-        "scalapack-openmpi" # scalapack lib to look for
-        "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}" # blas and lapack libs
-        "${MPI_Fortran_LIBRARIES}" # mpi libs
-        ""          # threads libs
-        )
-    endif ( NOT SCALAPACK_LIBRARIES )
   endif()
+  # Generic SCALAPACK library
+  if ( NOT SCALAPACK_LIBRARIES )
+    check_scalapack_libraries(
+      SCALAPACK_LIBRARIES
+      SCALAPACK
+      pdgemm
+      ""
+      "scalapack" # scalapack lib to look for
+      "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}" # blas and lapack libs
+      "${MPI_Fortran_LIBRARIES}" # mpi libs
+      ""          # threads libs
+      )
+  endif ( NOT SCALAPACK_LIBRARIES )
+  if ( NOT SCALAPACK_LIBRARIES )
+    check_scalapack_libraries(
+      SCALAPACK_LIBRARIES
+      SCALAPACK
+      pdgemm
+      ""
+      "scalapack-openmpi" # scalapack lib to look for
+      "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}" # blas and lapack libs
+      "${MPI_Fortran_LIBRARIES}" # mpi libs
+      ""          # threads libs
+      )
+  endif ( NOT SCALAPACK_LIBRARIES )
 else(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
   message(STATUS "SCALAPACK requires BLAS, LAPACK, and MPI")
 endif(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
@@ -504,10 +503,10 @@ if (SCALAPACK_LIBRARIES)
   set(SCALAPACK_INCLUDE_DIRS_DEP "${SCALAPACK_INCLUDE_DIRS}" "${LAPACK_INCLUDE_DIRS_DEP}")
   set(SCALAPACK_LIBRARY_DIRS_DEP "${SCALAPACK_LIBRARY_DIRS}" "${LAPACK_LIBRARY_DIRS_DEP}")
   set(SCALAPACK_LIBRARIES_DEP "${SCALAPACK_LIBRARIES}" "${LAPACK_LIBRARIES_DEP}" "${MPI_Fortran_LIBRARIES}")
-  list(REMOVE_DUPLICATES LAPACK_CFLAGS_OTHER_DEP)
-  list(REMOVE_DUPLICATES LAPACK_LDFLAGS_OTHER_DEP)
-  list(REMOVE_DUPLICATES LAPACK_INCLUDE_DIRS_DEP)
-  list(REMOVE_DUPLICATES LAPACK_LIBRARY_DIRS_DEP)
+  list(REMOVE_DUPLICATES SCALAPACK_CFLAGS_OTHER_DEP)
+  list(REMOVE_DUPLICATES SCALAPACK_LDFLAGS_OTHER_DEP)
+  list(REMOVE_DUPLICATES SCALAPACK_INCLUDE_DIRS_DEP)
+  list(REMOVE_DUPLICATES SCALAPACK_LIBRARY_DIRS_DEP)
 endif()
 mark_as_advanced(SCALAPACK_DIR)
 mark_as_advanced(SCALAPACK_DIR_FOUND)

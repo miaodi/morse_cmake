@@ -222,6 +222,19 @@ if (FFTW_LOOK_FOR_ESSL)
   endif()
 endif()
 
+
+if( THREADS_FOUND )
+  string(REGEX REPLACE "-l" "" THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
+  set(CMAKE_THREAD_LIBS_INIT)
+  foreach(_lib ${THREAD_LIBS})
+    find_library(THREADS_${_lib}_LIBRARY NAMES ${_lib} 
+      HINTS ${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES} ${CMAKE_C_IMPLICIT_LINK_DIRECTORIES})
+    if (THREADS_${_lib}_LIBRARY)
+      list(APPEND CMAKE_THREAD_LIBS_INIT ${THREADS_${_lib}_LIBRARY})
+    endif()
+  endforeach()
+endif ()
+  
 set(ENV_FFTW_DIR "$ENV{FFTW_DIR}")
 set(ENV_FFTW_INCDIR "$ENV{FFTW_INCDIR}")
 set(ENV_FFTW_LIBDIR "$ENV{FFTW_LIBDIR}")

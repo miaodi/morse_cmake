@@ -312,6 +312,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
       mark_as_advanced(CUDA_SDK_ROOT_DIR)
       mark_as_advanced(CUDA_TOOLKIT_ROOT_DIR)
       mark_as_advanced(CUDA_VERBOSE_BUILD)
+      string(REGEX REPLACE "-l" "" CUDA_LIBS "${CUDA_LIBRARIES}")
+      set(CUDA_LIBRARIES)
+      foreach(_lib ${CUDA_LIBS})
+        find_library(CUDA_${_lib}_LIBRARY NAMES ${_lib}
+          HINTS ${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES} ${CMAKE_C_IMPLICIT_LINK_DIRECTORIES})
+        if (CUDA_${_lib}_LIBRARY)
+          list(APPEND CUDA_LIBRARIES ${CUDA_${_lib}_LIBRARY})
+        endif()
+      endforeach()
     endif()
   endif()
 

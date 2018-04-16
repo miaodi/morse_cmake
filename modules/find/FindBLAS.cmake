@@ -593,7 +593,12 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
             list(APPEND BLAS_CFLAGS_OTHER "-m64")
           endif()
           if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
-            list(APPEND OMP_LIB "-ldl")
+            find_library(
+            DL_LIBRARY
+            NAMES dl
+            HINTS ${_libdir}
+            )
+            list(APPEND OMP_LIB "${DL_LIBRARY}")
           endif()
         endif()
 

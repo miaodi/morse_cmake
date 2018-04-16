@@ -22,8 +22,12 @@
 #    and -L).
 #  BLAS_CFLAGS_OTHER - list of required compiler flags (excluding -I).
 #  BLAS_INCLUDE_DIRS - include directories
-#  BLAS_LIBRARIES - list of libraries (using full path name) to
-#    link against to use BLAS
+#  BLAS_LIBRARIES    - list of libraries (using full path name) to
+#    link against to use BLAS, sequential or multithreaded version depending on BLA_VENDOR
+#  BLAS_LIBRARIES_SEQ - list of libraries (using full path name) to
+#    link against to use BLAS, sequential version (Intel MKL)
+#  BLAS_LIBRARIES_PAR - list of libraries (using full path name) to
+#    link against to use BLAS, multithreaded version (Intel MKL)
 #  BLAS95_LIBRARIES - list of libraries (using full path name)
 #    to link against to use BLAS95 interface
 #  BLAS95_FOUND - set to true if a library implementing the BLAS f95 interface
@@ -365,14 +369,21 @@ if( PKG_CONFIG_EXECUTABLE AND NOT BLAS_GIVEN_BY_USER )
   endif()
   # try different blas
   if (BLA_VENDOR STREQUAL "Intel10_64lp")
+    pkg_search_module(BLAS mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
+    if (BLAS_FOUND)
+      set (BLAS_VENDOR_FOUND "Intel MKL Sequential")
+      set (BLAS_LIBRARIES_SEQ "${BLAS_LIBRARIES}")
+    endif()
     pkg_search_module(BLAS mkl-${MKL_STR_BLA_STATIC}-lp64-iomp)
     if (BLAS_FOUND)
-      set (BLAS_VENDOR_FOUND "Intel MKL")
+      set (BLAS_VENDOR_FOUND "Intel MKL Multithreaded")
+      set (BLAS_LIBRARIES_PAR "${BLAS_LIBRARIES}")
     endif()
   elseif(BLA_VENDOR STREQUAL "Intel10_64lp_seq")
     pkg_search_module(BLAS mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
     if (BLAS_FOUND)
       set (BLAS_VENDOR_FOUND "Intel MKL")
+      set (BLAS_LIBRARIES_SEQ "${BLAS_LIBRARIES}")
     endif()
   elseif(BLA_VENDOR STREQUAL "Open")
     pkg_search_module(BLAS openblas)
@@ -386,9 +397,15 @@ if( PKG_CONFIG_EXECUTABLE AND NOT BLAS_GIVEN_BY_USER )
     endif()
   else()
     if (NOT BLAS_FOUND)
+      pkg_search_module(BLAS mkl-${MKL_STR_BLA_STATIC}-lp64-iomp)
+      if (BLAS_FOUND)
+        set (BLAS_VENDOR_FOUND "Intel MKL Multithreaded")
+        set (BLAS_LIBRARIES_PAR "${BLAS_LIBRARIES}")
+      endif()
       pkg_search_module(BLAS mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
       if (BLAS_FOUND)
-        set (BLAS_VENDOR_FOUND "Intel MKL")
+        set (BLAS_VENDOR_FOUND "Intel MKL Sequential")
+        set (BLAS_LIBRARIES_SEQ "${BLAS_LIBRARIES}")
       endif()
     endif()
     if (NOT BLAS_FOUND)
@@ -653,6 +670,10 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               list(APPEND BLAS_SEARCH_LIBS_WIN_THREAD
                 "libguide40 mkl_intel_thread${BLAS_mkl_DLL_SUFFIX}")
               # mkl >= 10.3
+              # sequential version
+              list(APPEND BLAS_SEARCH_LIBS_WIN_THREAD
+                "mkl_sequential${BLAS_mkl_DLL_SUFFIX}")
+              # multithreaded version
               list(APPEND BLAS_SEARCH_LIBS_WIN_THREAD
                 "libiomp5md mkl_intel_thread${BLAS_mkl_DLL_SUFFIX}")
             endif()
@@ -674,6 +695,10 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               list(APPEND BLAS_SEARCH_LIBS
                 "mkl_blas95 mkl_intel_lp64 mkl_intel_thread mkl_core guide")
               # mkl >= 10.3
+              # sequential version
+              list(APPEND BLAS_SEARCH_LIBS
+                "mkl_intel_lp64 mkl_sequential mkl_core")
+              # multithreaded version
               if (CMAKE_C_COMPILER_ID STREQUAL "Intel")
                 list(APPEND BLAS_SEARCH_LIBS
                   "mkl_blas95_lp64 mkl_intel_lp64 mkl_intel_thread mkl_core")
@@ -721,6 +746,10 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               list(APPEND BLAS_SEARCH_LIBS_WIN_THREAD
                 "libguide40 mkl_intel_thread${BLAS_mkl_DLL_SUFFIX}")
               # mkl >= 10.3
+              # sequential version
+              list(APPEND BLAS_SEARCH_LIBS_WIN_THREAD
+                "mkl_sequential${BLAS_mkl_DLL_SUFFIX}")
+              # multithreaded version
               list(APPEND BLAS_SEARCH_LIBS_WIN_THREAD
                 "libiomp5md mkl_intel_thread${BLAS_mkl_DLL_SUFFIX}")
             endif()
@@ -746,6 +775,10 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               list(APPEND BLAS_SEARCH_LIBS
                 "mkl_intel_lp64 mkl_intel_thread mkl_core guide")
               # mkl >= 10.3
+              # sequential version
+              list(APPEND BLAS_SEARCH_LIBS
+                "mkl_intel_lp64 mkl_sequential mkl_core")
+              # multithreaded version
               if (CMAKE_C_COMPILER_ID STREQUAL "Intel")
                 list(APPEND BLAS_SEARCH_LIBS
                   "mkl_intel_lp64 mkl_intel_thread mkl_core")
@@ -762,7 +795,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
                 set(OMP_LIB "")
               endif()
             endif ()
-            #older vesions of intel mkl libs
+            #older versions of intel mkl libs
             if (BLA_VENDOR STREQUAL "Intel" OR BLA_VENDOR STREQUAL "All")
               list(APPEND BLAS_SEARCH_LIBS
                 "mkl")
@@ -777,8 +810,14 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
 
         foreach (IT ${BLAS_SEARCH_LIBS})
           string(REPLACE " " ";" SEARCH_LIBS ${IT})
-          if (${_LIBRARIES})
-          else ()
+          # determine if we look at a sequential or multithreaded version
+          set(MKL_MT OFF)
+          foreach(_lib ${SEARCH_LIBS})
+            if (${_lib} MATCHES "thread")
+              set (MKL_MT ON)
+            endif()
+          endforeach()
+          if (MKL_MT)
             check_fortran_libraries(
               ${_LIBRARIES}
               BLAS
@@ -787,8 +826,22 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               "${SEARCH_LIBS}"
               "${OMP_LIB};${CMAKE_THREAD_LIBS_INIT};${LM}"
               )
-            if(_LIBRARIES)
-              set(BLAS_LDFLAGS_OTHER "${additional_flags}")
+          else()
+            check_fortran_libraries(
+              ${_LIBRARIES}
+              BLAS
+              ${BLAS_mkl_SEARCH_SYMBOL}
+              "${additional_flags}"
+              "${SEARCH_LIBS}"
+              "${CMAKE_THREAD_LIBS_INIT};${LM}"
+              )
+          endif()
+          if(${_LIBRARIES})
+            set(BLAS_LDFLAGS_OTHER "${additional_flags}")
+            if (MKL_MT)
+              set (BLAS_LIBRARIES_PAR "${${_LIBRARIES}}")
+            else()
+              set (BLAS_LIBRARIES_SEQ "${${_LIBRARIES}}")
             endif()
           endif()
         endforeach ()

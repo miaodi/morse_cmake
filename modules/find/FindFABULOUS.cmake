@@ -19,6 +19,7 @@
 #  FABULOUS_CFLAGS_OTHER      - fabulous compiler flags without headers paths
 #  FABULOUS_LDFLAGS_OTHER     - fabulous linker flags without libraries
 #  FABULOUS_INCLUDE_DIRS      - fabulous include directories
+#  FABULOUS_MODULE_DIRS       - fabulous module directories for Fortran API
 #  FABULOUS_LIBRARY_DIRS      - fabulous link directories
 #  FABULOUS_LIBRARIES         - fabulous libraries to be linked (absolute path)
 #  FABULOUS_CFLAGS_OTHER_DEP  - fabulous + dependencies compiler flags without headers paths
@@ -166,30 +167,41 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_FOUND
   # set paths where to look for
   set(PATH_TO_LOOK_FOR "${_inc_env}")
 
+  # List of files to find
+  set(FABULOUS_hdrs_to_find "fabulous.h;fabulous_mod.mod")
+
   # Try to find the fabulous header in the given paths
   # -------------------------------------------------
   # call cmake macro to find the header path
   if(FABULOUS_INCDIR)
-    set(FABULOUS_fabulous.h_DIRS "FABULOUS_fabulous.h_DIRS-NOTFOUND")
-    find_path(FABULOUS_fabulous.h_DIRS
-      NAMES fabulous.h
-      HINTS ${FABULOUS_INCDIR})
+    foreach(_file ${FABULOUS_hdrs_to_find})
+      set(FABULOUS_${_file}_DIRS "FABULOUS_${_file}_DIRS-NOTFOUND")
+      find_path(FABULOUS_${_file}_DIRS
+        NAMES ${_file}
+        HINTS "${FABULOUS_INCDIR}" "${FABULOUS_INCDIR}/fabulous")
+      mark_as_advanced(FABULOUS_${_file}_DIRS)
+    endforeach()
   else()
     if(FABULOUS_DIR)
-      set(FABULOUS_fabulous.h_DIRS "FABULOUS_fabulous.h_DIRS-NOTFOUND")
-      find_path(FABULOUS_fabulous.h_DIRS
-        NAMES fabulous.h
-        HINTS ${FABULOUS_DIR}
-        PATH_SUFFIXES "include" "include/fabulous")
+      foreach(_file ${FABULOUS_hdrs_to_find})
+        set(FABULOUS_${_file}_DIRS "FABULOUS_${_file}_DIRS-NOTFOUND")
+        find_path(FABULOUS_${_file}_DIRS
+          NAMES ${_file}
+          HINTS ${FABULOUS_DIR}
+          PATH_SUFFIXES "include" "include/fabulous")
+        mark_as_advanced(FABULOUS_${_file}_DIRS)
+      endforeach()
     else()
-      set(FABULOUS_fabulous.h_DIRS "FABULOUS_fabulous.h_DIRS-NOTFOUND")
-      find_path(FABULOUS_fabulous.h_DIRS
-        NAMES fabulous.h
-        HINTS ${PATH_TO_LOOK_FOR}
-        PATH_SUFFIXES "fabulous")
+      foreach(_file ${FABULOUS_hdrs_to_find})
+        set(FABULOUS_${_file}_DIRS "FABULOUS_${_file}_DIRS-NOTFOUND")
+        find_path(FABULOUS_${_file}_DIRS
+          NAMES ${_file}
+          HINTS ${PATH_TO_LOOK_FOR}
+          PATH_SUFFIXES "fabulous")
+        mark_as_advanced(FABULOUS_${_file}_DIRS)
+      endforeach()
     endif()
   endif()
-  mark_as_advanced(FABULOUS_fabulous.h_DIRS)
 
   # Add path to cmake variable
   # ------------------------------------
@@ -199,6 +211,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_FOUND
     set(FABULOUS_INCLUDE_DIRS "FABULOUS_INCLUDE_DIRS-NOTFOUND")
     if(NOT FABULOUS_FIND_QUIETLY)
       message(STATUS "Looking for fabulous -- fabulous.h not found")
+    endif()
+  endif ()
+  if (FABULOUS_fabulous_mod.mod_DIRS)
+    set(FABULOUS_MODULE_DIRS "${FABULOUS_fabulous_mod.mod_DIRS}")
+  else ()
+    set(FABULOUS_MODULE_DIRS "FABULOUS_MODULE_DIRS-NOTFOUND")
+    if(NOT FABULOUS_FIND_QUIETLY)
+      message(STATUS "Looking for fabulous -- fabulous_mod.mod not found")
     endif()
   endif ()
 

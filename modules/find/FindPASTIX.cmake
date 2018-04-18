@@ -45,6 +45,7 @@
 #  PASTIX_INCLUDE_DIRS      - pastix include directories
 #  PASTIX_LIBRARY_DIRS      - pastix link directories
 #  PASTIX_LIBRARIES         - pastix libraries to be linked (absolute path)
+#  PASTIX_LIBRARIES_FORTRAN - pastix Fortran libraries to be linked (absolute path)
 #  PASTIX_CFLAGS_OTHER_DEP  - pastix + dependencies compiler flags without headers paths
 #  PASTIX_LDFLAGS_OTHER_DEP - pastix + dependencies linker flags without libraries
 #  PASTIX_INCLUDE_DIRS_DEP  - pastix + dependencies include directories
@@ -895,6 +896,18 @@ if (PASTIX_LIBRARIES)
 endif()
 mark_as_advanced(PASTIX_DIR)
 mark_as_advanced(PASTIX_DIR_FOUND)
+
+if (PASTIX_LIBRARY_DIRS)
+  find_library(PASTIX_pastixf_LIBRARY
+            NAMES pastixf
+            HINTS ${PASTIX_LIBRARY_DIRS})
+  mark_as_advanced(PASTIX_pastixf_LIBRARY)
+  if (PASTIX_pastixf_LIBRARY)
+    set(PASTIX_LIBRARIES_FORTRAN ${PASTIX_pastixf_LIBRARY})
+  else()
+    set(PASTIX_LIBRARIES_FORTRAN "PASTIX_LIBRARIES_FORTRAN-NOTFOUND")
+  endif()
+endif()
 
 # check that PASTIX has been found
 # ---------------------------------

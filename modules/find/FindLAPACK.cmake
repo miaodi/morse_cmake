@@ -655,7 +655,7 @@ if(BLAS_FOUND)
           cheevd
           ""
           "esslsmp"
-          "${BLAS_PAR_LIBRARIES}"
+          "${BLAS_LIBRARIES}"
           ""
           )
         if(NOT LAPACK_FIND_QUIETLY)

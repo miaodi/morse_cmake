@@ -36,6 +36,7 @@
 #   - SCOTCH: to activate detection of PASTIX linked with SCOTCH
 #   - PTSCOTCH: to activate detection of PASTIX linked with SCOTCH
 #   - METIS: to activate detection of PASTIX linked with SCOTCH
+#   - FORTRAN: to provide Fortran libraries of PASTIX in LIBRARIES
 #
 # This module finds headers and pastix library.
 # Results are reported in variables:
@@ -111,6 +112,7 @@ set(PASTIX_LOOK_FOR_STARPU_FXT OFF)
 set(PASTIX_LOOK_FOR_SCOTCH ON)
 set(PASTIX_LOOK_FOR_PTSCOTCH OFF)
 set(PASTIX_LOOK_FOR_METIS OFF)
+set(PASTIX_LOOK_FOR_FORTRAN OFF)
 
 if( PASTIX_FIND_COMPONENTS )
   foreach( component ${PASTIX_FIND_COMPONENTS} )
@@ -148,6 +150,9 @@ if( PASTIX_FIND_COMPONENTS )
     endif()
     if (${component} STREQUAL "METIS")
       set(PASTIX_LOOK_FOR_METIS ON)
+    endif()
+    if (${component} STREQUAL "FORTRAN")
+      set(PASTIX_LOOK_FOR_FORTRAN ON)
     endif()
   endforeach()
 endif()
@@ -897,13 +902,15 @@ endif()
 mark_as_advanced(PASTIX_DIR)
 mark_as_advanced(PASTIX_DIR_FOUND)
 
-if (PASTIX_LIBRARY_DIRS)
+if (PASTIX_LOOK_FOR_FORTRAN)
   find_library(PASTIX_pastixf_LIBRARY
-            NAMES pastixf
-            HINTS ${PASTIX_LIBRARY_DIRS})
+               NAMES pastixf
+               HINTS ${PASTIX_LIBRARY_DIRS})
   mark_as_advanced(PASTIX_pastixf_LIBRARY)
   if (PASTIX_pastixf_LIBRARY)
     set(PASTIX_LIBRARIES_FORTRAN ${PASTIX_pastixf_LIBRARY})
+    list(INSERT PASTIX_LIBRARIES 0 "${PASTIX_LIBRARIES_FORTRAN}")
+    list(INSERT PASTIX_LIBRARIES_DEP 0 "${PASTIX_LIBRARIES_FORTRAN}")
   else()
     set(PASTIX_LIBRARIES_FORTRAN "PASTIX_LIBRARIES_FORTRAN-NOTFOUND")
   endif()
@@ -912,6 +919,13 @@ endif()
 # check that PASTIX has been found
 # ---------------------------------
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(PASTIX DEFAULT_MSG
-  PASTIX_LIBRARIES
-  PASTIX_WORKS)
+if (PASTIX_LOOK_FOR_FORTRAN)
+  find_package_handle_standard_args(PASTIX DEFAULT_MSG
+    PASTIX_LIBRARIES_FORTRAN
+    PASTIX_LIBRARIES
+    PASTIX_WORKS)
+else()
+  find_package_handle_standard_args(PASTIX DEFAULT_MSG
+    PASTIX_LIBRARIES
+    PASTIX_WORKS)
+endif()

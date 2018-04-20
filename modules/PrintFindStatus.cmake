@@ -79,8 +79,7 @@ macro(Print_Find_Header_Status _libname _header_to_find)
 	"Nor ${LIBNAME}_DIR neither ${LIBNAME}_INCDIR"
 	"are defined so that we looked for ${_header_to_find} in"
 	"system paths (INCLUDE, CPATH, C_INCLUDE_PATH,"
-	"INCLUDE_PATH, CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES"
-	", CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES)${ColourReset}")
+	"INCLUDE_PATH, CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES)${ColourReset}")
       if(_inc_env)
 	message("${Blue}${_header_to_find} has not been found in"
 	  "${_inc_env}${ColourReset}")
@@ -119,7 +118,6 @@ macro(Print_Find_Library_Status _libname _lib_to_find)
 	"are defined so that we looked for ${_lib_to_find} in"
 	"system paths (Linux: LD_LIBRARY_PATH, Windows: LIB,"
 	"Mac: DYLD_LIBRARY_PATH,"
-	"CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES,"
 	"CMAKE_C_IMPLICIT_LINK_DIRECTORIES)${ColourReset}")
       if(_lib_env)
 	message("${Yellow}${_lib_to_find} has not been found in"
@@ -157,7 +155,6 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
 	"are defined so that we look for ${_lib_to_find} in"
 	"system paths (Linux: LD_LIBRARY_PATH, Windows: LIB,"
 	"Mac: DYLD_LIBRARY_PATH,"
-	"CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES,"
 	"CMAKE_C_IMPLICIT_LINK_DIRECTORIES)${ColourReset}")
       if(_lib_env)
 	message("${Yellow}${_lib_to_find} has not been found in"

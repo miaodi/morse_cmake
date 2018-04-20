@@ -59,7 +59,6 @@ else()
   string(REPLACE ":" ";" _path_env "$ENV{PATH}")
   list(APPEND where_to_look "${_path_env}")
 endif()
-list(APPEND where_to_look "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
 list(APPEND where_to_look "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
 list(REMOVE_DUPLICATES where_to_look)
 

@@ -32,7 +32,6 @@ macro(FIND_PKGCONFIG_LIBRARIES_ABSOLUTE_PATH _prefix)
   else()
     string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
   endif()
-  list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
   list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
   # non static case
   set(${_prefix}_LIBRARIES_COPY "${${_prefix}_LIBRARIES}")

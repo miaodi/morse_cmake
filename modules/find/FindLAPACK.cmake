@@ -100,7 +100,6 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
         "are defined so that we look for ${_lib_to_find} in"
         "system paths (Linux: LD_LIBRARY_PATH, Windows: LIB,"
         "Mac: DYLD_LIBRARY_PATH,"
-        "CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES,"
         "CMAKE_C_IMPLICIT_LINK_DIRECTORIES)${ColourReset}")
       if(_lib_env)
         message("${Yellow}${_lib_to_find} has not been found in"
@@ -232,7 +231,6 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
         string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
       endif ()
       list(APPEND _libdir "${_libdir2}")
-      list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
     endif ()
   endif ()

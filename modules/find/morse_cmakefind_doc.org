@@ -68,16 +68,12 @@ etc, sub-directories). The priority order is the following:
       - scan the paths present in the following environment variables
         ~INCLUDE~, ~C_INCLUDE_PATH~, ~CPATH~, ~INCLUDE_PATH~
       - scan the system paths for headers: look into path present in
-        the CMake variables
-        ~CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES~ and
-        ~CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES~
+        the CMake variable ~CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES~
    b) for libraries:
       - scan the paths present in the following environment variables
         ~LIB~ (Windows), ~DYLD_LIBRARY_PATH~ (Mac OS X), ~LD_LIBRARY_PATH~ (Linux)
       - scan the system paths for headers: look into path present in
-        the CMake variables
-        ~CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES~,
-        ~CMAKE_C_IMPLICIT_LINK_DIRECTORIES~
+        the CMake variable ~CMAKE_C_IMPLICIT_LINK_DIRECTORIES~
 
 When it is possible, compiler flags are also given to users. This last
 point suggest that the information can be found in the library

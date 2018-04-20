@@ -32,7 +32,6 @@ macro(LIBRARIES_ABSOLUTE_PATH lib_list hints_paths)
   else()
     string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
   endif()
-  list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
   list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
   # copy the lib list 
   set (${lib_list}_COPY "${${lib_list}}")

@@ -82,7 +82,6 @@
 #     2) we look in environment variable BLAS_LIBDIR or BLAS_DIR (we guess the libdirs) if defined
 #     3) we look in common environnment variables depending on the system (INCLUDE, C_INCLUDE_PATH, CPATH - LIB, DYLD_LIBRARY_PATH, LD_LIBRARY_PATH)
 #     4) we look in common system paths depending on the system, see for example paths contained in the following cmake variables:
-#       - CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
 #       - CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_C_IMPLICIT_LINK_DIRECTORIES
 #
 
@@ -122,7 +121,6 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
         "are defined so that we look for ${_lib_to_find} in"
         "system paths (Linux: LD_LIBRARY_PATH, Windows: LIB,"
         "Mac: DYLD_LIBRARY_PATH,"
-        "CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES,"
         "CMAKE_C_IMPLICIT_LINK_DIRECTORIES)${ColourReset}")
       if(_lib_env)
         message("${Yellow}${_lib_to_find} has not been found in"
@@ -249,7 +247,6 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
         string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
       endif ()
       list(APPEND _libdir "${_libdir2}")
-      list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
     endif()
   endif ()
@@ -479,7 +476,6 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           list(APPEND _inc_env "${_path_env}")
         endif()
       endif()
-      list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
       list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
       list(REMOVE_DUPLICATES _inc_env)
 
@@ -528,7 +524,6 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
       else ()
         string(REPLACE ":" ";" _libdir "$ENV{LD_LIBRARY_PATH}")
       endif ()
-      list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
       # libiomp5
       # --------

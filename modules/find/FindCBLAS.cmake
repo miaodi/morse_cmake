@@ -71,7 +71,6 @@
 #     2) we look in environment variable CBLAS_LIBDIR or CBLAS_DIR (we guess the libdirs) if defined
 #     3) we look in common environnment variables depending on the system (INCLUDE, C_INCLUDE_PATH, CPATH - LIB, DYLD_LIBRARY_PATH, LD_LIBRARY_PATH)
 #     4) we look in common system paths depending on the system, see for example paths contained in the following cmake variables:
-#       - CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
 #       - CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_C_IMPLICIT_LINK_DIRECTORIES
 #
 
@@ -235,7 +234,6 @@ if (BLAS_FOUND)
           list(APPEND _inc_env "${_path_env}")
         endif()
       endif()
-      list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
       list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
       list(REMOVE_DUPLICATES _inc_env)
 
@@ -298,7 +296,6 @@ if (BLAS_FOUND)
           else()
             string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
           endif()
-          list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
           list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
         endif()
       endif()

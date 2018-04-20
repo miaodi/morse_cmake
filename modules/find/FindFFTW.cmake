@@ -422,7 +422,6 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
       list(APPEND _inc_env "${_path_env}")
     endif()
   endif()
-  list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
   list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
   list(REMOVE_DUPLICATES _inc_env)
 
@@ -511,7 +510,6 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
         string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
       endif()
       list(APPEND _lib_env "${_lib_env2}")
-      list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
     endif()
   endif()

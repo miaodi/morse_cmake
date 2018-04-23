@@ -174,15 +174,13 @@ endif()
 if (NOT PARSEC_FIND_QUIETLY)
   message(STATUS "Looking for PARSEC - Try to detect libdl")
 endif()
-set(PARSEC_DL_LIBRARIES "")
 find_library(
-  PARSEC_DL_LIBRARY
+  DL_LIBRARY
   NAMES dl
   )
-mark_as_advanced(PARSEC_DL_LIBRARY)
-if (PARSEC_DL_LIBRARY)
-  list(APPEND PARSEC_DL_LIBRARIES "${PARSEC_DL_LIBRARY}")
-  list(APPEND PARSEC_EXTRA_LIBRARIES "${PARSEC_DL_LIBRARY}")
+mark_as_advanced(DL_LIBRARY)
+if (DL_LIBRARY)
+  list(APPEND PARSEC_EXTRA_LIBRARIES "${DL_LIBRARY}")
 endif()
 
 # PARSEC may depend on HWLOC, try to find it

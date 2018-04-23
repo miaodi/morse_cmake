@@ -610,6 +610,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
             NAMES dl
             HINTS ${_libdir}
             )
+            mark_as_advanced(DL_LIBRARY)
             list(APPEND OMP_LIB "${DL_LIBRARY}")
           endif()
         endif()

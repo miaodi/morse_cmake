@@ -45,6 +45,9 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
+
 if (NOT HYPRE_FOUND)
   set(HYPRE_DIR "" CACHE PATH "Installation directory of HYPRE library")
   if (NOT HYPRE_FIND_QUIETLY)
@@ -222,6 +225,7 @@ if(HYPRE_LIBRARIES)
   set(REQUIRED_LIBS "${HYPRE_LIBRARIES}")
 
   # set required libraries for link
+  finds_remove_duplicates()
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
   set(CMAKE_REQUIRED_LIBRARIES)
   foreach(lib_dir ${REQUIRED_LIBDIRS})

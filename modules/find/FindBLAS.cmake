@@ -98,60 +98,8 @@
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
-## Some macros to print status when search for headers and libs
-# This macro informs why the _lib_to_find file has not been found
-macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
-
-  # save _libname upper/lower case
-  string(TOUPPER ${_libname} LIBNAME)
-  string(TOLOWER ${_libname} libname)
-
-  # print status
-  #message(" ")
-  if(${LIBNAME}_LIBDIR)
-    message("${Yellow}${LIBNAME}_LIBDIR is defined but ${_lib_to_find}"
-      "has not been found in ${ARGN}${ColourReset}")
-  else()
-    if(${LIBNAME}_DIR)
-      message("${Yellow}${LIBNAME}_DIR is defined but ${_lib_to_find}"
-        "has not been found in ${ARGN}${ColourReset}")
-    else()
-      message("${Yellow}${_lib_to_find} not found."
-        "Nor ${LIBNAME}_DIR neither ${LIBNAME}_LIBDIR"
-        "are defined so that we look for ${_lib_to_find} in"
-        "system paths (Linux: LD_LIBRARY_PATH, Windows: LIB,"
-        "Mac: DYLD_LIBRARY_PATH,"
-        "CMAKE_C_IMPLICIT_LINK_DIRECTORIES)${ColourReset}")
-      if(_lib_env)
-        message("${Yellow}${_lib_to_find} has not been found in"
-          "${_lib_env}${ColourReset}")
-      endif()
-    endif()
-  endif()
-  message("${BoldYellow}Please indicate where to find ${_lib_to_find}. You have three options:\n"
-    "- Option 1: Provide the Installation directory of BLAS library with cmake option: -D${LIBNAME}_DIR=your/path/to/${libname}/\n"
-    "- Option 2: Provide the directory where to find the library with cmake option: -D${LIBNAME}_LIBDIR=your/path/to/${libname}/lib/\n"
-    "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
-    "- Option 4: If your library provides a PkgConfig file, make sure pkg-config finds your library${ColourReset}")
-
-endmacro()
-
-# This macro informs why the _lib_to_find file has not been found
-macro(Print_Find_Library_Blas_CheckFunc_Status _name)
-
-  # save _libname upper/lower case
-  string(TOUPPER ${_name} FUNCNAME)
-  string(TOLOWER ${_name} funcname)
-
-  # print status
-  #message(" ")
-  message("${Red}Libs have been found but check of symbol ${_name} failed "
-    "with following libraries ${ARGN}${ColourReset}")
-  message("${BoldRed}Please open your error file CMakeFiles/CMakeError.log"
-    "to figure out why it fails${ColourReset}")
-  #message(" ")
-
-endmacro()
+# Common macros to use in finds
+include(FindInit)
 
 if (NOT BLAS_FOUND)
   set(BLAS_DIR "" CACHE PATH "Installation directory of BLAS library")

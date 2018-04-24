@@ -91,6 +91,8 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
 
 if (NOT CBLAS_FOUND)
   set(CBLAS_DIR "" CACHE PATH "Installation directory of CBLAS library")
@@ -396,6 +398,7 @@ if (BLAS_FOUND)
         list(APPEND REQUIRED_FLAGS "${_flag}")
       endforeach()
     endif()
+    finds_remove_duplicates()
     set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
     set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
     set(CMAKE_REQUIRED_LIBRARIES)
@@ -424,9 +427,6 @@ if (BLAS_FOUND)
       set(CBLAS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
       set(CBLAS_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
       set(CBLAS_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
-      list(REMOVE_DUPLICATES CBLAS_LIBRARY_DIRS_DEP)
-      list(REMOVE_DUPLICATES CBLAS_CFLAGS_OTHER_DEP)
-      list(REMOVE_DUPLICATES CBLAS_LDFLAGS_OTHER_DEP)
     else()
       if(NOT CBLAS_FIND_QUIETLY)
         message(STATUS "Looking for cblas : test of cblas_dscal with cblas and blas libraries fails")

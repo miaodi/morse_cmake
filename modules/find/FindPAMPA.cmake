@@ -58,6 +58,9 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
+
 if (NOT PAMPA_FOUND)
   set(PAMPA_DIR "" CACHE PATH "Installation directory of PAMPA library")
   if (NOT PAMPA_FIND_QUIETLY)
@@ -303,6 +306,7 @@ if(PAMPA_LIBRARIES)
       list(APPEND REQUIRED_FLAGS "${_flag}")
     endforeach()
   endif()
+  finds_remove_duplicates()
   set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -323,9 +327,6 @@ if(PAMPA_LIBRARIES)
     set(PAMPA_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
     set(PAMPA_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
     set(PAMPA_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
-    list(REMOVE_DUPLICATES PAMPA_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES PAMPA_CFLAGS_OTHER_DEP)
-    list(REMOVE_DUPLICATES PAMPA_LDFLAGS_OTHER_DEP)
   else()
     if(NOT PAMPA_FIND_QUIETLY)
       message(STATUS "Looking for PAMPA : test of PAMPA_dmeshInit with PAMPA library fails")

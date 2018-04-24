@@ -27,6 +27,9 @@
 #
 ###
 
+# Path to Morse modules
+get_filename_component(MORSE_CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_FILE} DIRECTORY CACHE)
+
 # Global Morse options
 option(MORSE_ENABLE_WARNING       "Enable warning messages" OFF)
 option(MORSE_ENABLE_COVERAGE      "Enable flags for coverage test" OFF)
@@ -47,19 +50,6 @@ if (MORSE_ENABLE_COLOR_MESSAGE)
   include(ColorizeMessage)
 endif()
 
-# To find headers and libs
-include(FindHeadersAndLibs)
-
-# To transform relative path from pkg-config into absolute
-include(FindPkgconfigLibrariesAbsolutePath)
-
-# To transform relative path into absolute for a list of libraries
-include(LibrariesAbsolutePath)
-
-# Some macros to print status when search for headers and libs
-# PrintFindStatus.cmake is in cmake_modules/morse/find directory
-include(PrintFindStatus)
-
 # Define some auxilary flags
 include(AuxilaryFlags)
 
@@ -68,6 +58,9 @@ include(Ressources)
 
 # Add the path where we handle our FindFOO.cmake to seek for liraries
 list(APPEND CMAKE_MODULE_PATH ${MORSE_CMAKE_MODULE_PATH}/find)
+
+# To load some macros used in Finds (could be useful for other projects)
+include(FindInit)
 
 ##
 ## @end file MorseInit.cmake

@@ -35,6 +35,7 @@ include(FindHeadersAndLibs)
 
 # To transform relative path into absolute for a list of libraries
 include(LibrariesAbsolutePath)
+include(FindPkgconfigLibrariesAbsolutePath)
 
 # Some macros to print status when search for headers and libs
 include(PrintFindStatus)

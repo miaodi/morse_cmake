@@ -47,6 +47,9 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
+
 if (NOT METIS_FOUND)
   set(METIS_DIR "" CACHE PATH "Installation directory of METIS library")
   if (NOT METIS_FIND_QUIETLY)
@@ -210,7 +213,7 @@ if(METIS_LIBRARIES)
   if(M_LIBRARY)
     list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
   endif()
-
+  finds_remove_duplicates()
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
   set(CMAKE_REQUIRED_LIBRARIES)

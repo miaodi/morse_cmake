@@ -51,6 +51,9 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
+
 if (NOT SCOTCH_FOUND)
   set(SCOTCH_DIR "" CACHE PATH "Installation directory of SCOTCH library")
   if (NOT SCOTCH_FIND_QUIETLY)
@@ -270,7 +273,7 @@ if(SCOTCH_LIBRARIES)
   if(RT_LIBRARY)
     list(APPEND REQUIRED_LIBS "${RT_LIBRARY}")
   endif()
-
+  finds_remove_duplicates()
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
   set(CMAKE_REQUIRED_LIBRARIES)

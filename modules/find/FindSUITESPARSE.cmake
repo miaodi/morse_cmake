@@ -56,6 +56,8 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
 
 if (NOT SUITESPARSE_FOUND)
   set(SUITESPARSE_DIR "" CACHE PATH "Installation directory of SUITESPARSE library")
@@ -358,6 +360,7 @@ if(SUITESPARSE_LIBRARIES)
       list(APPEND REQUIRED_FLAGS "${_flag}")
     endforeach()
   endif()
+  finds_remove_duplicates()
   set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -378,9 +381,6 @@ if(SUITESPARSE_LIBRARIES)
     set(SUITESPARSE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
     set(SUITESPARSE_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
     set(SUITESPARSE_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
-    list(REMOVE_DUPLICATES SUITESPARSE_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES SUITESPARSE_CFLAGS_OTHER_DEP)
-    list(REMOVE_DUPLICATES SUITESPARSE_LDFLAGS_OTHER_DEP)
   else()
     if(NOT SUITESPARSE_FIND_QUIETLY)
       message(STATUS "Looking for SUITESPARSE : test of symbol SuiteSparse_start fails")

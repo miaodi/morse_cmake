@@ -83,6 +83,9 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
+
 if (NOT LAPACKE_FOUND)
   set(LAPACKE_DIR "" CACHE PATH "Installation directory of LAPACKE library")
   if (NOT LAPACKE_FIND_QUIETLY)
@@ -100,7 +103,16 @@ if( LAPACKE_FIND_COMPONENTS )
   endforeach()
 endif()
 
-# LAPACKE depends on LAPACK anyway, try to find it
+# LAPACKE may depend on TMG, try to find it
+if (LAPACKE_WITH_TMG)
+  if(LAPACKE_FIND_REQUIRED)
+    find_package(TMG REQUIRED)
+  else()
+    find_package(TMG)
+  endif()
+endif()
+
+# LAPACKE depends on LAPACK, try to find it
 if(LAPACKE_FIND_REQUIRED)
   find_package(LAPACK REQUIRED)
 else()
@@ -139,10 +151,11 @@ if (LAPACK_FOUND)
 
     # try with pkg-config
     set(ENV_LAPACKE_DIR "$ENV{LAPACKE_DIR}")
+    set(ENV_MKL_DIR "$ENV{MKLROOT}")
     set(ENV_LAPACKE_INCDIR "$ENV{LAPACKE_INCDIR}")
     set(ENV_LAPACKE_LIBDIR "$ENV{LAPACKE_LIBDIR}")
     set(LAPACKE_GIVEN_BY_USER "FALSE")
-    if ( LAPACKE_DIR OR ( LAPACKE_INCDIR AND LAPACKE_LIBDIR) OR ENV_LAPACKE_DIR OR (ENV_LAPACKE_INCDIR AND ENV_LAPACKE_LIBDIR) )
+    if ( LAPACKE_DIR OR ( LAPACKE_INCDIR AND LAPACKE_LIBDIR) OR ENV_LAPACKE_DIR OR ENV_MKL_DIR OR (ENV_LAPACKE_INCDIR AND ENV_LAPACKE_LIBDIR) )
       set(LAPACKE_GIVEN_BY_USER "TRUE")
     endif()
 
@@ -355,6 +368,22 @@ if (LAPACK_FOUND)
       set(REQUIRED_LIBDIRS "${LAPACKE_LIBRARY_DIRS}")
     endif()
     set(REQUIRED_LIBS "${LAPACKE_LIBRARIES}")
+    # TMG
+    if (LAPACKE_WITH_TMG)
+      if (TMG_INCLUDE_DIRS_DEP)
+        list(APPEND REQUIRED_INCDIRS "${TMG_INCLUDE_DIRS_DEP}")
+      endif()
+      if (TMG_CFLAGS_OTHER_DEP)
+        list(APPEND REQUIRED_FLAGS "${TMG_CFLAGS_OTHER_DEP}")
+      endif()
+      if (TMG_LDFLAGS_OTHER_DEP)
+        list(APPEND REQUIRED_LDFLAGS "${TMG_LDFLAGS_OTHER_DEP}")
+      endif()
+      if (TMG_LIBRARY_DIRS_DEP)
+        list(APPEND REQUIRED_LIBDIRS "${TMG_LIBRARY_DIRS_DEP}")
+      endif()
+      list(APPEND REQUIRED_LIBS "${TMG_LIBRARIES_DEP}")
+    endif()
     # LAPACK
     if (LAPACK_INCLUDE_DIRS_DEP)
       list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS_DEP}")
@@ -369,28 +398,6 @@ if (LAPACK_FOUND)
       list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS_DEP}")
     endif()
     list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES_DEP}")
-    # Fortran
-    if (CMAKE_C_COMPILER_ID MATCHES "GNU")
-      find_library(
-        FORTRAN_gfortran_LIBRARY
-        NAMES gfortran
-        HINTS ${_lib_env}
-        )
-      mark_as_advanced(FORTRAN_gfortran_LIBRARY)
-      if (FORTRAN_gfortran_LIBRARY)
-        list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
-      endif()
-    elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
-      find_library(
-        FORTRAN_ifcore_LIBRARY
-        NAMES ifcore
-        HINTS ${_lib_env}
-        )
-      mark_as_advanced(FORTRAN_ifcore_LIBRARY)
-      if (FORTRAN_ifcore_LIBRARY)
-        list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
-      endif()
-    endif()
     # m
     find_library(M_LIBRARY NAMES m HINTS ${_lib_env})
     mark_as_advanced(M_LIBRARY)
@@ -411,6 +418,7 @@ if (LAPACK_FOUND)
         list(APPEND REQUIRED_FLAGS "${_flag}")
       endforeach()
     endif()
+    finds_remove_duplicates()
     set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
     set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
     set(CMAKE_REQUIRED_LIBRARIES)
@@ -435,9 +443,6 @@ if (LAPACK_FOUND)
       set(LAPACKE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
       set(LAPACKE_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
       set(LAPACKE_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
-      list(REMOVE_DUPLICATES LAPACKE_LIBRARY_DIRS_DEP)
-      list(REMOVE_DUPLICATES LAPACKE_CFLAGS_OTHER_DEP)
-      list(REMOVE_DUPLICATES LAPACKE_LDFLAGS_OTHER_DEP)
     else()
       if(NOT LAPACKE_FIND_QUIETLY)
         message(STATUS "Looking for lapacke: test of LAPACKE_dgeqrf with lapacke and lapack libraries fails")

@@ -63,6 +63,8 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
 
 if(NOT MAGMA_FOUND)
   set(MAGMA_DIR "" CACHE PATH "Installation directory of MAGMA library")
@@ -361,7 +363,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) O
       list(APPEND REQUIRED_LIBDIRS "${CUDA_LIBRARY_DIRS}")
     endif()
     list(APPEND REQUIRED_LIBS "${CUDA_CUBLAS_LIBRARIES};${CUDA_LIBRARIES}")
-
+    finds_remove_duplicates()
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
     set(CMAKE_REQUIRED_LIBRARIES)
@@ -384,9 +386,6 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) O
       set(MAGMA_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
       set(MAGMA_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
       set(MAGMA_LINKER_FLAGS     "${REQUIRED_LDFLAGS}")
-      list(REMOVE_DUPLICATES MAGMA_LIBRARY_DIRS_DEP)
-      list(REMOVE_DUPLICATES MAGMA_INCLUDE_DIRS_DEP)
-      list(REMOVE_DUPLICATES MAGMA_LINKER_FLAGS)
     else()
       if(NOT MAGMA_FIND_QUIETLY)
         message(STATUS "Looking for magma : test of magma_dgetrf with

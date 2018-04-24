@@ -76,44 +76,8 @@
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
-
-## Some macros to print status when search for headers and libs
-# This macro informs why the _lib_to_find file has not been found
-macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
-
-  # save _libname upper/lower case
-  string(TOUPPER ${_libname} LIBNAME)
-  string(TOLOWER ${_libname} libname)
-
-  # print status
-  #message(" ")
-  if(${LIBNAME}_LIBDIR)
-    message("${Yellow}${LIBNAME}_LIBDIR is defined but ${_lib_to_find}"
-      "has not been found in ${ARGN}${ColourReset}")
-  else()
-    if(${LIBNAME}_DIR)
-      message("${Yellow}${LIBNAME}_DIR is defined but ${_lib_to_find}"
-        "has not been found in ${ARGN}${ColourReset}")
-    else()
-      message("${Yellow}${_lib_to_find} not found."
-        "Nor ${LIBNAME}_DIR neither ${LIBNAME}_LIBDIR"
-        "are defined so that we look for ${_lib_to_find} in"
-        "system paths (Linux: LD_LIBRARY_PATH, Windows: LIB,"
-        "Mac: DYLD_LIBRARY_PATH,"
-        "CMAKE_C_IMPLICIT_LINK_DIRECTORIES)${ColourReset}")
-      if(_lib_env)
-        message("${Yellow}${_lib_to_find} has not been found in"
-          "${_lib_env}${ColourReset}")
-      endif()
-    endif()
-  endif()
-  message("${BoldYellow}Please indicate where to find ${_lib_to_find}. You have three options:\n"
-    "- Option 1: Provide the installation directory of the library with cmake option: -D${LIBNAME}_DIR=your/path/to/${libname}/\n"
-    "- Option 2: Provide the directory where to find the library with cmake option: -D${LIBNAME}_LIBDIR=your/path/to/${libname}/lib/\n"
-    "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
-    "- Option 4: If your library provides a PkgConfig file, make sure pkg-config finds your library${ColourReset}")
-
-endmacro()
+# Common macros to use in finds
+include(FindInit)
 
 if (NOT LAPACK_FOUND)
   set(LAPACK_DIR "" CACHE PATH "Installation directory of LAPACK library")
@@ -381,10 +345,11 @@ if(BLAS_FOUND)
 
   # if not lapack in blas libs, try to find lapack with pkg-config
   set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
+  set(ENV_MKL_DIR "$ENV{MKLROOT}")
   set(ENV_LAPACK_INCDIR "$ENV{LAPACK_INCDIR}")
   set(ENV_LAPACK_LIBDIR "$ENV{LAPACK_LIBDIR}")
   set(LAPACK_GIVEN_BY_USER "FALSE")
-  if ( LAPACK_DIR OR ( LAPACK_INCDIR AND LAPACK_LIBDIR) OR ENV_LAPACK_DIR OR (ENV_LAPACK_INCDIR AND ENV_LAPACK_LIBDIR) )
+  if ( LAPACK_DIR OR ( LAPACK_INCDIR AND LAPACK_LIBDIR) OR ENV_LAPACK_DIR OR ENV_MKL_DIR OR (ENV_LAPACK_INCDIR AND ENV_LAPACK_LIBDIR) )
     set(LAPACK_GIVEN_BY_USER "TRUE")
   endif()
 

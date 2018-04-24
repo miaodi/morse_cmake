@@ -82,6 +82,9 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# Common macros to use in finds
+include(FindInit)
+
 if (NOT STARPU_FOUND)
   set(STARPU_DIR "" CACHE PATH "Installation directory of STARPU library")
   if (NOT STARPU_FIND_QUIETLY)
@@ -774,28 +777,6 @@ if(STARPU_LIBRARIES)
     endif()
     list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
   endif()
-  # Fortran
-  if (CMAKE_C_COMPILER_ID MATCHES "GNU")
-    find_library(
-      FORTRAN_gfortran_LIBRARY
-      NAMES gfortran
-      HINTS ${_lib_env}
-      )
-    mark_as_advanced(FORTRAN_gfortran_LIBRARY)
-    if (FORTRAN_gfortran_LIBRARY AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
-      list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
-    endif()
-  elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
-    find_library(
-      FORTRAN_ifcore_LIBRARY
-      NAMES ifcore
-      HINTS ${_lib_env}
-      )
-    mark_as_advanced(FORTRAN_ifcore_LIBRARY)
-    if (FORTRAN_ifcore_LIBRARY)
-      list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
-    endif()
-  endif()
   # EXTRA LIBS such that pthread, m, rt
   list(APPEND REQUIRED_LIBS ${STARPU_EXTRA_LIBRARIES})
 
@@ -813,6 +794,7 @@ if(STARPU_LIBRARIES)
       list(APPEND REQUIRED_FLAGS "${_flag}")
     endforeach()
   endif()
+  finds_remove_duplicates()
   set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -833,9 +815,6 @@ if(STARPU_LIBRARIES)
     set(STARPU_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
     set(STARPU_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
     set(STARPU_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
-    list(REMOVE_DUPLICATES STARPU_LIBRARY_DIRS_DEP)
-    list(REMOVE_DUPLICATES STARPU_CFLAGS_OTHER_DEP)
-    list(REMOVE_DUPLICATES STARPU_LDFLAGS_OTHER_DEP)
   else()
     if(NOT STARPU_FIND_QUIETLY)
       message(STATUS "Looking for starpu : test of starpu_init fails")

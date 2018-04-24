@@ -566,28 +566,6 @@ if(PARSEC_LIBRARIES)
     endif()
     list(APPEND REQUIRED_LIBS "${CUDA_CUBLAS_LIBRARIES};${CUDA_CUDART_LIBRARY};${CUDA_CUDA_LIBRARY}")
   endif()
-  # Fortran
-  if (CMAKE_C_COMPILER_ID MATCHES "GNU")
-    find_library(
-      FORTRAN_gfortran_LIBRARY
-      NAMES gfortran
-      HINTS ${_lib_env}
-      )
-    mark_as_advanced(FORTRAN_gfortran_LIBRARY)
-    if (FORTRAN_gfortran_LIBRARY)
-      list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
-    endif()
-  elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
-    find_library(
-      FORTRAN_ifcore_LIBRARY
-      NAMES ifcore
-      HINTS ${_lib_env}
-      )
-    mark_as_advanced(FORTRAN_ifcore_LIBRARY)
-    if (FORTRAN_ifcore_LIBRARY)
-      list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
-    endif()
-  endif()
   # EXTRA LIBS such that pthread, m, rt, dl
   list(APPEND REQUIRED_LIBS ${PARSEC_EXTRA_LIBRARIES})
 

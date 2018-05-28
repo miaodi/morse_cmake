@@ -89,14 +89,14 @@ if (ENABLE_CTEST)
       GTG
       HQR
       HWLOC
-      #HYPRE module not ready TODO: complete it
+      HYPRE
       LAPACK
       LAPACKE
       LAPACKEXT
       METIS
       MPIEXT
       MUMPS
-      #PAMPA not able to install it, link problem with ptscotch
+      PAMPA
       PAPI
       PARMETIS
       PARSEC

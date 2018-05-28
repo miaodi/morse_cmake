@@ -6,7 +6,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -16,12 +16,18 @@
 #  find_package(HYPRE
 #               [REQUIRED]) # Fail with error if hypre is not found
 #
+#  HYPRE depends on the following libraries:
+#   - MPI
+#
 # This module finds headers and hypre library.
 # Results are reported in variables:
-#  HYPRE_FOUND           - True if headers and requested libraries were found
-#  HYPRE_INCLUDE_DIRS    - hypre include directories
-#  HYPRE_LIBRARY_DIRS    - Link directories for hypre libraries
-#  HYPRE_LIBRARIES       - hypre component libraries to be linked
+#  HYPRE_FOUND             - True if headers and requested libraries were found
+#  HYPRE_INCLUDE_DIRS      - hypre include directories
+#  HYPRE_LIBRARY_DIRS      - Link directories for hypre libraries
+#  HYPRE_LIBRARIES         - hypre component libraries to be linked
+#  HYPRE_INCLUDE_DIRS_DEP  - hypre + dependencies include directories
+#  HYPRE_LIBRARY_DIRS_DEP  - hypre + dependencies link directories
+#  HYPRE_LIBRARIES_DEP     - hypre + dependencies libraries
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DHYPRE_DIR=path/to/hypre):
@@ -32,8 +38,8 @@
 # are not given as cmake variable: HYPRE_DIR, HYPRE_INCDIR, HYPRE_LIBDIR
 
 #=============================================================================
-# Copyright 2016 Inria
-# Copyright 2016 Florent Pruvost
+# Copyright 2016-2018 Inria
+# Copyright 2016-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -61,6 +67,13 @@ set(ENV_HYPRE_LIBDIR "$ENV{HYPRE_LIBDIR}")
 set(HYPRE_GIVEN_BY_USER "FALSE")
 if ( HYPRE_DIR OR ( HYPRE_INCDIR AND HYPRE_LIBDIR) OR ENV_HYPRE_DIR OR (ENV_HYPRE_INCDIR AND ENV_HYPRE_LIBDIR) )
   set(HYPRE_GIVEN_BY_USER "TRUE")
+endif()
+
+# HYPRE depends on MPI, try to find it
+if (HYPRE_FIND_REQUIRED)
+  find_package(MPI REQUIRED)
+else()
+  find_package(MPI)
 endif()
 
 # Looking for include
@@ -223,6 +236,33 @@ if(HYPRE_LIBRARIES)
     set(REQUIRED_LIBDIRS "${HYPRE_LIBRARY_DIRS}")
   endif()
   set(REQUIRED_LIBS "${HYPRE_LIBRARIES}")
+  # MPI
+  if (MPI_FOUND)
+    if (MPI_C_INCLUDE_PATH)
+      list(APPEND REQUIRED_INCDIRS "${MPI_C_INCLUDE_PATH}")
+    endif()
+    if (MPI_C_LINK_FLAGS)
+      if (${MPI_C_LINK_FLAGS} MATCHES "  -")
+        string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
+      endif()
+      list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${MPI_C_LIBRARIES}")
+  endif()
+  # libm
+  set(M_LIBRARY "M_LIBRARY-NOTFOUND")
+  find_library(M_LIBRARY NAMES m)
+  mark_as_advanced(M_LIBRARY)
+  if(M_LIBRARY)
+    list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
+  endif()
+  # libstdc++
+  set(stdcpp_LIBRARY "stdcpp_LIBRARY-NOTFOUND")
+  find_library(stdcpp_LIBRARY NAMES stdc++)
+  mark_as_advanced(stdcpp_LIBRARY)
+  if(stdcpp_LIBRARY)
+    list(APPEND REQUIRED_LIBS "${stdcpp_LIBRARY}")
+  endif()
 
   # set required libraries for link
   finds_remove_duplicates()
@@ -241,6 +281,10 @@ if(HYPRE_LIBRARIES)
   mark_as_advanced(HYPRE_WORKS)
 
   if(NOT HYPRE_WORKS)
+    # save link with dependencies
+    set(HYPRE_LIBRARIES_DEP "${REQUIRED_LIBS}")
+    set(HYPRE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
+    set(HYPRE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
     if(NOT HYPRE_FIND_QUIETLY)
       message(STATUS "Looking for HYPRE : test of HYPRE_StructGridCreate with HYPRE library fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")

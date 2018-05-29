@@ -280,11 +280,12 @@ if(HYPRE_LIBRARIES)
   check_function_exists(HYPRE_StructGridCreate HYPRE_WORKS)
   mark_as_advanced(HYPRE_WORKS)
 
-  if(NOT HYPRE_WORKS)
+  if(HYPRE_WORKS)
     # save link with dependencies
     set(HYPRE_LIBRARIES_DEP "${REQUIRED_LIBS}")
     set(HYPRE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
     set(HYPRE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+  else()
     if(NOT HYPRE_FIND_QUIETLY)
       message(STATUS "Looking for HYPRE : test of HYPRE_StructGridCreate with HYPRE library fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")

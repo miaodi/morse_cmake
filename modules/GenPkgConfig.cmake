@@ -14,6 +14,53 @@
 #  @author Mathieu Faverge
 #  @date 2018-06-21
 #
+#.rst:
+# GenPkgConfig
+# ------------
+#
+#   The GenPkgConfig module intend to provide functions to generate a
+#   pkg-config file with the right format, and a environment file that
+#   the user can source to setup its environment with the library
+#   installed.
+#
+# generate_pkgconfig_files(
+#   file1 file2 ...
+#   [PROJECTNAME name]
+#   [LIBS lib1 lib2 ...]
+#   [LIBS_PRIVATE lib1 lib2 ...]
+#   [REQUIRED pkg1 pkg2 ...]
+#   [REQUIRED_PRIVATE pkg1 pkg2 ...]
+# )
+# Where:
+#   - file1, file2, .. are the different input files for the
+#     pkg-config configuration files.
+#   - PROJECTNAME defines the prefix of the variables to use for the
+#     default following values ${PROJECTNAME}_PKGCONFIG_XXX with XXX
+#     being part of (LIBS, LIBS_PRIVATE, REQUIRED and
+#     REQUIRED_PRIVATE)
+#   - LIBS defines the libs of the current project for dynamic
+#     linking.
+#   - LIBS_PRIVATE defines the libs of the current project and its
+#     required dependencies not handled by pkg-config for static
+#     linking.
+#   - LIBS defines the additional pkg-config packages needed by the
+#     project for dynamic linking.
+#   - LIBS_PRIVATE defines the additional pkg-config packages needed
+#     by the project for static linking.
+#
+# The generated files are then installed in the subdirectory
+# lib/pkgconfig of the prefix directory.
+#
+# generate_env_files(
+#   [PROJECTNAME name]
+# )
+# Where:
+#   - PROJECTNAME defines the project name of the library if different
+#     from CMAKE_PROJECT_NAME.
+#
+# The generated file is installed in the subdirectory bin of the
+# prefix directory.
+#
 ###
 
 ###

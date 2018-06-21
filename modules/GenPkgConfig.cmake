@@ -176,7 +176,7 @@ macro(generate_pkgconfig_files)
 
   # Define required package
   # -----------------------
-  gpc_clean_lib_list(PASTIX)
+  gpc_clean_lib_list(${PROJECTNAME})
 
   foreach(f IN LISTS ARGN)
     get_filename_component(fname "${f}" NAME_WE)
@@ -199,7 +199,7 @@ endmacro(generate_pkgconfig_files)
 
 ###
 #
-# generate_env_file: generate files pastix.pc
+# generate_env_file: generate pkf-config files
 #
 ###
 macro(generate_env_file)

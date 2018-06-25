@@ -88,6 +88,13 @@ endmacro(gpc_convert_incstyle_to_pkgconfig)
 #
 ###
 macro(gpc_convert_libstyle_to_pkgconfig _liblist)
+
+  # Start by removing duplicates
+  list(REVERSE ${_liblist})
+  list(REMOVE_DUPLICATES ${_liblist})
+  list(REVERSE ${_liblist})
+
+  # Convert to pkg-config file format
   set(${_liblist}_CPY "${${_liblist}}")
   set(${_liblist} "")
   foreach(_dep ${${_liblist}_CPY})
@@ -121,16 +128,10 @@ macro(gpc_clean_lib_list _package)
     string(REPLACE ";" " " ${_package}_PKGCONFIG_INCS "${${_package}_PKGCONFIG_INCS}")
   endif()
   if ( ${_package}_PKGCONFIG_LIBS )
-    list(REVERSE ${_package}_PKGCONFIG_LIBS)
-    list(REMOVE_DUPLICATES ${_package}_PKGCONFIG_LIBS)
-    list(REVERSE ${_package}_PKGCONFIG_LIBS)
     gpc_convert_libstyle_to_pkgconfig(${_package}_PKGCONFIG_LIBS)
     string(REPLACE ";" " " ${_package}_PKGCONFIG_LIBS "${${_package}_PKGCONFIG_LIBS}")
   endif()
   if ( ${_package}_PKGCONFIG_LIBS_PRIVATE )
-    list(REVERSE ${_package}_PKGCONFIG_LIBS_PRIVATE)
-    list(REMOVE_DUPLICATES ${_package}_PKGCONFIG_LIBS_PRIVATE)
-    list(REVERSE ${_package}_PKGCONFIG_LIBS_PRIVATE)
     gpc_convert_libstyle_to_pkgconfig(${_package}_PKGCONFIG_LIBS_PRIVATE)
     string(REPLACE ";" " " ${_package}_PKGCONFIG_LIBS_PRIVATE "${${_package}_PKGCONFIG_LIBS_PRIVATE}")
   endif()

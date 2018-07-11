@@ -435,6 +435,9 @@ if (LAPACK_FOUND)
       check_function_exists(LAPACKE_dlatms_work LAPACKE_WORKS)
     endif()
     mark_as_advanced(LAPACKE_WORKS)
+    unset(LAPACKE_WITH_LASCL CACHE)
+    check_function_exists(LAPACKE_dlascl LAPACKE_WITH_LASCL)
+    mark_as_advanced(LAPACKE_WITH_LASCL)
 
     if(LAPACKE_WORKS)
       # save link with dependencies

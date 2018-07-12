@@ -48,12 +48,12 @@ subs = {
     ('DOUBLE PRECISION',          'COMPLEX_16'                       ),
     ('SINGLE PRECISION',          'COMPLEX'                          ),
     ('real',                      'complex'                          ),
-    ('float',                     'MORSE_Complex32_t'                ),
-    ('double',                    'MORSE_Complex64_t'                ),
-    ('float',                     'MORSE_voidComplex32_t'            ),
-    ('double',                    'MORSE_voidComplex64_t'            ),
-    ('MorseRealFloat',            'MorseComplexFloat'                ),
-    ('MorseRealDouble',           'MorseComplexDouble'               ),
+    ('float',                     'CHAMELEON_Complex32_t'            ),
+    ('double',                    'CHAMELEON_Complex64_t'            ),
+    ('float',                     'CHAMELEON_voidComplex32_t'        ),
+    ('double',                    'CHAMELEON_voidComplex64_t'        ),
+    ('RealFloat',                 'ComplexFloat'                     ),
+    ('RealDouble',                'ComplexDouble'                    ),
 
     # ----- CBLAS
     ('',                          'CBLAS_SADDR'                      ),
@@ -75,11 +75,11 @@ subs = {
     ('magma_get_d',               'magma_get_z'                      ),
     ('magma_get_s',               'magma_get_c'                      ),
 
-    # ----- Prefixes MORSE
-    ('MORSE_D',                   'MORSE_Z'                          ),
-    ('MORSE_S',                   'MORSE_C'                          ),
-    ('morse_get_d',               'morse_get_z'                      ),
-    ('morse_get_s',               'morse_get_c'                      ),
+    # ----- Prefixes CHAMELEON
+    ('CHAMELEON_D',               'CHAMELEON_Z'                      ),
+    ('CHAMELEON_S',               'CHAMELEON_C'                      ),
+    ('chameleon_get_d',           'chameleon_get_z'                  ),
+    ('chameleon_get_s',           'chameleon_get_c'                  ),
     ('TASK_S',                    'TASK_C'                           ),
     ('TASK_D',                    'TASK_Z'                           ),
     ('TASKS_S',                   'TASKS_C'                          ),
@@ -101,13 +101,11 @@ subs = {
     # ----- PLASMA / MAGMA
     ('magma_sdgetrs',             'magma_czgetrs'                    ),
 
-    # ----- MORSE
-    ('morse_sdgetrs',             'morse_czgetrs'                    ),
+    # ----- CHAMELEON
+    ('chameleon_sdgetrs',         'chameleon_czgetrs'                ),
 
     # ----- Constants
-    ('CblasTrans',                'CblasConjTrans'                   ),
-    ('MagmaTrans',                'MagmaConjTrans'                   ),
-    ('MorseTrans',                'MorseConjTrans'                   ),
+    ('Trans',                'ConjTrans'                             ),
 
     # ----- BLAS and LAPACK, lowercase, alphabetic order
     # copy & paste these to uppercase below and fix case.
@@ -269,23 +267,23 @@ subs = {
     ('', 'float',                'double',                'PLASMA_Complex32_t',              r'\bPLASMA_Complex64_t'               ),
     ('', 'float',                'double',                'PLASMA_voidComplex32_t',          r'\bPLASMA_voidComplex64_t'           ),
     ('', 'PlasmaRealFloat',      'PlasmaRealDouble',      'PlasmaComplexFloat',              r'\bPlasmaComplexDouble'              ),
-    # MORSE
-    ('', 'float',                'double',                'MORSE_Complex32_t',               r'\bMORSE_Complex64_t'                ),
-    ('', 'float',                'double',                'MORSE_voidComplex32_t',           r'\bMORSE_voidComplex64_t'            ),
-    ('', 'MorseRealFloat',       'MorseRealDouble',       'MorseComplexFloat',               r'\bMorseComplexDouble'               ),
+    # CHAMELEON
+    ('', 'float',                'double',                'CHAMELEON_Complex32_t',          r'\bCHAMELEON_Complex64_t'             ),
+    ('', 'float',                'double',                'CHAMELEON_voidComplex32_t',      r'\bCHAMELEON_voidComplex64_t'         ),
+    ('', 'ChamRealFloat',        'ChamRealDouble',        'ChamComplexFloat',               r'\bChamComplexDouble'                 ),
     # Pastix
-    ('int',             'float',           'double',          'pastix_complex32_t', r'\bpastix_complex64_t'),
-    ('int',             'float',           'double',          'float',              r'\bdouble'            ),
-    ('PastixPattern',   'PastixFloat',     'PastixDouble',    'PastixComplex32',    r'\bPastixComplex64'   ),
-    ('PastixPattern',   'PastixFloat',     'PastixDouble',    'PastixFloat',        r'\bPastixDouble'      ),
-    ('int',             'float',           'double',          'spm_complex32_t',    r'\bspm_complex64_t'),
-    ('SpmPattern',   'SpmFloat',     'SpmDouble',    'SpmComplex32',    r'\bSpmComplex64'   ),
-    ('SpmPattern',   'SpmFloat',     'SpmDouble',    'SpmFloat',        r'\bSpmDouble'      ),
-    ('', 'sizeof_real',          'sizeof_double',         'sizeof_complex',                  r'\bsizeof_complex_16'                ),  # before complex
-    ('', 'real',                 'real',                  'complex',                         r'\bcomplex'                          ),
-    ('', 'float',                'double',                'float2',                          r'\bdouble2'                          ),
-    ('', 'float',                'double',                'float',                           r'\bdouble'                           ),
-    ('', 'float',                'double',                'complex',                          'double_complex'                     ),
+    ('int',           'float',       'double',        'pastix_complex32_t', r'\bpastix_complex64_t'),
+    ('int',           'float',       'double',        'float',              r'\bdouble'            ),
+    ('PastixPattern', 'PastixFloat', 'PastixDouble',  'PastixComplex32',    r'\bPastixComplex64'   ),
+    ('PastixPattern', 'PastixFloat', 'PastixDouble',  'PastixFloat',        r'\bPastixDouble'      ),
+    ('int',           'float',       'double',        'spm_complex32_t',    r'\bspm_complex64_t'   ),
+    ('SpmPattern',    'SpmFloat',    'SpmDouble',     'SpmComplex32',       r'\bSpmComplex64'      ),
+    ('SpmPattern',    'SpmFloat',    'SpmDouble',     'SpmFloat',           r'\bSpmDouble'         ),
+    ('',              'sizeof_real', 'sizeof_double', 'sizeof_complex',     r'\bsizeof_complex_16' ),  # before complex
+    ('',              'real',        'real',          'complex',            r'\bcomplex'           ),
+    ('',              'float',       'double',        'float2',             r'\bdouble2'           ),
+    ('',              'float',       'double',        'float',              r'\bdouble'            ),
+    ('',              'float',       'double',        'complex',             'double_complex'      ),
 
     # ----- Text
     ('Symmetric', 'Symmetric',      'Symmetric',      'Hermitian',      'Hermitian'       ),
@@ -375,14 +373,15 @@ subs = {
     ('', 'Workspace_s',    'Workspace_d',    'Workspace_c',    'Workspace_z'     ),
     ('', 'workspace_s',    'workspace_d',    'workspace_c',    'workspace_z'     ),
 
-    # ----- Prefixes MORSE
-    ('', 'MORSE_S',        'MORSE_D',        'MORSE_C',        'MORSE_Z'         ),
-    ('', 'MORSE_sor',      'MORSE_dor',      'MORSE_cun',      'MORSE_zun'       ),
-    ('', 'MORSE_s',        'MORSE_d',        'MORSE_c',        'MORSE_z'         ),
-    ('', 'morse_get_s',    'morse_get_d',    'morse_get_c',    'morse_get_z'     ),
-    ('', 'morse_ps',       'morse_pd',       'morse_pc',       'morse_pz'        ),
-    ('', 'morse_s',        'morse_d',        'morse_c',        'morse_z'         ),
-    ('', 'morse_sdesc',    'morse_ddesc',    'morse_sdesc',    'morse_ddesc'     ),
+    # ----- Prefixes CHAMELEON
+    ('', 'CHAMELEON_S',        'CHAMELEON_D',        'CHAMELEON_C',        'CHAMELEON_Z'         ),
+    ('', 'CHAMELEON_sor',      'CHAMELEON_dor',      'CHAMELEON_cun',      'CHAMELEON_zun'       ),
+    ('', 'CHAMELEON_s',        'CHAMELEON_d',        'CHAMELEON_c',        'CHAMELEON_z'         ),
+    ('', 'chameleon_get_s',    'chameleon_get_d',    'chameleon_get_c',    'chameleon_get_z'     ),
+    ('', 'chameleon_ps',       'chameleon_pd',       'chameleon_pc',       'chameleon_pz'        ),
+    ('', 'chameleon_s',        'chameleon_d',        'chameleon_c',        'chameleon_z'         ),
+    ('', 'chameleon_sdesc',    'chameleon_ddesc',    'chameleon_sdesc',    'chameleon_ddesc'     ),
+    #
     ('', 'TASK_sasum',     'TASK_dasum',     'TASK_scasum',    'TASK_dzasum'     ),
     ('', 'TASK_ssyrfb',    'TASK_dsyrfb',    'TASK_cherfb',    'TASK_zherfb'     ),
     ('', 'TASK_stsmlq_sy', 'TASK_dtsmlq_sy', 'TASK_ctsmlq_he', 'TASK_ztsmlq_he'  ),
@@ -426,10 +425,10 @@ subs = {
     ('', 'cublasIsamax',   'cublasIdamax',   'cublasIsamax',   'cublasIdamax'    ),
     ('', 'cublasSnrm2',    'cublasDnrm2',    'cublasScnrm2',   'cublasDznrm2'    ),
 
-    # ----- PLASMA / MAGMA / MORSE
+    # ----- PLASMA / MAGMA / CHAMELEON
     ('', 'bsy2trc',        'bsy2trc',        'bhe2trc',        'bhe2trc'         ),
     ('', 'magma_ssqrt',    'magma_dsqrt',    'magma_ssqrt',    'magma_dsqrt'     ),
-    ('', 'morse_ssqrt',    'morse_dsqrt',    'morse_ssqrt',    'morse_dsqrt'     ),
+    ('', 'chameleon_ssqrt','chameleon_dsqrt','chameleon_ssqrt','chameleon_dsqrt' ),
     ('', 'SAUXILIARY',     'DAUXILIARY',     'CAUXILIARY',     'ZAUXILIARY'      ),
     ('', 'sauxiliary',     'dauxiliary',     'cauxiliary',     'zauxiliary'      ),
     ('', 'sbcyclic',       'dbcyclic',       'cbcyclic',       'zbcyclic'        ),
@@ -461,7 +460,7 @@ subs = {
     # ----- Constants
     ('CblasTrans',  'CblasTrans',  'CblasTrans',  'CblasConjTrans',  r'\bCblasConjTrans'  ),
     ('MagmaTrans',  'MagmaTrans',  'MagmaTrans',  'MagmaConjTrans',  r'\bMagmaConjTrans'  ),
-    ('MorseTrans',  'MorseTrans',  'MorseTrans',  'MorseConjTrans',  r'\bMorseConjTrans'  ),
+    ('ChamTrans',   'ChamTrans',   'ChamTrans',   'ChamConjTrans',   r'\bChamConjTrans'  ),
     ('PlasmaTrans', 'PlasmaTrans', 'PlasmaTrans', 'PlasmaConjTrans', r'\bPlasmaConjTrans' ),
     ('PastixTrans', 'PastixTrans', 'PastixTrans', 'PastixConjTrans', r'\bPastixConjTrans' ),
 

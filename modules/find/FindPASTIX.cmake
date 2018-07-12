@@ -20,6 +20,7 @@
 #   - MPI
 #   - HWLOC
 #   - BLAS
+#   - SPM
 #
 #  COMPONENTS are optional libraries PASTIX could be linked with,
 #  Use it to drive detection of a specific compilation chain
@@ -246,6 +247,17 @@ if (PASTIX_FIND_REQUIRED)
   find_package(BLAS REQUIRED)
 else()
   find_package(BLAS)
+endif()
+
+# PASTIX depends on SPM
+#------------------------
+if (NOT PASTIX_FIND_QUIETLY)
+  message(STATUS "Looking for PASTIX - Try to detect SPM")
+endif()
+if (PASTIX_FIND_REQUIRED)
+  find_package(SPM REQUIRED)
+else()
+  find_package(SPM)
 endif()
 
 # Optional dependencies
@@ -703,6 +715,22 @@ if(PASTIX_LIBRARIES)
       list(APPEND REQUIRED_LIBDIRS "${BLAS_LIBRARY_DIRS}")
     endif()
     list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
+  endif()
+  # SPM
+  if (SPM_FOUND)
+    if (SPM_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${SPM_INCLUDE_DIRS}")
+    endif()
+    if (SPM_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${SPM_CFLAGS_OTHER}")
+    endif()
+    if (SPM_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${SPM_LDFLAGS_OTHER}")
+    endif()
+    if (SPM_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${SPM_LIBRARY_DIRS}")
+    endif()
+    list(APPEND REQUIRED_LIBS "${SPM_LIBRARIES}")
   endif()
   # SCOTCH
   if (PASTIX_LOOK_FOR_SCOTCH AND SCOTCH_FOUND)

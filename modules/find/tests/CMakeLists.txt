@@ -100,13 +100,14 @@ if (ENABLE_CTEST)
       PAPI
       PARMETIS
       PARSEC
-      PASTIX
+      #PASTIX
       PETSc
       PTSCOTCH
       QUARK
       SCALAPACK
       SCOTCH
       SIMGRID
+      #SPM
       STARPU
       SUITESPARSE
       TMG)

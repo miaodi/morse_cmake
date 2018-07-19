@@ -399,7 +399,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) 
   # ----------------------------------------------
 
   # create list of libs to find
-  set(PARSEC_libs_to_find "parsec" "parsec-base" "parsec_distribution" "parsec_distribution_matrix")
+  set(PARSEC_libs_to_find "parsec")
 
   # call cmake macro to find the lib path
   if(PARSEC_LIBDIR)

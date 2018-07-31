@@ -759,7 +759,6 @@ if(STARPU_LIBRARIES)
       list(APPEND REQUIRED_LIBDIRS "${SIMGRID_LIBRARY_DIRS}")
     endif()
     list(APPEND REQUIRED_LIBS "${SIMGRID_LIBRARIES}")
-    list(APPEND REQUIRED_FLAGS "-include starpu_simgrid_wrap.h")
   endif()
   # BLAS
   if (BLAS_FOUND AND STARPU_LOOK_FOR_BLAS)

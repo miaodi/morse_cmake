@@ -413,35 +413,35 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
   # ---------------------------------------------------
   # call cmake macro to find the header path
   if(CHAMELEON_INCDIR)
-    set(CHAMELEON_morse.h_DIRS "CHAMELEON_morse.h_DIRS-NOTFOUND")
-    find_path(CHAMELEON_morse.h_DIRS
-      NAMES morse.h
+    set(CHAMELEON_chameleon.h_DIRS "CHAMELEON_chameleon.h_DIRS-NOTFOUND")
+    find_path(CHAMELEON_chameleon.h_DIRS
+      NAMES chameleon.h
       HINTS ${CHAMELEON_INCDIR})
   else()
     if(CHAMELEON_DIR)
-      set(CHAMELEON_morse.h_DIRS "CHAMELEON_morse.h_DIRS-NOTFOUND")
-      find_path(CHAMELEON_morse.h_DIRS
-        NAMES morse.h
+      set(CHAMELEON_chameleon.h_DIRS "CHAMELEON_chameleon.h_DIRS-NOTFOUND")
+      find_path(CHAMELEON_chameleon.h_DIRS
+        NAMES chameleon.h
         HINTS ${CHAMELEON_DIR}
         PATH_SUFFIXES "include" "include/chameleon")
     else()
-      set(CHAMELEON_morse.h_DIRS "CHAMELEON_morse.h_DIRS-NOTFOUND")
-      find_path(CHAMELEON_morse.h_DIRS
-        NAMES morse.h
+      set(CHAMELEON_chameleon.h_DIRS "CHAMELEON_chameleon.h_DIRS-NOTFOUND")
+      find_path(CHAMELEON_chameleon.h_DIRS
+        NAMES chameleon.h
         HINTS ${_inc_env}
         PATH_SUFFIXES "chameleon")
     endif()
   endif()
-  mark_as_advanced(CHAMELEON_morse.h_DIRS)
+  mark_as_advanced(CHAMELEON_chameleon.h_DIRS)
 
   # If found, add path to cmake variable
   # ------------------------------------
-  if (CHAMELEON_morse.h_DIRS)
-    set(CHAMELEON_INCLUDE_DIRS "${CHAMELEON_morse.h_DIRS}")
+  if (CHAMELEON_chameleon.h_DIRS)
+    set(CHAMELEON_INCLUDE_DIRS "${CHAMELEON_chameleon.h_DIRS}")
   else ()
     set(CHAMELEON_INCLUDE_DIRS "CHAMELEON_INCLUDE_DIRS-NOTFOUND")
     if(NOT CHAMELEON_FIND_QUIETLY)
-      message(STATUS "Looking for chameleon -- morse.h not found")
+      message(STATUS "Looking for chameleon -- chameleon.h not found")
     endif()
   endif()
 
@@ -459,16 +459,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
     list(APPEND _lib_env "${ENV_CHAMELEON_DIR}")
     list(APPEND _lib_env "${ENV_CHAMELEON_DIR}/lib")
   else()
+    list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
     if(WIN32)
-      string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+      string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
+    elseif(APPLE)
+      string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
     else()
-      if(APPLE)
-        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
-      else()
-        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
-      endif()
-      list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+      string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
     endif()
+    list(APPEND _lib_env "${_lib_env2}")
+    list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
   endif()
   list(REMOVE_DUPLICATES _lib_env)
 
@@ -720,7 +720,7 @@ if(CHAMELEON_LIBRARIES)
   # test link
   unset(CHAMELEON_WORKS CACHE)
   include(CheckFunctionExists)
-  check_function_exists(MORSE_Init CHAMELEON_WORKS)
+  check_function_exists(CHAMELEON_Init CHAMELEON_WORKS)
   mark_as_advanced(CHAMELEON_WORKS)
 
   if(CHAMELEON_WORKS)
@@ -732,7 +732,7 @@ if(CHAMELEON_LIBRARIES)
     set(CHAMELEON_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
   else()
     if(NOT CHAMELEON_FIND_QUIETLY)
-      message(STATUS "Looking for chameleon : test of MORSE_Init fails")
+      message(STATUS "Looking for chameleon : test of CHAMELEON_Init fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
       message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")

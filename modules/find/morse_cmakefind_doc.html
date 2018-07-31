@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>MORSE CMake "Find modules" documentation</title>
-<!-- 2016-09-15 jeu. 08:01 -->
+<!-- 2018-07-26 jeu. 15:38 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="HiePACS" />
@@ -114,22 +114,14 @@ it is installed, etc.
 <h2 id="sec-2"><span class="section-number-2">2</span> How CMake is aware of these specific modules?</h2>
 <div class="outline-text-2" id="text-2">
 <p>
-<code>find_package(LIBNAME)</code> rely on a CMake module file called
-<i>FindLIBNAME.cmake</i> which should lies in a directory set in the CMake
-variable <code>CMAKE_MODULE_PATH</code>. For example, <code>FindLIBNAME.cmake</code> is in the
-relative path <code>./cmake_modules/FindLIBNAME.cmake</code>
+To use MORSE modules you should call the <b>MorseInit</b> module as follows:
 </p>
 <pre class="example">
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(LIBNAME)
-</pre>
-
-<p>
-To use MORSE modules you can add the path to the modules in your CMake
-project like this
-</p>
-<pre class="example">
-list(APPEND CMAKE_MODULE_PATH "${MORSE_DISTRIB_DIR}/cmake_modules/morse/find" )
+# For example if Morse CMake modules are located in ./cmake_modules/morse_cmake
+# append this directory to the list of directories containing CMake modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/morse_cmake/modules" )
+# Include the init module
+include(MorseInit)
 </pre>
 </div>
 </div>
@@ -142,11 +134,12 @@ The general process consists in looking into some system paths known
 from CMake to find headers and libraries and define in output some
 CMake variables the user need to link with his dependency. Additionaly
 to the system paths, some environment variable can also be scanned
-like <code>LD_LIBRARY_PATH</code> and <code>CPATH</code>. A custom CMake cache variable
-<code>LIBNAME_DIR</code> is also introduced in our modules in order to let users
-indicate directly during the "configure" step a specific installation
-directory for the library (e.g. where are located the include/, lib/,
-etc, sub-directories). The priority order is the following:
+like <code>LIBRARY_PATH</code> <code>LD_LIBRARY_PATH</code> and <code>CPATH</code>. A custom CMake cache
+variable <code>LIBNAME_DIR</code> is also introduced in our modules in order to let
+users indicate directly during the "configure" step a specific
+installation directory for the library (e.g. where are located the
+include/, lib/, etc, sub-directories). The priority order is the
+following:
 </p>
 <ol class="org-ol">
 <li>The CMake variable <code>LIBNAME_DIR</code> is set or both <code>LIBNAME_INCDIR</code> and
@@ -166,19 +159,18 @@ environment (cf. PKG_CONFIG_PATH environment variable) and is used
 <code>INCLUDE</code>, <code>C_INCLUDE_PATH</code>, <code>CPATH</code>, <code>INCLUDE_PATH</code>
 </li>
 <li>scan the system paths for headers: look into path present in
-the CMake variable
-<code>CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES</code>
+the CMake variable <code>CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES</code>
 </li>
 </ul>
 </li>
 <li>for libraries:
 <ul class="org-ul">
 <li>scan the paths present in the following environment variables
-<code>LIB</code> (Windows), <code>DYLD_LIBRARY_PATH</code> (Mac OS X), <code>LD_LIBRARY_PATH</code> (Linux)
+<code>LIBRARY_PATH</code>, <code>LIB</code> (Windows), <code>DYLD_LIBRARY_PATH</code> (Mac OS X),
+<code>LD_LIBRARY_PATH</code> (Linux)
 </li>
 <li>scan the system paths for headers: look into path present in
-the CMake variable
-<code>CMAKE_C_IMPLICIT_LINK_DIRECTORIES</code>
+the CMake variable <code>CMAKE_C_IMPLICIT_LINK_DIRECTORIES</code>
 </li>
 </ul>
 </li>
@@ -216,7 +208,7 @@ during the test. The precise error can also be found in the
 <div class="outline-text-3" id="text-3-1">
 <p>
 If the user does not change the environment (do not modify environment
-variables like <code>LD_LIBRARY_PATH</code>), and gives no hint at all about the
+variables like <code>LIBRARY_PATH</code>, <code>LD_LIBRARY_PATH</code>), and gives no hint at all about the
 location of the libraries, the module will match the situation 4.2 and
 will look into system paths.
 </p>
@@ -274,8 +266,8 @@ can be used and the output variables are explained here.
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: HiePACS</p>
-<p class="date">Created: 2016-09-15 jeu. 08:01</p>
-<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
+<p class="date">Created: 2018-07-26 jeu. 15:38</p>
+<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 25.2.2 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

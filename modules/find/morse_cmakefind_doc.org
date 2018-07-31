@@ -52,11 +52,12 @@ The general process consists in looking into some system paths known
 from CMake to find headers and libraries and define in output some
 CMake variables the user need to link with his dependency. Additionaly
 to the system paths, some environment variable can also be scanned
-like ~LD_LIBRARY_PATH~ and ~CPATH~. A custom CMake cache variable
-~LIBNAME_DIR~ is also introduced in our modules in order to let users
-indicate directly during the "configure" step a specific installation
-directory for the library (e.g. where are located the include/, lib/,
-etc, sub-directories). The priority order is the following:
+like ~LIBRARY_PATH~ ~LD_LIBRARY_PATH~ and ~CPATH~. A custom CMake cache
+variable ~LIBNAME_DIR~ is also introduced in our modules in order to let
+users indicate directly during the "configure" step a specific
+installation directory for the library (e.g. where are located the
+include/, lib/, etc, sub-directories). The priority order is the
+following:
 1) The CMake variable ~LIBNAME_DIR~ is set or both ~LIBNAME_INCDIR~ and
    ~LIBNAME_LIBDIR~ are set
 2) The environment variable ~LIBNAME_DIR~ is set or both ~LIBNAME_INCDIR~ and
@@ -71,7 +72,8 @@ etc, sub-directories). The priority order is the following:
         the CMake variable ~CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES~
    b) for libraries:
       - scan the paths present in the following environment variables
-        ~LIB~ (Windows), ~DYLD_LIBRARY_PATH~ (Mac OS X), ~LD_LIBRARY_PATH~ (Linux)
+        ~LIBRARY_PATH~, ~LIB~ (Windows), ~DYLD_LIBRARY_PATH~ (Mac OS X),
+        ~LD_LIBRARY_PATH~ (Linux)
       - scan the system paths for headers: look into path present in
         the CMake variable ~CMAKE_C_IMPLICIT_LINK_DIRECTORIES~
 
@@ -95,7 +97,7 @@ during the test. The precise error can also be found in the
 
 ** How to act on the searching process?
 If the user does not change the environment (do not modify environment
-variables like ~LD_LIBRARY_PATH~), and gives no hint at all about the
+variables like ~LIBRARY_PATH~, ~LD_LIBRARY_PATH~), and gives no hint at all about the
 location of the libraries, the module will match the situation 4.2 and
 will look into system paths.
 

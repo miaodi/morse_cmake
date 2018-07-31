@@ -82,7 +82,7 @@ if (ENABLE_CTEST)
       CBLAS
       CHAMELEON
       CPPCHECK
-      EZTRACE
+      # EZTRACE # not installed yet, we should do it
       FABULOUS
       FFTW
       FXT

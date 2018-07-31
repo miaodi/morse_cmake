@@ -25,13 +25,15 @@
 # _prefix: the name of the CMake variable used when pkg_search_module was called
 # e.g. for pkg_search_module(BLAS blas) _prefix would be BLAS
 macro(FIND_PKGCONFIG_LIBRARIES_ABSOLUTE_PATH _prefix)
+  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
   if(WIN32)
-    string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
   elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
   else()
-    string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
   endif()
+  list(APPEND _lib_env "${_lib_env2}")
   list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
   # non static case
   set(${_prefix}_LIBRARIES_COPY "${${_prefix}_LIBRARIES}")

@@ -7,7 +7,6 @@ Find:
     paths:
      - modules/find/tests/build/Testing/
   script:
-    - source /etc/profile.d/spack.sh
     - cd modules/find/tests
     - mkdir -p build
     - cd build

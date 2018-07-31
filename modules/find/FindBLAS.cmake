@@ -80,7 +80,7 @@
 #     Here is the order of precedence:
 #     1) we look in cmake variable BLAS_LIBDIR or BLAS_DIR (we guess the libdirs) if defined
 #     2) we look in environment variable BLAS_LIBDIR or BLAS_DIR (we guess the libdirs) if defined
-#     3) we look in common environnment variables depending on the system (INCLUDE, C_INCLUDE_PATH, CPATH - LIB, DYLD_LIBRARY_PATH, LD_LIBRARY_PATH)
+#     3) we look in common environnment variables depending on the system (INCLUDE, C_INCLUDE_PATH, CPATH - LIB, DYLD_LIBRARY_PATH, LD_LIBRARY_PATH, LIBRARY_PATH)
 #     4) we look in common system paths depending on the system, see for example paths contained in the following cmake variables:
 #       - CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_C_IMPLICIT_LINK_DIRECTORIES
 #
@@ -187,6 +187,7 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
           list(APPEND _libdir "${ENV_MKLROOT}/lib/ia32")
         endif()
       endif()
+      list(APPEND _libdir "$ENV{LIBRARY_PATH}")
       if (WIN32)
         string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
       elseif (APPLE)
@@ -466,13 +467,15 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
 
+      list(APPEND _libdir "$ENV{LIBRARY_PATH}")
       if (WIN32)
-        string(REPLACE ":" ";" _libdir "$ENV{LIB}")
+        string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
       elseif (APPLE)
-        string(REPLACE ":" ";" _libdir "$ENV{DYLD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
       else ()
-        string(REPLACE ":" ";" _libdir "$ENV{LD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
       endif ()
+      list(APPEND _libdir "${_libdir2}")
       list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
       # libiomp5
       # --------
@@ -1445,7 +1448,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           "\nPlease indicate where to find blas libraries. You have three options:\n"
           "- Option 1: Provide the installation directory of BLAS library with cmake option: -DBLAS_DIR=your/path/to/blas\n"
           "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
-          "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
+          "- Option 3: Update your environment variable (LIBRARY_PATH or Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
           "\nTo follow libraries detection more precisely you can activate a verbose mode with -DBLAS_VERBOSE=ON at cmake configure."
           "\nYou could also specify a BLAS vendor to look for by setting -DBLA_VENDOR=blas_vendor_name."
           "\nList of possible BLAS vendor: Goto, ATLAS PhiPACK, CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL, Intel10_32 (intel mkl v10 32 bit),"
@@ -1487,7 +1490,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           "\nPlease indicate where to find blas libraries. You have three options:\n"
           "- Option 1: Provide the installation directory of BLAS library with cmake option: -DBLAS_DIR=your/path/to/blas\n"
           "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
-          "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
+          "- Option 3: Update your environment variable (LIBRARY_PATH or Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
           "\nTo follow libraries detection more precisely you can activate a verbose mode with -DBLAS_VERBOSE=ON at cmake configure."
           "\nYou could also specify a BLAS vendor to look for by setting -DBLA_VENDOR=blas_vendor_name."
           "\nList of possible BLAS vendor: Goto, ATLAS PhiPACK, CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL, Intel10_32 (intel mkl v10 32 bit),"

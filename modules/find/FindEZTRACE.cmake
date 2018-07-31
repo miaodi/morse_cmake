@@ -119,16 +119,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_FOUND)
   # Add system library paths to search lib
   # --------------------------------------
   unset(_lib_env)
+  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
   if(WIN32)
-    string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
+  elseif(APPLE)
+    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
   else()
-    if(APPLE)
-      string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
-    else()
-      string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
-    endif()
-    list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
   endif()
+  list(APPEND _lib_env "${_lib_env2}")
+  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
   list(REMOVE_DUPLICATES _lib_env)
 
   # set paths where to look for

@@ -25,13 +25,15 @@
 # hints_paths (input): additional paths to add when looking for libraries
 macro(LIBRARIES_ABSOLUTE_PATH lib_list hints_paths)
   # collect environment paths to dig 
+  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
   if(WIN32)
-    string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
   elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
   else()
-    string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
   endif()
+  list(APPEND _lib_env "${_lib_env2}")
   list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
   # copy the lib list 
   set (${lib_list}_COPY "${${lib_list}}")

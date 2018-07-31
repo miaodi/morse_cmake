@@ -169,6 +169,7 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
           list(APPEND _libdir "${ENV_MKLROOT}/lib/ia32")
         endif()
       endif()
+      list(APPEND _libdir "$ENV{LIBRARY_PATH}")
       if (WIN32)
         string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
       elseif (APPLE)

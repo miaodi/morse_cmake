@@ -77,6 +77,7 @@ if (ENABLE_CTEST)
   include(CTest)
 
   set(CTEST_PACKAGES_LIST
+      AL4SAN
       BLAS
       BLASEXT
       CBLAS

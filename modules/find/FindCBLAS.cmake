@@ -58,9 +58,7 @@
 # CBLAS could be directly embedded in BLAS library (ex: Intel MKL) so that
 # we test a cblas function with the blas libraries found and set CBLAS
 # variables to BLAS ones if test is successful. To skip this feature and
-# look for a stand alone cblas, please add the following in your
-# CMakeLists.txt before to call find_package(CBLAS):
-# set(CBLAS_STANDALONE TRUE)
+# look for a stand alone cblas, please set CBLAS_STANDALONE to TRUE
 ###
 # We handle different modes to find the dependency
 #

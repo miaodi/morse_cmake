@@ -62,6 +62,9 @@
 # Note that if BLAS_DIR is set, it will also look for lapack in it
 ### List of vendors (BLA_VENDOR) valid in this module
 ##  Intel(mkl), ACML, Apple, NAS, Generic
+# LAPACK could be directly embedded in BLAS library (ex: Intel MKL) so that
+# we test a lapack function with the blas libraries found. To skip this feature
+# and look for a stand alone lapack, please set LAPACK_STANDALONE to TRUE
 
 #=============================================================================
 # Copyright 2007-2009 Kitware, Inc.
@@ -281,11 +284,13 @@ set(LAPACK_LDFLAGS_OTHER)
 set(LAPACK_LIBRARIES)
 set(LAPACK95_LIBRARIES)
 
-if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
-  find_package(BLAS)
-else(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
-  find_package(BLAS REQUIRED)
-endif(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
+if (NOT BLAS_FOUND)
+  if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
+    find_package(BLAS)
+  else()
+    find_package(BLAS REQUIRED)
+  endif()
+endif()
 
 if(BLAS_FOUND)
   set(LAPACK_INCLUDE_DIRS ${BLAS_INCLUDE_DIRS})
@@ -308,8 +313,8 @@ if(BLAS_FOUND)
     endif()
   endif()
 
-  # check if blas lib contains lapack symbols
-  if (BLAS_LIBRARIES)
+  # check if blas found contains lapack symbols
+  if (BLAS_LIBRARIES AND NOT LAPACK_STANDALONE)
     if (BLAS_LIBRARIES_DEP)
       set(LIBRARIES ${BLAS_LIBRARIES_DEP})
     else()
@@ -332,17 +337,17 @@ if(BLAS_FOUND)
         set(LAPACK_LIBRARIES_PAR "${BLAS_LIBRARIES_PAR}")
       endif()
       if(NOT LAPACK_FIND_QUIETLY)
-            if(LAPACK_LIBRARIES)
-              message(STATUS "Looking for LAPACK in BLAS: found")
-            else()
-              message(STATUS "Looking for LAPACK in BLAS: not found")
-            endif()
-          endif()
+        if(LAPACK_LIBRARIES)
+          message(STATUS "Looking for LAPACK in BLAS: found")
+        else()
+          message(STATUS "Looking for LAPACK in BLAS: not found")
+        endif()
+      endif()
       if (LAPACK_LIBRARIES AND NOT LAPACK_VENDOR_FOUND)
-          set (LAPACK_VENDOR_FOUND "${BLAS_VENDOR_FOUND}")
+        set (LAPACK_VENDOR_FOUND "${BLAS_VENDOR_FOUND}")
       endif()
     endif()
-  endif(BLAS_LIBRARIES)
+  endif(BLAS_LIBRARIES AND NOT LAPACK_STANDALONE)
 
   # if not lapack in blas libs, try to find lapack with pkg-config
   set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
@@ -463,69 +468,63 @@ if(BLAS_FOUND)
           endif()
 
           if (BLA_F95)
-                set(LAPACK_mkl_SEARCH_SYMBOL "CHEEV")
-                set(_LIBRARIES LAPACK95_LIBRARIES)
-                set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
-
-                # old
-                list(APPEND LAPACK_SEARCH_LIBS
-                  "mkl_lapack95")
-                # new >= 10.3
-                list(APPEND LAPACK_SEARCH_LIBS
-                  "mkl_intel_c")
-                list(APPEND LAPACK_SEARCH_LIBS
-                  "mkl_intel_lp64")
+            set(LAPACK_mkl_SEARCH_SYMBOL "CHEEV")
+            set(_LIBRARIES LAPACK95_LIBRARIES)
+            set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
+            # old
+            list(APPEND LAPACK_SEARCH_LIBS "mkl_lapack95")
+            # new >= 10.3
+            list(APPEND LAPACK_SEARCH_LIBS "mkl_intel_c")
+            list(APPEND LAPACK_SEARCH_LIBS "mkl_intel_lp64")
           else(BLA_F95)
-                set(LAPACK_mkl_SEARCH_SYMBOL "cheev")
-                set(_LIBRARIES LAPACK_LIBRARIES)
-                set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
+            set(LAPACK_mkl_SEARCH_SYMBOL "cheev")
+            set(_LIBRARIES LAPACK_LIBRARIES)
+            set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
 
-                # old
-                list(APPEND LAPACK_SEARCH_LIBS
-                  "mkl_lapack")
-                # new >= 10.3
-                list(APPEND LAPACK_SEARCH_LIBS
-                  "mkl_gf_lp64")
+            # old
+            list(APPEND LAPACK_SEARCH_LIBS "mkl_lapack")
+            # new >= 10.3
+            list(APPEND LAPACK_SEARCH_LIBS "mkl_gf_lp64")
           endif(BLA_F95)
 
           # First try empty lapack libs
           if (NOT ${_LIBRARIES})
-                check_lapack_libraries(
-                  ${_LIBRARIES}
-                  LAPACK
-                  ${LAPACK_mkl_SEARCH_SYMBOL}
-                  "${additional_flags}"
-                  ""
-                  "${_BLAS_LIBRARIES}"
-                  "${CMAKE_THREAD_LIBS_INIT};${LM}"
-                  )
-                if(_LIBRARIES)
-                  set(LAPACK_LDFLAGS_OTHER "${additional_flags}")
-                endif()
+            check_lapack_libraries(
+              ${_LIBRARIES}
+              LAPACK
+              ${LAPACK_mkl_SEARCH_SYMBOL}
+              "${additional_flags}"
+              ""
+              "${_BLAS_LIBRARIES}"
+              "${CMAKE_THREAD_LIBS_INIT};${LM}"
+              )
+            if(_LIBRARIES)
+              set(LAPACK_LDFLAGS_OTHER "${additional_flags}")
+            endif()
           endif ()
           # Then try the search libs
           foreach (IT ${LAPACK_SEARCH_LIBS})
-                if (NOT ${_LIBRARIES})
-                  check_lapack_libraries(
-                    ${_LIBRARIES}
-                    LAPACK
-                    ${LAPACK_mkl_SEARCH_SYMBOL}
-                    "${additional_flags}"
-                    "${IT}"
-                    "${_BLAS_LIBRARIES}"
-                    "${CMAKE_THREAD_LIBS_INIT};${LM}"
-                    )
-                  if(_LIBRARIES)
-                    set(LAPACK_LDFLAGS_OTHER "${additional_flags}")
-                  endif()
-                endif ()
+            if (NOT ${_LIBRARIES})
+              check_lapack_libraries(
+                ${_LIBRARIES}
+                LAPACK
+                ${LAPACK_mkl_SEARCH_SYMBOL}
+                "${additional_flags}"
+                "${IT}"
+                "${_BLAS_LIBRARIES}"
+                "${CMAKE_THREAD_LIBS_INIT};${LM}"
+                )
+              if(_LIBRARIES)
+                set(LAPACK_LDFLAGS_OTHER "${additional_flags}")
+              endif()
+            endif ()
           endforeach ()
           if(NOT LAPACK_FIND_QUIETLY)
-                if(${_LIBRARIES})
-                  message(STATUS "Looking for MKL LAPACK: found")
-                else()
-                  message(STATUS "Looking for MKL LAPACK: not found")
-                endif()
+            if(${_LIBRARIES})
+              message(STATUS "Looking for MKL LAPACK: found")
+            else()
+              message(STATUS "Looking for MKL LAPACK: not found")
+            endif()
           endif(NOT LAPACK_FIND_QUIETLY)
           if(${_LIBRARIES} AND NOT LAPACK_VENDOR_FOUND)
             set (LAPACK_VENDOR_FOUND "Intel MKL")

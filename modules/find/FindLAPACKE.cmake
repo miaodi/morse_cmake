@@ -62,9 +62,7 @@
 # LAPACKE could be directly embedded in LAPACK library (ex: Intel MKL) so that
 # we test a lapacke function with the lapack libraries found and set LAPACKE
 # variables to LAPACK ones if test is successful. To skip this feature and
-# look for a stand alone lapacke, please add the following in your
-# CMakeLists.txt before to call find_package(LAPACKE):
-# set(LAPACKE_STANDALONE TRUE)
+# look for a stand alone lapacke, please set LAPACKE_STANDALONE to TRUE
 
 #=============================================================================
 # Copyright 2012-2018 Inria

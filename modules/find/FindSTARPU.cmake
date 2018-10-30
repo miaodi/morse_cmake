@@ -26,6 +26,7 @@
 #   - MAGMA: to activate the detection of StarPU linked with MAGMA
 #   - FXT: to activate the detection of StarPU linked with FxT
 #   - SIMGRID: to activate the detection of StarPU linked with SimGrid
+#   - FORTRAN: to activate the detection of the StarPU Fortran interface
 #
 # Results are reported in variables:
 #  STARPU_FOUND                  - True if headers and requested libraries were found
@@ -42,6 +43,7 @@
 #  STARPU_VERSION                - A human-readable string containing the version of the package found
 #  STARPU_VERSION_MAJOR          - The major version of the package found
 #  STARPU_VERSION_MINOR          - The minor version of the package found
+#  STARPU_FORTRAN_MOD            - Points to the StarPU Fortran interface module fstarpu_mod.f90
 #
 #  STARPU_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #  if found with pkg-config the following variables are set

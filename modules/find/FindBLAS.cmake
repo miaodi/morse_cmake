@@ -311,7 +311,7 @@ set(ENV_MKL_DIR "$ENV{MKLROOT}")
 set(ENV_BLAS_INCDIR "$ENV{BLAS_INCDIR}")
 set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
 set(BLAS_GIVEN_BY_USER "FALSE")
-if ( BLAS_LIBRARIES_USER OR BLAS_DIR OR ( BLAS_INCDIR AND BLAS_LIBDIR) OR ENV_BLAS_DIR OR ENV_MKL_DIR OR (ENV_BLAS_INCDIR AND ENV_BLAS_LIBDIR) )
+if ( BLAS_LIBRARIES_USER OR BLAS_DIR OR ( BLAS_INCDIR AND BLAS_LIBDIR) OR ENV_BLAS_DIR OR (ENV_BLAS_INCDIR AND ENV_BLAS_LIBDIR) )
   set(BLAS_GIVEN_BY_USER "TRUE")
 endif()
 
@@ -528,6 +528,18 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         else()
           set(LM "")
         endif()
+        # dl
+        find_library(
+          DL_LIBRARY
+          NAMES dl
+          HINTS ${_libdir}
+          )
+        mark_as_advanced(DL_LIBRARY)
+        if(DL_LIBRARY)
+          set(LDL "${DL_LIBRARY}")
+        else()
+          set(LDL "")
+        endif()
         # Fortran
         set(LGFORTRAN "")
         if (CMAKE_C_COMPILER_ID MATCHES "GNU")
@@ -552,6 +564,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           endif()
         endif()
         set(BLAS_CFLAGS_OTHER "")
+        # OpenMP
         if (BLA_VENDOR STREQUAL "Intel10_64lp")
           find_package(OpenMP REQUIRED)
         endif()
@@ -564,17 +577,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           else()
             list(APPEND BLAS_CFLAGS_OTHER "-m64")
           endif()
-          if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
-            find_library(
-            DL_LIBRARY
-            NAMES dl
-            HINTS ${_libdir}
-            )
-            mark_as_advanced(DL_LIBRARY)
-            list(APPEND OMP_LIB "${DL_LIBRARY}")
-          endif()
         endif()
-
         set(additional_flags "")
         if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
           set(additional_flags "-Wl,--no-as-needed")
@@ -776,7 +779,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               ${BLAS_mkl_SEARCH_SYMBOL}
               "${additional_flags}"
               "${SEARCH_LIBS}"
-              "${OMP_LIB};${CMAKE_THREAD_LIBS_INIT};${LM}"
+              "${OMP_LIB};${CMAKE_THREAD_LIBS_INIT};${LM};${LDL}"
               )
           else()
             check_fortran_libraries(
@@ -785,7 +788,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               ${BLAS_mkl_SEARCH_SYMBOL}
               "${additional_flags}"
               "${SEARCH_LIBS}"
-              "${CMAKE_THREAD_LIBS_INIT};${LM}"
+              "${CMAKE_THREAD_LIBS_INIT};${LM};${LDL}"
               )
           endif()
           if(${_LIBRARIES})
@@ -1536,6 +1539,10 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_blas_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 
 if (BLAS_FOUND)
   list(GET BLAS_LIBRARIES 0 first_lib)
+  # first lib may be -Wl,--start-group (MKL) which is not a lib
+  if (NOT EXISTS ${first_lib})
+    list(GET BLAS_LIBRARIES 1 first_lib)
+  endif()
   get_filename_component(first_lib_path "${first_lib}" PATH)
   if (NOT BLAS_LIBRARY_DIRS)
     set(BLAS_LIBRARY_DIRS "${first_lib_path}")

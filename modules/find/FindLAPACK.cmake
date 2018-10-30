@@ -322,6 +322,18 @@ if(BLAS_FOUND)
     else()
       set(LM "")
     endif()
+    # dl
+    find_library(
+      DL_LIBRARY
+      NAMES dl
+      HINTS ${_libdir}
+      )
+    mark_as_advanced(DL_LIBRARY)
+    if(DL_LIBRARY)
+      set(LDL "${DL_LIBRARY}")
+    else()
+      set(LDL "")
+    endif()
   endif()
 
   # check if blas found contains lapack symbols
@@ -366,7 +378,7 @@ if(BLAS_FOUND)
   set(ENV_LAPACK_INCDIR "$ENV{LAPACK_INCDIR}")
   set(ENV_LAPACK_LIBDIR "$ENV{LAPACK_LIBDIR}")
   set(LAPACK_GIVEN_BY_USER "FALSE")
-  if ( LAPACK_LIBRARIES_USER OR LAPACK_DIR OR ( LAPACK_INCDIR AND LAPACK_LIBDIR) OR ENV_LAPACK_DIR OR ENV_MKL_DIR OR (ENV_LAPACK_INCDIR AND ENV_LAPACK_LIBDIR) )
+  if ( LAPACK_LIBRARIES_USER OR LAPACK_DIR OR ( LAPACK_INCDIR AND LAPACK_LIBDIR) OR ENV_LAPACK_DIR OR (ENV_LAPACK_INCDIR AND ENV_LAPACK_LIBDIR) )
     set(LAPACK_GIVEN_BY_USER "TRUE")
   endif()
 
@@ -507,7 +519,7 @@ if(BLAS_FOUND)
               "${additional_flags}"
               ""
               "${_BLAS_LIBRARIES}"
-              "${CMAKE_THREAD_LIBS_INIT};${LM}"
+              "${CMAKE_THREAD_LIBS_INIT};${LM};${LDL}"
               )
             if(_LIBRARIES)
               set(LAPACK_LDFLAGS_OTHER "${additional_flags}")
@@ -523,7 +535,7 @@ if(BLAS_FOUND)
                 "${additional_flags}"
                 "${IT}"
                 "${_BLAS_LIBRARIES}"
-                "${CMAKE_THREAD_LIBS_INIT};${LM}"
+                "${CMAKE_THREAD_LIBS_INIT};${LM};${LDL}"
                 )
               if(_LIBRARIES)
                 set(LAPACK_LDFLAGS_OTHER "${additional_flags}")
@@ -840,6 +852,10 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_lapack_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 
 if (LAPACK_FOUND)
   list(GET LAPACK_LIBRARIES 0 first_lib)
+  # first lib may be -Wl,--start-group (MKL) which is not a lib
+  if (NOT EXISTS ${first_lib})
+    list(GET LAPACK_LIBRARIES 1 first_lib)
+  endif()
   get_filename_component(first_lib_path "${first_lib}" PATH)
   if (NOT LAPACK_LIBRARY_DIRS)
     set(LAPACK_LIBRARY_DIRS "${first_lib_path}")

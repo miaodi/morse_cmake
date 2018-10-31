@@ -61,6 +61,9 @@
 # are not given as cmake variable: BLAS_DIR, BLAS_INCDIR, BLAS_LIBDIR
 # For MKL case and if no paths are given as hints, we will try to use the MKLROOT
 # environment variable
+# The user can also give directly the BLAS libraries to be used with
+# BLAS_LIBRARIES_USER. If BLA_STATIC is ON users may also give some additional
+# libraries to resolve dependencies with BLAS_LDFLAGS_USER
 #  BLAS_VERBOSE Print some additional information during BLAS libraries detection
 ##########
 ### List of vendors (BLA_VENDOR) valid in this module
@@ -70,7 +73,7 @@
 ##  Intel10_32 (intel mkl v10 32 bit), Intel10_64lp (intel mkl v10 64 bit,lp thread model, lp64 model),
 ##  Intel10_64lp_seq (intel mkl v10 64 bit,sequential code, lp64 model),
 ##  Intel( older versions of mkl 32 and 64 bit),
-##  ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic
+##  ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic, User (see BLAS_LIBRARIES_USER)
 # C/CXX should be enabled to use Intel mkl
 ###
 # We handle different modes to find the dependency
@@ -110,6 +113,11 @@ endif()
 
 option(BLAS_VERBOSE "Print some additional information during BLAS libraries detection" OFF)
 mark_as_advanced(BLAS_VERBOSE)
+set(BLAS_LIBRARIES_USER "" CACHE STRING "BLAS libraries given by users")
+set(BLAS_LDFLAGS_USER   "" CACHE STRING "BLAS link flags given by users")
+if(BLAS_LIBRARIES_USER)
+  set(BLA_VENDOR "User")
+endif()
 
 include(CheckFunctionExists)
 include(CheckFortranFunctionExists)
@@ -303,7 +311,7 @@ set(ENV_MKL_DIR "$ENV{MKLROOT}")
 set(ENV_BLAS_INCDIR "$ENV{BLAS_INCDIR}")
 set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
 set(BLAS_GIVEN_BY_USER "FALSE")
-if ( BLAS_LIBRARIES OR BLAS_DIR OR ( BLAS_INCDIR AND BLAS_LIBDIR) OR ENV_BLAS_DIR OR ENV_MKL_DIR OR (ENV_BLAS_INCDIR AND ENV_BLAS_LIBDIR) )
+if ( BLAS_LIBRARIES_USER OR BLAS_DIR OR ( BLAS_INCDIR AND BLAS_LIBDIR) OR ENV_BLAS_DIR OR (ENV_BLAS_INCDIR AND ENV_BLAS_LIBDIR) )
   set(BLAS_GIVEN_BY_USER "TRUE")
 endif()
 
@@ -520,6 +528,18 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         else()
           set(LM "")
         endif()
+        # dl
+        find_library(
+          DL_LIBRARY
+          NAMES dl
+          HINTS ${_libdir}
+          )
+        mark_as_advanced(DL_LIBRARY)
+        if(DL_LIBRARY)
+          set(LDL "${DL_LIBRARY}")
+        else()
+          set(LDL "")
+        endif()
         # Fortran
         set(LGFORTRAN "")
         if (CMAKE_C_COMPILER_ID MATCHES "GNU")
@@ -544,10 +564,9 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           endif()
         endif()
         set(BLAS_CFLAGS_OTHER "")
-        if (BLA_VENDOR STREQUAL "Intel10_64lp" AND BLAS_FIND_REQUIRED)
+        # OpenMP
+        if (BLA_VENDOR STREQUAL "Intel10_64lp")
           find_package(OpenMP REQUIRED)
-        else()
-          find_package(OpenMP)
         endif()
         if(OPENMP_C_FLAGS)
           list(APPEND BLAS_CFLAGS_OTHER "${OPENMP_C_FLAGS}")
@@ -558,17 +577,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           else()
             list(APPEND BLAS_CFLAGS_OTHER "-m64")
           endif()
-          if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
-            find_library(
-            DL_LIBRARY
-            NAMES dl
-            HINTS ${_libdir}
-            )
-            mark_as_advanced(DL_LIBRARY)
-            list(APPEND OMP_LIB "${DL_LIBRARY}")
-          endif()
         endif()
-
         set(additional_flags "")
         if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
           set(additional_flags "-Wl,--no-as-needed")
@@ -576,11 +585,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
       endif ()
 
       if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
-        if(BLAS_FIND_QUIETLY OR NOT BLAS_FIND_REQUIRED)
-          find_package(Threads)
-        else()
-          find_package(Threads REQUIRED)
-        endif()
+        find_package(Threads)
         if( THREADS_FOUND )
           libraries_absolute_path(CMAKE_THREAD_LIBS_INIT "")
         endif ()
@@ -774,7 +779,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               ${BLAS_mkl_SEARCH_SYMBOL}
               "${additional_flags}"
               "${SEARCH_LIBS}"
-              "${OMP_LIB};${CMAKE_THREAD_LIBS_INIT};${LM}"
+              "${OMP_LIB};${CMAKE_THREAD_LIBS_INIT};${LM};${LDL}"
               )
           else()
             check_fortran_libraries(
@@ -783,7 +788,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
               ${BLAS_mkl_SEARCH_SYMBOL}
               "${additional_flags}"
               "${SEARCH_LIBS}"
-              "${CMAKE_THREAD_LIBS_INIT};${LM}"
+              "${CMAKE_THREAD_LIBS_INIT};${LM};${LDL}"
               )
           endif()
           if(${_LIBRARIES})
@@ -1431,15 +1436,14 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
   endif (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
 
   # BLAS given user, we need to test it
-  if (BLAS_GIVEN_BY_USER)
-    set(BLAS_LIBRARIES_GIVEN_BY_USER ${BLAS_LIBRARIES})
+  if (BLA_VENDOR STREQUAL "User" AND BLAS_LIBRARIES_USER)
     check_fortran_libraries(
       BLAS_LIBRARIES
       BLAS
       sgemm
       ""
-      "${BLAS_LIBRARIES_GIVEN_BY_USER}"
-      ""
+      "${BLAS_LIBRARIES_USER}"
+      "${BLAS_LDFLAGS_USER}"
       )
     if(NOT BLAS_FIND_QUIETLY)
       if(BLAS_LIBRARIES)
@@ -1535,6 +1539,10 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_blas_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 
 if (BLAS_FOUND)
   list(GET BLAS_LIBRARIES 0 first_lib)
+  # first lib may be -Wl,--start-group (MKL) which is not a lib
+  if (NOT EXISTS ${first_lib})
+    list(GET BLAS_LIBRARIES 1 first_lib)
+  endif()
   get_filename_component(first_lib_path "${first_lib}" PATH)
   if (NOT BLAS_LIBRARY_DIRS)
     set(BLAS_LIBRARY_DIRS "${first_lib_path}")

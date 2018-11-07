@@ -602,7 +602,7 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
 
         if(BLA_F95)
 
-          set(BLAS_mkl_SEARCH_SYMBOL SGEMM)
+          set(BLAS_mkl_SEARCH_SYMBOL sgemm_f95)
           set(_LIBRARIES BLAS95_LIBRARIES)
           if (WIN32)
             if (BLA_STATIC)

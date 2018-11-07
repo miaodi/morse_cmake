@@ -491,7 +491,7 @@ if(BLAS_FOUND)
           endif()
 
           if (BLA_F95)
-            set(LAPACK_mkl_SEARCH_SYMBOL "CHEEV")
+            set(LAPACK_mkl_SEARCH_SYMBOL "cheev_f95")
             set(_LIBRARIES LAPACK95_LIBRARIES)
             set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
             # old

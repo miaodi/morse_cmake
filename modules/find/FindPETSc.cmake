@@ -128,11 +128,11 @@ endif()
 find_file(petscconf NAMES petscconf.h HINTS ${PETSC_DIR}/include)
 if (petscconf)
   if (NOT PETSc_FIND_QUIETLY)
-    message(STATUS "petscconf.h is located ad ${petscconf}")
+    message(STATUS "petscconf.h is located in ${petscconf}")
   endif()
 else()
   if (PETSc_FIND_REQUIRED)
-    message(FATAL_ERROR "\petscconf.h not found
+    message(FATAL_ERROR "petscconf.h not found
     we must find it into PETSC_DIR/include/")
   endif()
 endif()

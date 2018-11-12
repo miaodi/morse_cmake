@@ -38,6 +38,7 @@
 #  BLAS_VENDOR_FOUND stores the BLAS vendor found
 #  BLA_F95     if set on tries to find the f95 interfaces for BLAS/LAPACK
 #
+#  BLA_PREFER_PKGCONFIG - try using pkg-config (ON by default)
 #  BLAS_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #  if found with pkg-config the following variables are set
 #  <PREFIX>  = BLAS

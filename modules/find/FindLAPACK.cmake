@@ -506,8 +506,6 @@ if(BLAS_FOUND)
 
             # old
             list(APPEND LAPACK_SEARCH_LIBS "mkl_lapack")
-            # new >= 10.3
-            list(APPEND LAPACK_SEARCH_LIBS "mkl_gf_lp64")
           endif(BLA_F95)
 
           # First try empty lapack libs

@@ -651,39 +651,39 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           else (WIN32)
             if( _LANGUAGES_ MATCHES Fortran )
               if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-                set(mkl_intface "gf")
+                set(BLAS_mkl_intface "gf")
               else()
-                set(mkl_intface "intel")
+                set(BLAS_mkl_intface "intel")
               endif()
             else()
-              set(mkl_intface "intel")
+              set(BLAS_mkl_intface "intel")
             endif()
 
             if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-              set(mkl_threading "gnu")
+              set(BLAS_mkl_threading "gnu")
             else()
-              set(mkl_threading "intel")
+              set(BLAS_mkl_threading "intel")
             endif()
-            
+
             if (BLA_VENDOR STREQUAL "Intel10_32" OR BLA_VENDOR STREQUAL "All")
               list(APPEND BLAS_SEARCH_LIBS
-                "mkl_blas95 mkl_${mkl_intface} mkl_${mkl_threading}_thread mkl_core guide")
+                "mkl_blas95 mkl_${BLAS_mkl_intface} mkl_${BLAS_mkl_threading}_thread mkl_core")
             endif ()
             if (BLA_VENDOR STREQUAL "Intel10_64lp" OR BLA_VENDOR STREQUAL "All")
               # old version
               list(APPEND BLAS_SEARCH_LIBS
-                "mkl_blas95 mkl_${mkl_intface}_lp64 mkl_${mkl_threading}_thread mkl_core guide")
+                "mkl_blas95 mkl_${BLAS_mkl_intface}_lp64 mkl_${BLAS_mkl_threading}_thread mkl_core guide")
               # mkl >= 10.3
               # sequential version
               list(APPEND BLAS_SEARCH_LIBS
-                "mkl_blas95_lp64 mkl_${mkl_intface}_lp64 mkl_sequential mkl_core")
+                "mkl_blas95_lp64 mkl_${BLAS_mkl_intface}_lp64 mkl_sequential mkl_core")
               # multithreaded version
                 list(APPEND BLAS_SEARCH_LIBS
-                "mkl_blas95_lp64 mkl_${mkl_intface}_lp64 mkl_${mkl_threading}_thread mkl_core")
+                "mkl_blas95_lp64 mkl_${BLAS_mkl_intface}_lp64 mkl_${BLAS_mkl_threading}_thread mkl_core")
             endif ()
             if (BLA_VENDOR STREQUAL "Intel10_64lp_seq" OR BLA_VENDOR STREQUAL "All")
               list(APPEND BLAS_SEARCH_LIBS
-                "mkl_blas95_lp64 mkl_${mkl_intface}_lp64 mkl_sequential mkl_core")
+                "mkl_blas95_lp64 mkl_${BLAS_mkl_intface}_lp64 mkl_sequential mkl_core")
               if (BLA_VENDOR STREQUAL "Intel10_64lp_seq")
                 set(OMP_LIB "")
               endif()
@@ -741,39 +741,39 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
           else (WIN32)
             if( _LANGUAGES_ MATCHES Fortran )
               if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-                set(mkl_intface "gf")
+                set(BLAS_mkl_intface "gf")
               else()
-                set(mkl_intface "intel")
+                set(BLAS_mkl_intface "intel")
               endif()
             else()
-              set(mkl_intface "intel")
+              set(BLAS_mkl_intface "intel")
             endif()
 
             if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-              set(mkl_threading "gnu")
+              set(BLAS_mkl_threading "gnu")
             else()
-              set(mkl_threading "intel")
+              set(BLAS_mkl_threading "intel")
             endif()
 
             if (BLA_VENDOR STREQUAL "Intel10_32" OR BLA_VENDOR STREQUAL "All")
               list(APPEND BLAS_SEARCH_LIBS
-                "mkl_${mkl_intface} mkl_${mkl_threading}_thread mkl_core guide")
+                "mkl_${BLAS_mkl_intface} mkl_${BLAS_mkl_threading}_thread mkl_core")
             endif ()
             if (BLA_VENDOR STREQUAL "Intel10_64lp" OR BLA_VENDOR STREQUAL "All")
               # old version
               list(APPEND BLAS_SEARCH_LIBS
-                "mkl_${mkl_intface}_lp64 mkl_${mkl_threading}_thread mkl_core guide")
+                "mkl_${BLAS_mkl_intface}_lp64 mkl_${BLAS_mkl_threading}_thread mkl_core guide")
               # mkl >= 10.3
               # sequential version
               list(APPEND BLAS_SEARCH_LIBS
-                "mkl_${mkl_intface}_lp64 mkl_sequential mkl_core")
+                "mkl_${BLAS_mkl_intface}_lp64 mkl_sequential mkl_core")
               # multithreaded version
                 list(APPEND BLAS_SEARCH_LIBS
-                "mkl_${mkl_intface}_lp64 mkl_${mkl_threading}_thread mkl_core")
+                "mkl_${BLAS_mkl_intface}_lp64 mkl_${BLAS_mkl_threading}_thread mkl_core")
             endif ()
             if (BLA_VENDOR STREQUAL "Intel10_64lp_seq" OR BLA_VENDOR STREQUAL "All")
               list(APPEND BLAS_SEARCH_LIBS
-                "mkl_${mkl_intface}_lp64 mkl_sequential mkl_core")
+                "mkl_${BLAS_mkl_intface}_lp64 mkl_sequential mkl_core")
               if (BLA_VENDOR STREQUAL "Intel10_64lp_seq")
                 set(OMP_LIB "")
               endif()
@@ -849,6 +849,8 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
       set(BLAS_CFLAGS_OTHER "")
       set(BLAS_LDFLAGS_OTHER "")
     endif()
+    unset(BLAS_mkl_intface)
+    unset(BLAS_mkl_threading)
   endif (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 
 

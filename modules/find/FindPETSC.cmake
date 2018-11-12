@@ -9,8 +9,8 @@
 # INPUT
 # -----
 #
-# PETSc is not installed in a standard way on Unix systems so that
-# this module requires hints to know where PETSc is installed. Please
+# PETSC is not installed in a standard way on Unix systems so that
+# this module requires hints to know where PETSC is installed. Please
 # give the installation directory (contains ./include/petsc.h, ./lib/, etc):
 # 1. by setting the PETSC_DIR variable
 #    a. as an environment variable, e.g.
@@ -22,12 +22,12 @@
 #
 # OUTPUT
 # -------
-# PETSC_INCLUDE_DIRS - the PETSc include directories
-# PETSC_LIBRARIES    - Link these to use PETSc
-# PETSC_LIBRARY_DIRS - Link these to use PETSc
+# PETSC_INCLUDE_DIRS - the PETSC include directories
+# PETSC_LIBRARIES    - Link these to use PETSC
+# PETSC_LIBRARY_DIRS - Link these to use PETSC
 # PETSC_MPIEXEC - Executable for running MPI programs
 #
-# if pkg-config is used i.e. pkgconfig installed, PETSc.pc file path
+# if pkg-config is used i.e. pkgconfig installed, PETSC.pc file path
 # in the PKG_CONFIG_PATH environment variable and PETSC_DIR not set
 # then the following variables are set (or empty)
 #
@@ -50,15 +50,15 @@
 #
 # PETSC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
-# find_package(PETSc [QUIET] [REQUIRED])
+# find_package(PETSC [QUIET] [REQUIRED])
 #
 # Setting these changes the behavior of the search
-# PETSC_DIR - directory in which PETSc is installed
+# PETSC_DIR - directory in which PETSC is installed
 # PETSC_ARCH - build architecture
 
 # create a cmake cache variable
 set(PETSC_DIR "" CACHE PATH "Installation directory of PETSC library")
-if (NOT PETSc_FIND_QUIETLY AND NOT PETSC_DIR)
+if (NOT PETSC_FIND_QUIETLY AND NOT PETSC_DIR)
   message(STATUS "A cache variable, namely PETSC_DIR, has been set
   to specify a custom installation directory of PETSC")
 endif()
@@ -69,12 +69,12 @@ include(FindPkgConfig)
 find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT PETSC_DIR )
   pkg_search_module(PETSC PETSc)
-  if (NOT PETSc_FIND_QUIETLY)
+  if (NOT PETSC_FIND_QUIETLY)
     if (PETSC_FOUND AND PETSC_LIBRARIES)
       message(STATUS "Looking for PETSC - found using PkgConfig")
     else()
       message(STATUS "Looking for PETSC - not found using PkgConfig."
-        "\n   Perhaps you should add the directory containing PETSc.pc to"
+        "\n   Perhaps you should add the directory containing PETSC.pc to"
         "\n   the PKG_CONFIG_PATH environment variable.")
     endif()
   endif()
@@ -95,24 +95,24 @@ endif()
 if (PETSC_DIR)
     if (EXISTS ${PETSC_DIR})
       if (EXISTS ${PETSC_DIR}/include/petsc.h)
-          if (NOT PETSc_FIND_QUIETLY)
+          if (NOT PETSC_FIND_QUIETLY)
             message(STATUS "PETSC_DIR = ${PETSC_DIR} contains include/petsc.h")
           endif()
         else()
-          if (PETSc_FIND_REQUIRED)
+          if (PETSC_FIND_REQUIRED)
             message(FATAL_ERROR "include/petsc.h not found in PETSC_DIR = ${PETSC_DIR}")
           endif()
         endif()
       else()
-        if (PETSc_FIND_REQUIRED)
+        if (PETSC_FIND_REQUIRED)
           message(FATAL_ERROR "PETSC_DIR defined, but ${PETSC_DIR} does not exist")
         endif()
     endif()
 else()
-  if (PETSc_FIND_REQUIRED)
+  if (PETSC_FIND_REQUIRED)
     message(FATAL_ERROR "\
-PETSc is not installed in a standard way on Unix systems so that
-this module requires hints to know where PETSc is installed. Please
+PETSC is not installed in a standard way on Unix systems so that
+this module requires hints to know where PETSC is installed. Please
 give the installation directory (contains ./include/petsc.h, ./lib/, etc):
 1. by setting the PETSC_DIR variable
    a. as an environment variable, e.g.
@@ -127,11 +127,11 @@ endif()
 
 find_file(petscconf NAMES petscconf.h HINTS ${PETSC_DIR}/include)
 if (petscconf)
-  if (NOT PETSc_FIND_QUIETLY)
+  if (NOT PETSC_FIND_QUIETLY)
     message(STATUS "petscconf.h is located in ${petscconf}")
   endif()
 else()
-  if (PETSc_FIND_REQUIRED)
+  if (PETSC_FIND_REQUIRED)
     message(FATAL_ERROR "petscconf.h not found
     we must find it into PETSC_DIR/include/")
   endif()
@@ -139,28 +139,27 @@ endif()
 
 if (NOT PETSC_ARCH)
   if (petscconf)
-     file(READ ${petscconf} contents)
-     string(REGEX MATCH "#define *PETSC_ARCH *\"[a-z0-9-]*\" *\n" foundArch ${contents})
-     string(REGEX REPLACE "#define *PETSC_ARCH *\"([a-z0-9-]*)\" *\n" "\\1" archFromFile ${foundArch})
-     if (NOT PETSc_FIND_QUIETLY)
-       message(STATUS "PETSC_ARCH taken from petscconf.h = ${archFromFile}")
-     endif()
-     if(archFromFile)
-         set(PETSC_ARCH ${archFromFile})
-     endif(archFromFile)
+    file(READ ${petscconf} contents)
+    string(REGEX MATCH "#define *PETSC_ARCH *\"[a-z0-9-]*\" *\n" foundArch ${contents})
+    if (foundArch)
+      string(REGEX REPLACE "#define *PETSC_ARCH *\"([a-z0-9-]*)\" *\n" "\\1" archFromFile ${foundArch})
+      if (NOT PETSC_FIND_QUIETLY)
+        message(STATUS "PETSC_ARCH taken from petscconf.h = ${archFromFile}")
+      endif()
+      if(archFromFile)
+        set(PETSC_ARCH ${archFromFile})
+      endif(archFromFile)
+    endif()
   endif(petscconf)
 endif (NOT PETSC_ARCH)
-if (NOT PETSc_FIND_QUIETLY)
-  message(STATUS "PETSC_ARCH  = ${PETSC_ARCH}")
-endif()
 
 find_file(petscvariables NAMES petscvariables HINTS ${PETSC_DIR}/lib/petsc/conf/ ${PETSC_DIR}/conf)
 if (petscvariables)
-  if (NOT PETSc_FIND_QUIETLY)
+  if (NOT PETSC_FIND_QUIETLY)
     message(STATUS "petscvariables = ${petscvariables}")
   endif()
 else()
-  if (PETSc_FIND_REQUIRED)
+  if (PETSC_FIND_REQUIRED)
     message(FATAL_ERROR "petscvariables not found")
   endif()
 endif()
@@ -208,6 +207,6 @@ string(REGEX REPLACE " " ";" PETSC_LIBRARIES ${PETSC_LIBRARIES})
 libraries_absolute_path(PETSC_LIBRARIES "${PETSC_LIBRARY_DIRS}")
 
 include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (PETSc
-  "PETSc could not be found. Be sure to set PETSC_DIR."
+find_package_handle_standard_args (PETSC
+  "PETSC could not be found. Be sure to set PETSC_DIR."
   PETSC_MPIEXEC PETSC_INCLUDE_DIRS PETSC_LIBRARIES PETSC_LIBRARY_DIRS)

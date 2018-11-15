@@ -35,6 +35,7 @@
 #     all the possibilities
 #  LAPACK_VENDOR_FOUND stores the LAPACK vendor found
 #  LAP_F95     if set on tries to find the f95 interfaces for BLAS/LAPACK
+#  LAP_PREFER_PKGCONFIG - try using pkg-config (ON by default)
 #
 #  LAPACK_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #  if found with pkg-config the following variables are set
@@ -91,8 +92,11 @@ if (NOT LAPACK_FOUND)
   endif()
 endif (NOT LAPACK_FOUND)
 
-option(LAPACK_VERBOSE "Print some additional information during LAPACK
-libraries detection" OFF)
+option(LAPACK_VERBOSE "Print some additional information during LAPACK libraries detection" OFF)
+if(NOT DEFINED LAP_PREFER_PKGCONFIG)
+  set(LAP_PREFER_PKGCONFIG ON CACHE BOOL "Try to find LAPACK using pkg-config")
+endif()
+
 mark_as_advanced(LAPACK_VERBOSE)
 if (BLAS_VERBOSE)
   set(LAPACK_VERBOSE ON)
@@ -386,7 +390,8 @@ if(BLAS_FOUND)
   # -------------------------------------------------------------------------------------
   include(FindPkgConfig)
   find_package(PkgConfig QUIET)
-  if( PKG_CONFIG_EXECUTABLE AND NOT LAPACK_GIVEN_BY_USER AND LAP_VENDOR STREQUAL "All")
+  if( PKG_CONFIG_EXECUTABLE AND NOT LAPACK_GIVEN_BY_USER AND LAP_VENDOR STREQUAL "All"
+      AND NOT LAPACK_LIBRARIES AND LAP_PREFER_PKGCONFIG)
 
     if (LAP_STATIC)
       set(MKL_STR_LAP_STATIC "static")

@@ -124,17 +124,16 @@ if(BLAS_LIBRARIES_USER)
   set(BLA_VENDOR "User")
 endif()
 
-include(CheckFunctionExists)
-include(CheckFortranFunctionExists)
-
 set(_blas_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 # Check the language being used
 get_property( _LANGUAGES_ GLOBAL PROPERTY ENABLED_LANGUAGES )
 if( _LANGUAGES_ MATCHES Fortran )
   set( _CHECK_FORTRAN TRUE )
+  include(CheckFortranFunctionExists)
 elseif( (_LANGUAGES_ MATCHES C) OR (_LANGUAGES_ MATCHES CXX) )
   set( _CHECK_FORTRAN FALSE )
+  include(CheckFunctionExists)
 else()
   if(BLAS_FIND_REQUIRED)
     message(FATAL_ERROR "FindBLAS requires Fortran, C, or C++ to be enabled.")

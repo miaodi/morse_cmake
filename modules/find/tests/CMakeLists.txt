@@ -77,7 +77,7 @@ if (ENABLE_CTEST)
   include(CTest)
 
   set(CTEST_PACKAGES_LIST
-      AL4SAN
+      # AL4SAN # not installed in the common image hpclib/hiepacs, see hpclib/al4san to get it
       BLAS
       BLASEXT
       CBLAS

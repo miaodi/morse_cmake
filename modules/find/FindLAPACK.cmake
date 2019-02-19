@@ -360,7 +360,7 @@ if(BLAS_FOUND)
     check_lapack_libraries(
       LAPACK_LIBRARIES
       LAPACK
-      "CHEEV"
+      "cheev"
       ""
       ""
       "${LIBRARIES}"

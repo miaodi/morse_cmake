@@ -1008,6 +1008,7 @@ subs = {
     ('', 'S_',             'D_',             'C_',             'Z_'              ),
     ('', 'FLT_EPSILON',    'DBL_EPSILON',    'FLT_EPSILON',    'DBL_EPSILON'     ),
     ('', 's_RAFF_FLOAT',   'd_RAFF_FLOAT',   'c_RAFF_FLOAT',   'z_RAFF_FLOAT'    ),
+    ('', 'MPI_FLOAT',      'MPI_DOUBLE',     'MPI_COMPLEX32',  'MPI_COMPLEX64'   ),
     ('', 'MPI_FLOAT',      'MPI_DOUBLE',     'MPI_COMPLEX',    'MPI_DOUBLE_COMPLEX'),
     ('', 'MPI_FLOAT',      'MPI_DOUBLE',     'MPI_FLOAT',      'MPI_DOUBLE'      ),
     # ----- unused?

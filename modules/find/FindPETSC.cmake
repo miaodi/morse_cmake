@@ -1,5 +1,5 @@
 #
-# @copyright (c) 2018 Inria. All rights reserved.
+# @copyright (c) 2019 Inria. All rights reserved.
 #
 # Marc Fuentes
 # Florent Pruvost

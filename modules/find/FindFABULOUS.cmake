@@ -1,6 +1,6 @@
 ###
 #
-# @copyright (c) 2012-2018 Inria. All rights reserved.
+# @copyright (c) 2012-2019 Inria. All rights reserved.
 #
 ###
 #
@@ -51,7 +51,7 @@
 # are not given as cmake variable: FABULOUS_DIR, FABULOUS_INCDIR, FABULOUS_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2018 Inria
+# Copyright 2012-2019 Inria
 # Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");

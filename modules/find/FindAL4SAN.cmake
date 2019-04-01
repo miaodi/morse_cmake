@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2018 Inria. All rights reserved.
+# @copyright (c) 2012-2019 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 # @copyright 2017-2018 King Abdullah University of Science and Technology (KAUST). All rights reserved.
@@ -32,7 +32,7 @@
 #  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 
 #=============================================================================
-# Copyright 2018 Inria
+# Copyright 2019 Inria
 # Copyright 2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");

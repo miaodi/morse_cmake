@@ -1,6 +1,6 @@
 ###
 #
-# @copyright (c) 2018 Inria. All rights reserved.
+# @copyright (c) 2019 Inria. All rights reserved.
 #
 ###
 #
@@ -60,7 +60,7 @@
 # are not given as cmake variable: SPM_DIR, SPM_INCDIR, SPM_LIBDIR
 
 #=============================================================================
-# Copyright 2018 Inria
+# Copyright 2019 Inria
 # Copyright 2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");

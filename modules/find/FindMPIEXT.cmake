@@ -6,7 +6,7 @@
 #  MPIEXT_FOUND        - if a MPI has been found
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2019 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede

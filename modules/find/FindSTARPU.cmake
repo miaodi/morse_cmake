@@ -848,10 +848,10 @@ if(STARPU_LIBRARIES)
           message(STATUS "Looking for starpu Fortran interface: found")
         endif (NOT STARPU_FIND_QUIETLY)
       endif(NOT FSTARPU_WORKS)
-      
+
     endif(STARPU_LOOK_FOR_FORTRAN)
   endif(STARPU_WORKS)
-  
+
   if(STARPU_WORKS)
     # save link with dependencies
     set(STARPU_LIBRARIES_DEP "${REQUIRED_LIBS}")
@@ -904,3 +904,43 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(STARPU DEFAULT_MSG
   STARPU_LIBRARIES
   STARPU_WORKS)
+
+if(STARPU_FOUND)
+  if(STARPU_MPI_LIBRARIES AND STARPU_SHM_LIBRARIES AND NOT TARGET starpu::starpu AND NOT TARGET starpu::starpu_mpi)
+    add_library(starpu::starpu_mpi INTERFACE IMPORTED)
+    set_property(TARGET starpu::starpu_mpi APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${STARPU_LINKER_FLAGS}")
+    set_property(TARGET starpu::starpu_mpi APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${STARPU_MPI_LIBRARIES}")
+    set_property(TARGET starpu::starpu_mpi APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${STARPU_C_FLAGS}")
+    set_property(TARGET starpu::starpu_mpi APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${STARPU_INCLUDE_DIRS}")
+    set_property(TARGET starpu::starpu_mpi APPEND PROPERTY INTERFACE_LINK_DIRECTORIES "${STARPU_LIBRARY_DIRS}")
+
+    add_library(starpu::starpu INTERFACE IMPORTED)
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${STARPU_LINKER_FLAGS}")
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${STARPU_SHM_LIBRARIES}")
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${STARPU_C_FLAGS}")
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${STARPU_INCLUDE_DIRS}")
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_LINK_DIRECTORIES "${STARPU_LIBRARY_DIRS}")
+
+    message(STATUS "Morse : targets starpu::starpu and starpu::starpu_mpi available")
+  endif()
+  if(STARPU_LIBRARIES_DEP AND NOT TARGET starpu::starpu_dep)
+    add_library(starpu::starpu_dep INTERFACE IMPORTED)
+    set_property(TARGET starpu::starpu_dep APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${STARPU_LINKER_FLAGS}")
+    set_property(TARGET starpu::starpu_dep APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${STARPU_LIBRARIES_DEP}")
+    set_property(TARGET starpu::starpu_dep APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${STARPU_C_FLAGS}")
+    set_property(TARGET starpu::starpu_dep APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${STARPU_INCLUDE_DIRS_DEP}")
+    set_property(TARGET starpu::starpu_dep APPEND PROPERTY INTERFACE_LINK_DIRECTORIES "${STARPU_LIBRARY_DIRS_DEP}")
+
+    message(STATUS "Morse : target starpu::starpu_dep available")
+  endif()
+  if(STARPU_LIBRARIES AND NOT TARGET starpu::starpu)
+    add_library(starpu::starpu INTERFACE IMPORTED)
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${STARPU_LINKER_FLAGS}")
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${STARPU_LIBRARIES}")
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${STARPU_C_FLAGS}")
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${STARPU_INCLUDE_DIRS}")
+    set_property(TARGET starpu::starpu APPEND PROPERTY INTERFACE_LINK_DIRECTORIES "${STARPU_LIBRARY_DIRS}")
+
+    message(STATUS "Morse : target starpu::starpu available")
+  endif()
+endif()

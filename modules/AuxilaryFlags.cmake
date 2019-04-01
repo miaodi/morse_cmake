@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Inria. All rights reserved.
+# @copyright (c) 2012-2019 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -52,6 +52,28 @@ if (MORSE_ENABLE_WARNING)
   endif()
 
 endif(MORSE_ENABLE_WARNING)
+
+if (MORSE_ENABLE_STATIC_ANALYSIS)
+
+  find_program(CLANGTIDY "clang-tidy")
+  if (CLANGTIDY)
+    set(CMAKE_C_CLANG_TIDY "${CLANGTIDY}")
+  endif()
+  find_program(CPPCHECK "cppcheck")
+  if (CPPCHECK)
+    set(CMAKE_C_CPPCHECK "${CPPCHECK}"
+      "--language=c"
+      "--enable=all"
+      "--force"
+      )
+  endif()
+  find_program(INCLUDE_WHAT_YOU_USE "iwyu")
+  if (INCLUDE_WHAT_YOU_USE)
+    set(CMAKE_C_INCLUDE_WHAT_YOU_USE "${INCLUDE_WHAT_YOU_USE}")
+  endif()
+  set(CMAKE_LINK_WHAT_YOU_USE TRUE)
+
+endif()
 
 if (MORSE_ENABLE_COVERAGE)
 

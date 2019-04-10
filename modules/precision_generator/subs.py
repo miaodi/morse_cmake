@@ -1,4 +1,31 @@
-#!/usr/bin/env python
+#
+# @package Tools
+#
+# @copyright (c) 2009-2018 The University of Tennessee and The
+#                          University of Tennessee Research Foundation.
+#                          All rights reserved.
+# @copyright (c) 2012-2019 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+#                          Univ. Bordeaux. All rights reserved.
+#
+# @project MORSE
+#
+# MORSE is a software package provided by:
+#      Inria Bordeaux - Sud-Ouest,
+#      Univ. of Tennessee,
+#      King Abdullah Univesity of Science and Technology
+#      Univ. of California Berkeley,
+#      Univ. of Colorado Denver.
+#
+# @author Mark Gates
+# @author Mathieu Faverge
+#
+# @date 2019-4-2
+#
+# This python script holds the main dictionnary for the substitutions
+# of the precision generation tool codegen.py.
+#
+# Substitutions used in codegen.py
+#
 # Substitutions are applied in the order listed. This is important in cases
 # where multiple substitutions could match, or when one substitution matches
 # the result of a previous substitution. For example, these rules are correct
@@ -10,1026 +37,266 @@
 # but if switched would translate 'double precision' -> 'float precision',
 # which is wrong.
 #
-# Reorganized 5/2012 Mark Gates
+from __future__ import print_function
+
+import re
+import sys, traceback
+from os import path
+from subs_blas import blas_mixed, blas, lapack
+
+# ===========================================================================
+# utility functions
+
+# ----------------------------------------
+def _upper( table ):
+    '''
+    Maps double-nested list of strings to upper case.
+    [ ['Foo', 'bar'], ['baz', 'ZAB'] ]
+    becomes
+    [ ['FOO', 'BAR'], ['BAZ', 'ZAB'] ]
+    '''
+    ucase = [ [ x.upper() for x in row ] for row in table ]
+    return ucase
+# end
+
+# ----------------------------------------
+def _lower( table ):
+    '''
+    Maps double-nested list of strings to lower case.
+    [ ['Foo', 'BAR'], ['BAZ', 'zab'] ]
+    becomes
+    [ ['foo', 'bar'], ['baz', 'zab'] ]
+    '''
+    lcase = [ [ x.lower() for x in row ] for row in table ]
+    return lcase
+# end
+
+# ----------------------------------------
+def _title( table ):
+    '''
+    Maps double-nested list of strings to Title case. Useful for cuBLAS.
+    [ ['FOO', 'bar'], ['Baz', 'Zab'] ]
+    becomes
+    [ ['Foo', 'Bar'], ['Baz', 'Zab'] ]
+    '''
+    tcase = [ [ x.title() for x in row ] for row in table ]
+    return tcase
+# end
 
 # Dictionary is keyed on substitution type (mixed, normal, etc.)
-subs = {
-  # ------------------------------------------------------------
-  # replacements applied to ALL files.
-  'all' : [
-    [None, None]
-  ],
+_subs = {
+    # ------------------------------------------------------------
+    # replacements applied to mixed precision files.
+    'mixed' : [
+        # double/single,          double/single-complex
+        #'12345678901234567890', '12345678901234567890')
 
-  # ------------------------------------------------------------
-  # replacements applied to mixed precision files.
-  'mixed' : [
-    # ----- Special line indicating column types
-    ['ds',                        'zc'                               ],
+        # ----- Special line indicating column types
+        ['ds',                   'zc'                  ],
 
-    # ----- Mixed precisions
-    ('DS',                        'ZC'                               ),
-    ('ds',                        'zc'                               ),
+        # ----- Text
+        (r'\ba symmetric',      r'\ban hermitian'      ),
+        ('symmetric',            'hermitian'           ),
+        ('Symmetric',            'Hermitian'           ),
+        ('SYMMETRIC',            'HERMITIAN'           ),
+        ('orthogonal',           'unitary'             ),
 
-    # ----- Preprocessor
-    ('#define PRECISION_d',       '#define PRECISION_z'              ),
-    ('#define PRECISION_s',       '#define PRECISION_c'              ),
-    ('#undef PRECISION_d',        '#undef PRECISION_z'               ),
-    ('#undef PRECISION_s',        '#undef PRECISION_c'               ),
+        # ----- CBLAS
+        ('',                     'CBLAS_SADDR'         ),
+        ('saxpy',                'caxpy'               ),
 
-    # ----- Fortran Types
-    ('real\(kind=c_double\)',     'complex\(kind=c_double_complex\)' ),
-    ('real\(kind=c_float\)',      'real\(kind=c_float_complex\)'     ),
+        # ----- LAPACKE
+        ('slange',               'clange'              ),
+        ('slarnv',               'clarnv'              ),
 
-    # ----- Data types
-    ('double',                    'double2'                          ),
-    ('float',                     'float2'                           ),
-    ('double',                    'cuDoubleComplex'                  ),
-    ('float',                     'cuFloatComplex'                   ),
-    ('DOUBLE PRECISION',          'COMPLEX_16'                       ),
-    ('SINGLE PRECISION',          'COMPLEX'                          ),
-    ('real',                      'complex'                          ),
-    ('float',                     'CHAMELEON_Complex32_t'            ),
-    ('double',                    'CHAMELEON_Complex64_t'            ),
-    ('float',                     'CHAMELEON_voidComplex32_t'        ),
-    ('double',                    'CHAMELEON_voidComplex64_t'        ),
-    ('RealFloat',                 'ComplexFloat'                     ),
-    ('RealDouble',                'ComplexDouble'                    ),
+        # ----- Complex numbers
+        # See note in "normal" section below about regexps
+        (r'',                   r'\bconj\b'            ),
 
-    # ----- CBLAS
-    ('',                          'CBLAS_SADDR'                      ),
+        # ----- Constants
+        ('Trans',                'ConjTrans'           ),
 
-    # ----- Prefixes
-    ('blasf77_d',                 'blasf77_z'                        ),
-    ('blasf77_s',                 'blasf77_c'                        ),
-    ('cublasIdamax',              'cublasIzamax'                     ),
-    ('cublasD',                   'cublasZ'                          ),
-    ('cublasS',                   'cublasC'                          ),
-    ('lapackf77_d',               'lapackf77_z'                      ),
-    ('lapackf77_s',               'lapackf77_c'                      ),
-    ('MAGMA_D',                   'MAGMA_Z'                          ),
-    ('MAGMA_S',                   'MAGMA_C'                          ),
-    ('magmablas_d',               'magmablas_z'                      ),
-    ('magmablas_s',               'magmablas_c'                      ),
-    ('magma_d',                   'magma_z'                          ),
-    ('magma_s',                   'magma_c'                          ),
-    ('magma_get_d',               'magma_get_z'                      ),
-    ('magma_get_s',               'magma_get_c'                      ),
+        # ----- BLAS & LAPACK
+    ]
+    + _title( blas_mixed )  # e.g., Dgemm, as in cuBLAS, before lowercase (e.g., for Zdrot)
+    + _lower( blas_mixed )  # e.g., dgemm
+    + _upper( blas_mixed )  # e.g., DGEMM
+    + [
 
-    # ----- Prefixes CHAMELEON
-    ('CHAMELEON_D',               'CHAMELEON_Z'                      ),
-    ('CHAMELEON_S',               'CHAMELEON_C'                      ),
-    ('chameleon_get_d',           'chameleon_get_z'                  ),
-    ('chameleon_get_s',           'chameleon_get_c'                  ),
-    ('TASK_S',                    'TASK_C'                           ),
-    ('TASK_D',                    'TASK_Z'                           ),
-    ('TASKS_S',                   'TASKS_C'                          ),
-    ('TASKS_D',                   'TASKS_Z'                          ),
-    ('RUNTIME_S',                 'RUNTIME_C'                        ),
-    ('RUNTIME_D',                 'RUNTIME_Z'                        ),
+        # ----- Fortran Types
+        ('real\(kind=c_double\)', 'complex\(kind=c_double_complex\)' ),
+        ('real\(kind=c_float\)',  'real\(kind=c_float_complex\)'     ),
 
-    # ----- Complex numbers
-    ('(double)',                  'cuComplexFloatToDouble'           ),
-    ('(float)',                   'cuComplexDoubleToFloat'           ),
-    ('',                          'cuCrealf'                         ),
-    ('',                          'cuCimagf'                         ),
-    ('',                          'cuCreal'                          ),
-    ('',                          'cuCimag'                          ),
-    ('',                          'cuConj'                           ),
-    ('abs',                       'cuCabs'                           ),
-    ('absf',                      'cuCabsf'                          ),
+        # ----- Data types
+        ('double',               'double2'             ),
+        ('float',                'float2'              ),
+        ('double',               'cuDoubleComplex'     ),
+        ('float',                'cuFloatComplex'      ),
+        ('DOUBLE PRECISION',    r'COMPLEX\*16'         ),
+        ('DOUBLE PRECISION',     'COMPLEX_16'          ),
+        ('SINGLE PRECISION',     'COMPLEX'             ),
+        ('RealFloat',            'ComplexFloat'        ),
+        ('RealDouble',           'ComplexDouble'       ),
 
-    # ----- PLASMA / MAGMA
-    ('magma_sdgetrs',             'magma_czgetrs'                    ),
+        # ----- header files
+        (r'_ds\.h\b',           r'_zc\.h\b'            ),
+        (r'_ds_h_\b',           r'_zc_h_\b'            ),
+        (r'_d\.h\b',            r'_z\.h\b'             ),
+        (r'_s\.h\b',            r'_c\.h\b'             ),
 
-    # ----- CHAMELEON
-    ('chameleon_sdgetrs',         'chameleon_czgetrs'                ),
+        # ----- Prefixes
+        (r'\bds_',             r'\bzc_'                ),
+        (r'\bd_',              r'\bz_'                 ),
+        (r'\bs_',              r'\bc_'                 ),
+        (r'\bDS_',             r'\bZC_'                ),
+        (r'\bD_',              r'\bZ_'                 ),
+        (r'\bS_',              r'\bC_'                 ),
 
-    # ----- Constants
-    ('Trans',                'ConjTrans'                             ),
+        # See note in "normal" section below
+        #('LAPACKE_d',            'LAPACKE_z'           ),
+        #('LAPACKE_s',            'LAPACKE_c',          ),
+        #('plasma_d',             'plasma_z'            ),
+        #('plasma_s',             'plasma_c'            ),
 
-    # ----- BLAS and LAPACK, lowercase, alphabetic order
-    # copy & paste these to uppercase below and fix case.
-    # mixed precision
-    ('dsaxpy',                    'zcaxpy'                           ),
-    ('dslaswp',                   'zclaswp'                          ),
+        # ----- Fortran examples
+        ('real\(',               'complex\(',          ),
+        ('\(transpose\(',        'conjg\(transpose\('  ),
+    ],  # end mixed
 
-    # regular
-    ('daxpy',                     'zaxpy'                            ),
-    ('dgemm',                     'zgemm'                            ),
-    ('dgesv',                     'zgesv'                            ),
-    ('dlacpy',                    'zlacpy'                           ),
-    ('dlange',                    'zlange'                           ),
-    ('dlansy',                    'zlansy'                           ),
-    ('dlarnv',                    'zlarnv'                           ),
-    ('dpotrf',                    'zpotrf'                           ),
-    ('dsytrf',                    'zsytrf'                           ),
-    ('dtrmm',                     'ztrmm'                            ),
-    ('dtrsm',                     'ztrsm'                            ),
-    ('dtrsv',                     'ztrsv'                            ),
-    ('idamax',                    'izamax'                           ),
-    ('spotrf',                    'cpotrf'                           ),
-    ('ssytrf',                    'csytrf'                           ),
-    ('strmm',                     'ctrmm'                            ),
-    ('strsm',                     'ctrsm'                            ),
-    ('strsv',                     'ctrsv'                            ),
+    # ------------------------------------------------------------
+    # replacements applied to most files.
+    'normal' : [
+        # pattern                single                  double                  single-complex          double-complex
+        #'12345678901234567890', '12345678901234567890', '12345678901234567890', '12345678901234567890', '12345678901234567890')
 
-    # ----- BLAS and LAPACK, where complex base name != real base name
-    # with precision
-    ('dlag2s',                    'zlag2c'                           ),
-    ('dlagsy',                    'zlaghe'                           ),
-    ('dlansy',                    'zlanhe'                           ),
-    ('dlat2s',                    'zlat2c'                           ),
-    ('dormqr',                    'zunmqr'                           ),
-    ('dsymm',                     'zhemm'                            ),
-    ('dsymv',                     'zhemv'                            ),
-    ('dsyrk',                     'zherk'                            ),
-    ('slag2d',                    'clag2z'                           ),
-    ('slansy',                    'clanhe'                           ),
-    ('slat2d',                    'clat2z'                           ),
+        # ----- header (identifies precision; not a substitution)
+        ['p',                    's',                    'd',                    'c',                    'z'                   ],
 
-    # without precision
-    ('lag2s',                     'lag2c'                            ),
-    ('lagsy',                     'laghe'                            ),
-    ('lansy',                     'lanhe'                            ),
-    ('lat2s',                     'lat2c'                            ),
-    ('ormqr',                     'unmqr'                            ),
-    ('symm',                      'hemm'                             ),
-    ('symv',                      'hemv'                             ),
-    ('syrk',                      'herk'                             ),
-    ('lag2d',                     'lag2z'                            ),
-    ('lansy',                     'lanhe'                            ),
-    ('lat2d',                     'lat2z'                            ),
+        # ----- Text
+        (r'\ba symmetric',      r'\ba symmetric',      r'\ba symmetric',        r'\ban hermitian',      r'\ba hermitian'       ),
+        ('symmetric',            'symmetric',            'symmetric',            'hermitian',            'hermitian'           ),
+        ('Symmetric',            'Symmetric',            'Symmetric',            'Hermitian',            'Hermitian'           ),
+        ('SYMMETRIC',            'SYMMETRIC',            'SYMMETRIC',            'HERMITIAN',            'HERMITIAN'           ),
+        ('orthogonal',           'orthogonal',           'orthogonal',           'unitary',              'unitary'             ),
+        ('\^T',                  '\^T',                  '\^T',                  '\^H',                  '\^H'                 ),
 
-    # QUARK codelets protection (to prevent conversion with LAPACK WITH PRECISION)
-    ('DAG_CORE_L-AG2C',           'DAG_CORE_LAG2C'                   ),
+        # ----- CBLAS
+        ('',                     '',                     '',                     'CBLAS_SADDR',          'CBLAS_SADDR'         ),
 
-    # ----- BLAS AND LAPACK, UPPERCASE, ALPHABETIC ORDER
-    # COPY & PASTE THESE TO UPPERCASE BELOW AND FIX CASE.
-    # MIXED PRECISION
-    ('DSAXPY',                    'ZCAXPY'                           ),
-    ('DSLASWP',                   'ZCLASWP'                          ),
+        # ----- Complex numbers
+        # \b regexp here avoids conjugate -> conjfugate, and fabs -> fabsf -> fabsff.
+        # Note r for raw string literals, otherwise \b is a bell character.
+        # The \b is deleted from replacement strings.
+        # conj() and fabs() are overloaded in MAGMA, so don't need substitution.
+        (r'',                   r'',                    r'',                    r'\bconjf\b',           r'\bconj\b'            ),
+        (r'',                   r'\bfabsf\b',           r'\bfabs\b',            r'\bfabsf\b',           r'\bfabs\b'            ),
+        (r'',                   r'\bfabsf\b',           r'\bfabs\b',            r'\bcabsf\b',           r'\bcabs\b'            ),
+        (r'',                   r'\bsqrtf\b',           r'\bsqrt\b',            r'\bcsqrtf\b',          r'\bcsqrt\b'            ),
+        (r'',                   r'\bsqrtf\b',           r'\bsqrt\b',            r'\bsqrtf\b',           r'\bsqrt\b'            ),
+        (r'',                   r'',                    r'',                    r'\bcrealf\b',          r'\bcreal\b'           ),
+        (r'',                   r'',                    r'',                    r'\bcimagf\b',          r'\bcimag\b'           ),
 
-    # REGULAR
-    ('DAXPY',                     'ZAXPY'                            ),
-    ('DGEMM',                     'ZGEMM'                            ),
-    ('DGESV',                     'ZGESV'                            ),
-    ('DLACPY',                    'ZLACPY'                           ),
-    ('DLANGE',                    'ZLANGE'                           ),
-    ('DLANSY',                    'ZLANSY'                           ),
-    ('DLARNV',                    'ZLARNV'                           ),
-    ('DPOTRF',                    'ZPOTRF'                           ),
-    ('DSYTRF',                    'ZSYTRF'                           ),
-    ('DTRMM',                     'ZTRMM'                            ),
-    ('DTRSM',                     'ZTRSM'                            ),
-    ('DTRSV',                     'ZTRSV'                            ),
-    ('IDAMAX',                    'IZAMAX'                           ),
-    ('SPOTRF',                    'CPOTRF'                           ),
-    ('SSYTRF',                    'CSYTRF'                           ),
-    ('STRMM',                     'CTRMM'                            ),
-    ('STRSM',                     'CTRSM'                            ),
-    ('STRSV',                     'CTRSV'                            ),
+        # ----- Constants
+        ('Trans',                'Trans',                'Trans',                'ConjTrans',            'ConjTrans'           ),
 
-    # ----- BLAS AND LAPACK, WHERE COMPLEX BASE NAME != REAL BASE NAME
-    # WITH PRECISION
-    ('DLAG2S',                    'ZLAG2C'                           ),
-    ('DLAGSY',                    'ZLAGHE'                           ),
-    ('DLANSY',                    'ZLANHE'                           ),
-    ('DLAT2S',                    'ZLAT2C'                           ),
-    ('DORMQR',                    'ZUNMQR'                           ),
-    ('DSYMM',                     'ZHEMM'                            ),
-    ('DSYMV',                     'ZHEMV'                            ),
-    ('DSYRK',                     'ZHERK'                            ),
-    ('SLAG2D',                    'CLAG2Z'                           ),
-    ('SLANSY',                    'CLANHE'                           ),
-    ('SLAT2D',                    'CLAT2Z'                           ),
+        # ----- BLAS & LAPACK
+    ]
+    + _title( blas )    # e.g., Dgemm, as in cuBLAS, before lowercase (e.g., for Zdrot)
+    + _lower( blas )    # e.g., dgemm
+    + _upper( blas )    # e.g., DGEMM
+    + _lower( lapack )  # e.g., dgetrf
+    + _title( lapack )  # e.g., Dgetrf
+    + _upper( lapack )  # e.g., DGETRF
+    + [
+        # ----- Fortran Types
+        ('int\(',                'real\(',               'real\(',               'complex\(',            'complex\('           ),
+        ('int',                  'real',                 'double precision',     'real',                r'\bdouble precision\b'),  # before double
+        ('_int',                 '_float',               '_double',              '_complex',             '_double_complex'     ),
+        (r'\bint',              r'\bfloat',             r'\bdouble',            r'\bcomplex',           r'\bdouble_complex'    ),
+        (r'\bint',              r'\bfloat',             r'\bdouble',            r'\bfloat',             r'\bdouble'            ),
+        ('int',                  'real',                 'double precision',     'complex',             r'\bcomplex\*16'       ),
+        ('INT',                  'REAL',                 'DOUBLE_PRECISION',     'COMPLEX',             r'\bCOMPLEX_16'        ),
+        ('INT',                  'REAL',                 'DOUBLE PRECISION',     'COMPLEX',             r'\bDOUBLE COMPLEX'    ),
+        ('INT',                  'REAL',                 'DOUBLE PRECISION',     'REAL',                r'\bDOUBLE PRECISION'  ),
+        ('MPI_INT',              'MPI_FLOAT',            'MPI_DOUBLE',           'MPI_COMPLEX',          'MPI_DOUBLE_COMPLEX'  ),
+        ('MPI_INT',              'MPI_FLOAT',            'MPI_DOUBLE',           'MPI_FLOAT',            'MPI_DOUBLE'          ),
 
-    # WITHOUT PRECISION
-    ('LAG2S',                     'LAG2C'                            ),
-    ('LAGSY',                     'LAGHE'                            ),
-    ('LANSY',                     'LANHE'                            ),
-    ('LAT2S',                     'LAT2C'                            ),
-    ('ORMQR',                     'UNMQR'                            ),
-    ('SYMM',                      'HEMM'                             ),
-    ('SYMV',                      'HEMV'                             ),
-    ('SYRK',                      'HERK'                             ),
-    ('LAG2D',                     'LAG2Z'                            ),
-    ('LANSY',                     'LANHE'                            ),
-    ('LAT2D',                     'LAT2Z'                            ),
+        # ----- Data types
+        # C++
+        ('int',                  'float',                'double',               'float _Complex',      r'\bdouble _Complex'   ),
+        # CUDA
+        ('int',                  'float',                'double',               'make_cuFloatComplex',  'make_cuDoubleComplex'),
+        (r'\bint',              r'\bfloat',             r'\bdouble',            r'\bcuFloatComplex',    r'\bcuDoubleComplex'   ),
+        (r'\bint',              r'\breal',              r'\breal',              r'\bcomplex',           r'\bcomplex'           ),
+        (r'\bint',              r'\bfloat',             r'\bdouble',            r'\bfloat2',            r'\bdouble2'           ),
 
-    # QUARK codelets protection (to prevent conversion with LAPACK WITH PRECISION)
-    ('DAG_CORE_LAG2C',            'DAG_CORE_L-AG2C'                  ),
-],
+        # ----- header files
+        (r'_p\.h\b',            r'_s\.h\b',            r'_d\.h\b',             r'_c\.h\b',             r'_z\.h\b'             ),
+        ('_p_',                  '_s_',                 '_d_',                  '_c_',                  '_z_'                 ),
+        ('_P_',                  '_S_',                 '_D_',                  '_C_',                  '_Z_'                 ),
+        (r'\bp_',               r'\bs_',               r'\bd_',                r'\bc_',                r'\bz_'                ),
+    ],  # end normal
+} #end _subs
 
-  # ------------------------------------------------------------
-  # replacements applied to most files.
-  'normal' : [
-    # ----- Special line indicating column types
-    # old python (2.4) requires this line to be list [] rather than tuple () to use index() function.
-    ['p',            's',              'd',              'c',              'z'               ],
+class Substitution( object ):
+    def __init__( self, subsfiles=[] ):
+        # Fill in subs_search with same structure as subs, but containing None values.
+        # Later in substitute(), we'll cache compiled regexps in subs_search.
+        # We could pre-compile them here, but that would compile many unneeded ones.
+        #
+        for file in subsfiles:
+            fullpath = path.realpath(file)
+            (filepath, filename) = path.split( fullpath )
 
-    # TODO clean; shouldn't be added this way
-    ('', 'cblas_sscal',   ' cblas_dscal',    'cblas_csscal',   'cblas_zdscal'),
-    ('', 'stsmqr_hetra1',  'dtsmqr_hetra1',  'ctsmqr_hetra1',  'ztsmqr_hetra1'),
-    ('', 'stsmlq_hetra1',  'dtsmlq_hetra1',  'ctsmlq_hetra1',  'ztsmlq_hetra1'),
-    ('', 'codelet_ssyrfb', 'codelet_dsyrfb', 'codelet_cherfb', 'codelet_zherfb'),
-    ('', 'cl_ssyrfb',      'cl_dsyrfb',      'cl_cherfb',      'cl_zherfb'),
-    ('', 'she2ge',         'dhe2ge',         'che2ge',         'zhe2ge'),
-    ('', 'sgbcpy',         'dgbcpy',         'cgbcpy',         'zgbcpy'),
+            if filename != "local_subs.py":
+                print( "Error in dictionnary: Must be named local_subs.py and not", filename, file=sys.stderr )
+                exit(1)
 
+            remove = False
+            if filepath not in sys.path:
+                sys.path.append( filepath )
+                remove = True
+            try:
+                from local_subs import subs
+                for key in subs.keys():
+                    _subs[key] = _subs[key] + subs[key]
+            except Exception as err:
+                print( "Error: in importing:", file, file=sys.stderr )
+                traceback.print_exc()
+                exit(1)
+            if remove:
+                sys.path.remove( filepath )
 
-    # ----- Preprocessor
-    ('', '#define PRECISION_s',  '#define PRECISION_d',   '#define PRECISION_c',              '#\s*define PRECISION_z'              ),
-    ('', '#undef PRECISION_s',   '#undef PRECISION_d',    '#undef PRECISION_c',               '#undef PRECISION_z'               ),
-    ('', '#define REAL',         '#define REAL',          '#define COMPLEX',                  '#define COMPLEX'                  ),
-    ('', '#undef COMPLEX',       '#undef COMPLEX',        '#undef REAL',                      '#undef REAL'                      ),
-    ('', '#define SINGLE',       '#define DOUBLE',        '#define SINGLE',                   '#define DOUBLE'                   ),
-    ('', '#undef DOUBLE',        '#undef SINGLE',         '#undef DOUBLE',                    '#undef SINGLE'                    ),
+        # Fill in subs_replace with pre-processed version of subs, removing regexp escapes.
+        try:
+            subs = _subs
+            subs_search  = {}
+            subs_replace = {}
+            for key in subs.keys():
+                nrow = len( subs[key]    )
+                ncol = len( subs[key][0] )
+                subs_search [key] = [ [ None for j in range(ncol) ] for i in range(nrow) ]
+                subs_replace[key] = [ [ None for j in range(ncol) ] for i in range(nrow) ]
+                for (i, row) in enumerate( subs[key] ):
+                    for (j, sub) in enumerate( row ):
+                        sub = sub.replace( r'\b',  r''  )
+                        sub = sub.replace( r'\*',  r'*' )
+                        sub = sub.replace( r'\(',  r'(' )
+                        sub = sub.replace( r'\)',  r')' )
+                        sub = sub.replace( r'\.',  r'.' )
+                        sub = sub.replace( r'\^',  r'^' )
+                        subs_replace[key][i][j] = sub
+                    # end
+                # end
+            # end
+        except Exception as err:
+            print( "Error: in subs:", file=sys.stderr )
+            if 'key' in locals() and 'i' in locals():
+                print( "row %d of substitution table '%s': %s" %
+                       (i, key, row), file=sys.stderr )
+            traceback.print_exc()
+            exit(1)
 
-    # ----- Fortran Types
-    ('', 'real\(kind=c_float\)', 'real\(kind=c_double\)', 'complex\(kind=c_float_complex\)',  'complex\(kind=c_double_complex\)' ),
-    ('', 'real(kind=c_float\)',  'real\(kind=c_double\)', 'real\(kind=c_float\)',             'real\(kind=c_double\)'            ),
-    ('', 'real',                 'double precision',      'complex',                          'complex\(kind=wp\)'               ),
-    ('', 'real',                 'double precision',      'real',                            r'\bdouble precision'               ),  # before double
-    ('', 'real',                 'double precision',      'complex',                         r'\bcomplex\*16'                    ),
-    ('', 'REAL',                 'DOUBLE_PRECISION',      'COMPLEX',                         r'\bCOMPLEX_16'                     ),
-    ('', 'REAL',                 'DOUBLE PRECISION',      'COMPLEX',                         r'\bDOUBLE COMPLEX'                 ),
-    ('', 'REAL',                 'DOUBLE PRECISION',      'REAL',                            r'\bDOUBLE PRECISION'               ),
-
-    # ----- Data types
-    # C++
-    ('', 'float',                'double',                'float _Complex',                  r'\bdouble _Complex'                  ),
-    # CUDA
-    ('', 'float',                'double',                'cuFloatComplex',                  r'\bcuDoubleComplex'                  ),
-    ('', 'float',                'double',                'make_cuFloatComplex',              'make_cuDoubleComplex'               ),
-    # Magma
-    ('', 'float',                'double',                'magmaFloatComplex',               r'\bmagmaDoubleComplex'               ),
-    # Plasma
-    ('', 'float',                'double',                'PLASMA_Complex32_t',              r'\bPLASMA_Complex64_t'               ),
-    ('', 'float',                'double',                'PLASMA_voidComplex32_t',          r'\bPLASMA_voidComplex64_t'           ),
-    ('', 'PlasmaRealFloat',      'PlasmaRealDouble',      'PlasmaComplexFloat',              r'\bPlasmaComplexDouble'              ),
-    # CHAMELEON
-    ('', 'float',                'double',                'CHAMELEON_Complex32_t',          r'\bCHAMELEON_Complex64_t'             ),
-    ('', 'float',                'double',                'CHAMELEON_voidComplex32_t',      r'\bCHAMELEON_voidComplex64_t'         ),
-    ('', 'ChamRealFloat',        'ChamRealDouble',        'ChamComplexFloat',               r'\bChamComplexDouble'                 ),
-    # Pastix
-    ('int',           'float',       'double',        'pastix_complex32_t', r'\bpastix_complex64_t'),
-    ('int',           'float',       'double',        'float',              r'\bdouble'            ),
-    ('PastixPattern', 'PastixFloat', 'PastixDouble',  'PastixComplex32',    r'\bPastixComplex64'   ),
-    ('PastixPattern', 'PastixFloat', 'PastixDouble',  'PastixFloat',        r'\bPastixDouble'      ),
-    ('int',           'float',       'double',        'spm_complex32_t',    r'\bspm_complex64_t'   ),
-    ('SpmPattern',    'SpmFloat',    'SpmDouble',     'SpmComplex32',       r'\bSpmComplex64'      ),
-    ('SpmPattern',    'SpmFloat',    'SpmDouble',     'SpmFloat',           r'\bSpmDouble'         ),
-    ('',              'sizeof_real', 'sizeof_double', 'sizeof_complex',     r'\bsizeof_complex_16' ),  # before complex
-    ('',              'real',        'real',          'complex',            r'\bcomplex'           ),
-    ('',              'float',       'double',        'float2',             r'\bdouble2'           ),
-    ('',              'float',       'double',        'float',              r'\bdouble'            ),
-    ('',              'float',       'double',        'complex',             'double_complex'      ),
-
-    # ----- Text
-    ('Symmetric', 'Symmetric',      'Symmetric',      'Hermitian',      'Hermitian'       ),
-    ('', '\*\*T',          '\*\*T',          '\*\*H',          '\*\*H'           ),
-    ('', '%f',             '%lf',            '%f',             '%lf'             ),  # for scanf
-    ('', '%g',             '%lg',            '%g',             '%lg'             ),  # for scanf
-
-    # ----- CBLAS
-    ('', 'cblas_sasum',    'cblas_dasum',    'cblas_scasum',   'cblas_dzasum'    ),
-    ('', 'cblas_snrm2',    'cblas_dnrm2',    'cblas_scnrm2',   'cblas_dznrm2'    ),
-    ('', '',               '',               'CBLAS_SADDR',    'CBLAS_SADDR'     ),
-    ('', 'cblas_ssyr',     'cblas_dsyr',     'cblas_cher',     'cblas_zher'      ),
-    ('', 'cblas_sscal',    'cblas_dscal',    'cblas_csscal',   'cblas_zdscal'    ),
-
-    # ----- Core BLAS
-    ('', 'CORE_sasum',     'CORE_dasum',     'CORE_scasum',    'CORE_dzasum'     ),
-    ('', 'core_sasum',     'core_dasum',     'core_scasum',    'core_dzasum'     ),
-    ('', 'CORE_ssyrfb',    'CORE_dsyrfb',    'CORE_cherfb',    'CORE_zherfb'     ),
-    ('', 'core_ssyrfb',    'core_dsyrfb',    'core_cherfb',    'core_zherfb'     ),
-    ('', 'CORE_stsmlq_sy', 'CORE_dtsmlq_sy', 'CORE_ctsmlq_he', 'CORE_ztsmlq_he'  ),
-    ('', 'core_stsmlq_sy', 'core_dtsmlq_sy', 'core_ctsmlq_he', 'core_ztsmlq_he'  ),
-    ('', 'CORE_stsmqr_sy', 'CORE_dtsmqr_sy', 'CORE_ctsmqr_he', 'CORE_ztsmqr_he'  ),
-    ('', 'core_stsmqr_sy', 'core_dtsmqr_sy', 'core_ctsmqr_he', 'core_ztsmqr_he'  ),
-
-    # ----- Prefixes
-    # Changing prefixes first requires some calls to be fixed without precision,
-    # e.g., her2k -> syr2k instead of zher2k -> ssyr2k.
-    # See BLAS and LAPACK without precision, below.
-    ('', 'blasf77_s',      'blasf77_d',      'blasf77_c',      'blasf77_z'       ),
-    ('', 'blasf77_s',      'blasf77_d',      'blasf77_s',      'blasf77_d'       ),
-    ('', 'BLAS_S',         'BLAS_D',         'BLAS_C',         'BLAS_Z'          ),
-    ('', 'BLAS_s',         'BLAS_d',         'BLAS_c',         'BLAS_z'          ),
-    ('', 'BLAS_s',         'BLAS_d',         'BLAS_s',         'BLAS_d'          ),
-    ('', 'blas_is',        'blas_id',        'blas_ic',        'blas_iz'         ),
-    ('', 'blas_s',         'blas_d',         'blas_c',         'blas_z'          ),
-    ('', 'cl_ps',          'cl_pd',          'cl_pc',          'cl_pz'           ),
-    ('', 'cl_s',           'cl_d',           'cl_c',           'cl_z'            ),
-    ('', 'cl_s',           'cl_d',           'cl_sc',          'cl_dz'           ),
-    ('', 'CODELETS_S',     'CODELETS_D',     'CODELETS_C',     'CODELETS_Z'      ),
-    ('', 'codelet_s',      'codelet_d',      'codelet_c',      'codelet_z'       ),
-    ('', 'compute_s',      'compute_d',      'compute_c',      'compute_z'       ),
-    ('', 'control_s',      'control_d',      'control_c',      'control_z'       ),
-    ('', 'coreblas_s',     'coreblas_d',     'coreblas_c',     'coreblas_z'      ),
-    ('', 'CORE_S',         'CORE_D',         'CORE_C',         'CORE_Z'          ),
-    ('', 'CORE_s',         'CORE_d',         'CORE_c',         'CORE_z'          ),
-    ('', 'core_s',         'core_d',         'core_c',         'core_z'          ),
-    ('', 'CORE_s',         'CORE_d',         'CORE_s',         'CORE_d'          ),
-    ('', 'core_s',         'core_d',         'core_s',         'core_d'          ),
-    ('', 'cpu_gpu_s',      'cpu_gpu_d',      'cpu_gpu_c',      'cpu_gpu_z'       ),
-    ('', 'cublasS',        'cublasD',        'cublasC',        'cublasZ'         ),
-    ('', 'CUDA_S',         'CUDA_D',         'CUDA_C',         'CUDA_Z'          ),
-    ('', 'CUDA_s',         'CUDA_d',         'CUDA_c',         'CUDA_z'          ),
-    ('', 'example_s',      'example_d',      'example_c',      'example_z'       ),
-    ('', 'ipt_s',          'ipt_d',          'ipt_c',          'ipt_z'           ),
-    ('', 'LAPACKE_s',      'LAPACKE_d',      'LAPACKE_c',      'LAPACKE_z'       ),
-    ('', 'lapackf77_s',    'lapackf77_d',    'lapackf77_c',    'lapackf77_z'     ),
-    ('', 'lapackf77_s',    'lapackf77_d',    'lapackf77_s',    'lapackf77_d'     ),
-    ('', 'lapack_s',       'lapack_d',       'lapack_c',       'lapack_z'        ),
-    ('', 'lapack_s',       'lapack_d',       'lapack_s',       'lapack_d'        ),
-    ('', 'MAGMABLAS_S',    'MAGMABLAS_D',    'MAGMABLAS_C',    'MAGMABLAS_Z'     ),
-    ('', 'magmablas_s',    'magmablas_d',    'magmablas_c',    'magmablas_z'     ),
-    ('', 'magmaf_s',       'magmaf_d',       'magmaf_c',       'magmaf_z'        ),
-    ('', 'magma_get_s',    'magma_get_d',    'magma_get_c',    'magma_get_z'     ),
-    ('', 'magma_ps',       'magma_pd',       'magma_pc',       'magma_pz'        ),
-    ('', 'MAGMA_S',        'MAGMA_D',        'MAGMA_C',        'MAGMA_Z'         ),
-    ('', 'MAGMA_s',        'MAGMA_d',        'MAGMA_c',        'MAGMA_z'         ),
-    ('', 'magma_s',        'magma_d',        'magma_c',        'magma_z'         ),
-    ('', 'QUARK_S',        'QUARK_D',        'QUARK_C',        'QUARK_Z'         ),
-    ('', 'QUARK_s',        'QUARK_d',        'QUARK_c',        'QUARK_z'         ),
-    ('', 'quark_s',        'quark_d',        'quark_c',        'quark_z'         ),
-    ('', 'QUARK_s',        'QUARK_d',        'QUARK_s',        'QUARK_d'         ),
-    ('', 'plasma_ps',      'plasma_pd',      'plasma_pc',      'plasma_pz'       ),
-    ('', 'PLASMA_S',       'PLASMA_D',       'PLASMA_C',       'PLASMA_Z'        ),
-    ('', 'PLASMA_sor',     'PLASMA_dor',     'PLASMA_cun',     'PLASMA_zun'      ),
-    ('', 'PLASMA_s',       'PLASMA_d',       'PLASMA_c',       'PLASMA_z'        ),
-    ('', 'plasma_s',       'plasma_d',       'plasma_c',       'plasma_z'        ),
-    ('', 'PROFILE_S',      'PROFILE_D',      'PROFILE_C',      'PROFILE_Z'       ),
-    ('', 'profile_s',      'profile_d',      'profile_c',      'profile_z'       ),
-    ('', 'SCHED_s',        'SCHED_d',        'SCHED_c',        'SCHED_z'         ),
-    ('', 'starpu_s',       'starpu_d',       'starpu_c',       'starpu_z'        ),
-    ('', 'testing_ds',     'testing_ds',     'testing_zc',     'testing_zc'      ),
-    ('', 'TESTING_S',      'TESTING_D',      'TESTING_C',      'TESTING_Z'       ),
-    ('', 'testing_s',      'testing_d',      'testing_c',      'testing_z'       ),
-    ('', 'time_s',         'time_d',         'time_c',         'time_z'          ),
-    ('', 'WRAPPER_S',      'WRAPPER_D',      'WRAPPER_C',      'WRAPPER_Z'       ),
-    ('', 'wrapper_s',      'wrapper_d',      'wrapper_c',      'wrapper_z'       ),
-    ('', 'Workspace_s',    'Workspace_d',    'Workspace_c',    'Workspace_z'     ),
-    ('', 'workspace_s',    'workspace_d',    'workspace_c',    'workspace_z'     ),
-
-    # ----- Prefixes CHAMELEON
-    ('', 'CHAMELEON_S',        'CHAMELEON_D',        'CHAMELEON_C',        'CHAMELEON_Z'         ),
-    ('', 'CHAMELEON_sor',      'CHAMELEON_dor',      'CHAMELEON_cun',      'CHAMELEON_zun'       ),
-    ('', 'CHAMELEON_s',        'CHAMELEON_d',        'CHAMELEON_c',        'CHAMELEON_z'         ),
-    ('', 'chameleon_get_s',    'chameleon_get_d',    'chameleon_get_c',    'chameleon_get_z'     ),
-    ('', 'chameleon_ps',       'chameleon_pd',       'chameleon_pc',       'chameleon_pz'        ),
-    ('', 'chameleon_s',        'chameleon_d',        'chameleon_c',        'chameleon_z'         ),
-    ('', 'chameleon_sdesc',    'chameleon_ddesc',    'chameleon_sdesc',    'chameleon_ddesc'     ),
-    #
-    ('', 'TASK_sasum',     'TASK_dasum',     'TASK_scasum',    'TASK_dzasum'     ),
-    ('', 'TASK_ssyrfb',    'TASK_dsyrfb',    'TASK_cherfb',    'TASK_zherfb'     ),
-    ('', 'TASK_stsmlq_sy', 'TASK_dtsmlq_sy', 'TASK_ctsmlq_he', 'TASK_ztsmlq_he'  ),
-    ('', 'TASK_stsmqr_sy', 'TASK_dtsmqr_sy', 'TASK_ctsmqr_he', 'TASK_ztsmqr_he'  ),
-    ('', 'TASK_sor',       'TASK_dor',       'TASK_cun',       'TASK_zun'        ),
-    ('', 'TASK_s',         'TASK_d',         'TASK_c',         'TASK_z'          ),
-    ('', 'TASKS_s',        'TASKS_d',        'TASKS_c',        'TASKS_z'         ),
-    ('', 'tasks_s',        'tasks_d',        'tasks_c',        'tasks_z'         ),
-    ('', 'TASK_slan',      'TASK_dlan',      'TASK_slan',      'TASK_dlan'       ),
-    ('', 'RUNTIME_S',      'RUNTIME_D',      'RUNTIME_C',      'RUNTIME_Z'       ),
-    ('', 'RUNTIME_s',      'RUNTIME_d',      'RUNTIME_c',      'RUNTIME_z'       ),
-
-    ('', 'TASK_s',         'TASK_d',         'TASK_s',         'TASK_d'          ),
-    ('', 'dataflush',      'dataflush',      'dataflush',      'sataflush'       ), # Correct previous line
-
-    # ----- Prefixes PaStiX
-    ('p_spm',  's_spm',  'd_spm',  'c_spm',  'z_spm'  ),
-    ('p_bcsc', 's_bcsc', 'd_bcsc', 'c_bcsc', 'z_bcsc' ),
-    ('', 'csc_s',          'csc_d',          'csc_c',          'csc_z'           ),
-    ('', 'vec_s',          'vec_d',          'vec_c',          'vec_z'           ),
-    ('', 'sequential_s',   'sequential_d',   'sequential_c',   'sequential_z'    ),
-    ('', 'coeftab_s',      'coeftab_d',      'coeftab_c',      'coeftab_z'       ),
-    ('', 'cblk_s',         'cblk_d',         'cblk_c',         'cblk_z'          ),
-    ('', 'thread_s',       'thread_d',       'thread_c',       'thread_z'        ),
-    ('', 'thread_ps',      'thread_pd',      'thread_pc',      'thread_pz'       ),
-
-    # ----- Complex numbers
-    # \b regexp here avoids conjugate -> conjfugate,
-    # assuming we always translate from z, not to z.
-    ('', '',               '',               'conjf',         r'conj\b'          ),
-    ('', 'fabsf',          'fabs',           'cabsf',          'cabs'            ),
-    ('', '',               '',               'cuCrealf',       'cuCreal'         ),
-    ('', '',               '',               'cuCimagf',       'cuCimag'         ),
-    ('', '',               '',               'cuConjf',        'cuConj'          ),
-    ('', 'fabsf',          'fabs',           'cuCabsf',        'cuCabs'          ),
-    ('', '',               '',               'crealf',         'creal'           ),
-    ('', 'sqrtf',          'sqrt',           'csqrtf',         'csqrt'           ),
-
-    # ----- CUDA
-    ('', 'cublasIsamax',   'cublasIdamax',   'cublasIcamax',   'cublasIzamax'    ),
-    ('', 'cublasIsamax',   'cublasIdamax',   'cublasIsamax',   'cublasIdamax'    ),
-    ('', 'cublasSnrm2',    'cublasDnrm2',    'cublasScnrm2',   'cublasDznrm2'    ),
-
-    # ----- PLASMA / MAGMA / CHAMELEON
-    ('', 'bsy2trc',        'bsy2trc',        'bhe2trc',        'bhe2trc'         ),
-    ('', 'magma_ssqrt',    'magma_dsqrt',    'magma_ssqrt',    'magma_dsqrt'     ),
-    ('', 'chameleon_ssqrt','chameleon_dsqrt','chameleon_ssqrt','chameleon_dsqrt' ),
-    ('', 'SAUXILIARY',     'DAUXILIARY',     'CAUXILIARY',     'ZAUXILIARY'      ),
-    ('', 'sauxiliary',     'dauxiliary',     'cauxiliary',     'zauxiliary'      ),
-    ('', 'sbcyclic',       'dbcyclic',       'cbcyclic',       'zbcyclic'        ),
-    ('', 'sbulge',         'dbulge',         'cbulge',         'zbulge'          ),
-    ('', 'SCODELETS',      'DCODELETS',      'CCODELETS',      'ZCODELETS'       ),
-    ('', 'sgetmatrix',     'dgetmatrix',     'cgetmatrix',     'zgetmatrix'      ),
-    ('', 'sinplace',       'dinplace',       'cinplace',       'zinplace'        ),
-    ('', 'slocality',      'dlocality',      'clocality',      'zlocality'       ),
-    ('', 'slapack',        'dlapack',        'clapack',        'zlapack'         ),
-    ('', 'SLAPACK',        'DLAPACK',        'CLAPACK',        'ZLAPACK'         ),
-    ('', 'smalloc',        'dmalloc',        'cmalloc',        'zmalloc'         ),
-    ('', 'smalloc',        'dmalloc',        'smalloc',        'dmalloc'         ),
-    ('', 'spanel_to_q',    'dpanel_to_q',    'cpanel_to_q',    'zpanel_to_q'     ),
-    ('', 'spermute',       'dpermute',       'cpermute',       'zpermute'        ),
-    ('', 'sprint',         'dprint',         'cprint',         'zprint'          ),
-    ('', 'sprint',         'dprint',         'sprint',         'dprint'          ),
-    ('', 'sprofiling',     'dprofiling',     'cprofiling',     'zprofiling'      ),
-    ('', 'sq_to_panel',    'dq_to_panel',    'cq_to_panel',    'zq_to_panel'     ),
-    ('', 'sset',           'dset',           'cset',           'zset'            ),
-    ('', 'ssetmatrix',     'dsetmatrix',     'csetmatrix',     'zsetmatrix'      ),
-    ('', 'SSIZE',          'DSIZE',          'CSIZE',          'ZSIZE'           ),
-    ('', 'ssplit',         'dsplit',         'csplit',         'zsplit'          ),
-    ('', 'stile',          'dtile',          'ctile',          'ztile'           ),
-    ('', 'STILE',          'DTILE',          'CTILE',          'ZTILE'           ),
-    ('', 'stranspose',     'dtranspose',     'ctranspose',     'ztranspose'      ),
-    ('', 'szero',          'dzero',          'czero',          'zzero'           ),
-    ('', 'sy2sb',          'sy2sb',          'he2hb',          'he2hb'           ),
-
-    # ----- Constants
-    ('CblasTrans',  'CblasTrans',  'CblasTrans',  'CblasConjTrans',  r'\bCblasConjTrans'  ),
-    ('MagmaTrans',  'MagmaTrans',  'MagmaTrans',  'MagmaConjTrans',  r'\bMagmaConjTrans'  ),
-    ('ChamTrans',   'ChamTrans',   'ChamTrans',   'ChamConjTrans',   r'\bChamConjTrans'  ),
-    ('PlasmaTrans', 'PlasmaTrans', 'PlasmaTrans', 'PlasmaConjTrans', r'\bPlasmaConjTrans' ),
-    ('PastixTrans', 'PastixTrans', 'PastixTrans', 'PastixConjTrans', r'\bPastixConjTrans' ),
-
-    # ----- BLAS and LAPACK, lowercase, alphabetic order
-    # copy & paste these to uppercase below and fix case.
-    # used for filenames lacking magma_z, etc. prefix
-    ('', 'isamax',         'idamax',         'icamax',         'izamax'          ),
-    ('', 'isamax',         'idamax',         'isamax',         'idamax'          ),
-    ('', 'saxpy',          'daxpy',          'caxpy',          'zaxpy'           ),
-    ('', 'scopy',          'dcopy',          'ccopy',          'zcopy'           ),
-    ('', 'sdiag',          'ddiag',          'cdiag',          'zdiag'           ),
-    ('', 'sgeadd',         'dgeadd',         'cgeadd',         'zgeadd'          ),
-    ('', 'sgecfi',         'dgecfi',         'cgecfi',         'zgecfi'          ),
-    ('', 'sgemdm',         'dgemdm',         'cgemdm',         'zgemdm'          ),
-    ('', 'sgemm',          'dgemm',          'cgemm',          'zgemm'           ),
-    ('', 'sgemv',          'dgemv',          'cgemv',          'zgemv'           ),
-    ('', 'sscal',          'dscal',          'cscal',          'zscal'           ),
-    ('', 'sscal',          'dscal',          'csscal',         'zdscal'          ),
-    ('', 'sscal',          'dscal',          'sscal',          'dscal'           ),  # zdscal -> csscal
-    ('', 'slascal',        'dlascal',        'clascal',        'zlascal'         ),
-    ('', 'slascal',        'dlascal',        'slascal',        'dlascal'         ),
-    ('', 'sswap',          'dswap',          'cswap',          'zswap'           ),
-    ('', 'ssymm',          'dsymm',          'csymm',          'zsymm'           ),
-    ('', 'ssymv',          'dsymv',          'csymv',          'zsymv'           ),
-    ('', 'ssyr2k',         'dsyr2k',         'csyr2k',         'zsyr2k'          ),
-    ('', 'ssyrk',          'dsyrk',          'csyrk',          'zsyrk'           ),
-    ('', 'stradd',         'dtradd',         'ctradd',         'ztradd'          ),
-    ('', 'strmm',          'dtrmm',          'ctrmm',          'ztrmm'           ),
-    ('', 'strmv',          'dtrmv',          'ctrmv',          'ztrmv'           ),
-    ('', 'strsm',          'dtrsm',          'ctrsm',          'ztrsm'           ),
-    ('', 'strsv',          'dtrsv',          'ctrsv',          'ztrsv'           ),
-
-# ADD FOR NEW VERSION OF CHAMELEON
-    ('', 'shbcpy',         'dhbcpy',         'chbcpy',         'zhbcpy'          ),
-    ('', 'ssyrbt',         'dsyrbt',         'cherbt',         'zherbt'          ),
-    ('', 'ssygv',          'dsygv',          'chegv',          'zhegv'           ),
-# END ADD
-
-    # LAPACK
-    ('', 'sbarrier',       'dbarrier',       'cbarrier',       'zbarrier'        ),
-    ('', 'sbdsqr',         'dbdsqr',         'cbdsqr',         'zbdsqr'          ),
-    ('', 'sbdt01',         'dbdt01',         'cbdt01',         'zbdt01'          ),
-    ('', 'scheck',         'dcheck',         'ccheck',         'zcheck'          ),
-    ('', 'sgebak',         'dgebak',         'cgebak',         'zgebak'          ),
-    ('', 'sgebal',         'dgebal',         'cgebal',         'zgebal'          ),
-    ('', 'sgebd2',         'dgebd2',         'cgebd2',         'zgebd2'          ),
-    ('', 'sgebrd',         'dgebrd',         'cgebrd',         'zgebrd'          ),
-    ('', 'sgeev',          'dgeev',          'cgeev',          'zgeev'           ),
-    ('', 'sgehd2',         'dgehd2',         'cgehd2',         'zgehd2'          ),
-    ('', 'sgehrd',         'dgehrd',         'cgehrd',         'zgehrd'          ),
-    ('', 'sgelq2',         'dgelq2',         'cgelq2',         'zgelq2'          ),
-    ('', 'sgelqf',         'dgelqf',         'cgelqf',         'zgelqf'          ),
-    ('', 'sgelqs',         'dgelqs',         'cgelqs',         'zgelqs'          ),
-    ('', 'sgelqt',         'dgelqt',         'cgelqt',         'zgelqt'          ),
-    ('', 'sgels',          'dgels',          'cgels',          'zgels'           ),
-    ('', 'sgeqlf',         'dgeqlf',         'cgeqlf',         'zgeqlf'          ),
-    ('', 'sgeqp3',         'dgeqp3',         'cgeqp3',         'zgeqp3'          ),
-    ('', 'sgeqr2',         'dgeqr2',         'cgeqr2',         'zgeqr2'          ),
-    ('', 'sgeqrf',         'dgeqrf',         'cgeqrf',         'zgeqrf'          ),
-    ('', 'sgeqrs',         'dgeqrs',         'cgeqrs',         'zgeqrs'          ),
-    ('', 'sgeqrt',         'dgeqrt',         'cgeqrt',         'zgeqrt'          ),
-    ('', 'sgessm',         'dgessm',         'cgessm',         'zgessm'          ),
-    ('', 'sgessq',         'dgessq',         'cgessq',         'zgessq'          ),
-    ('', 'sgesv',          'dgesv',          'cgesv',          'zgesv'           ),
-    ('', 'sgesv',          'sgesv',          'cgesv',          'cgesv'           ),
-    ('', 'sget22',         'dget22',         'cget22',         'zget22'          ),
-    ('', 'sgetf2',         'dgetf2',         'cgetf2',         'zgetf2'          ),
-    ('', 'sgetmi',         'dgetmi',         'cgetmi',         'zgetmi'          ),
-    ('', 'sgetmo',         'dgetmo',         'cgetmo',         'zgetmo'          ),
-    ('', 'sgetrf',         'dgetrf',         'cgetrf',         'zgetrf'          ),
-    ('', 'sgetri',         'dgetri',         'cgetri',         'zgetri'          ),
-    ('', 'sgetrl',         'dgetrl',         'cgetrl',         'zgetrl'          ),
-    ('', 'sgetrs',         'dgetrs',         'cgetrs',         'zgetrs'          ),
-    ('', 'shseqr',         'dhseqr',         'chseqr',         'zhseqr'          ),
-    ('', 'shst01',         'dhst01',         'chst01',         'zhst01'          ),
-    ('', 'slabad',         'dlabad',         'slabad',         'dlabad'          ),
-    ('', 'slabrd',         'dlabrd',         'clabrd',         'zlabrd'          ),
-    ('', 'slacgv',         'dlacgv',         'clacgv',         'zlacgv'          ),
-    ('', 'slacpy',         'dlacpy',         'clacpy',         'zlacpy'          ),
-    ('', 'slaed',          'dlaed',          'slaed',          'dlaed'           ),
-    ('', 'slaex',          'dlaex',          'slaex',          'dlaex'           ),
-    ('', 'slagsy',         'dlagsy',         'clagsy',         'zlagsy'          ),
-    ('', 'slahr',          'dlahr',          'clahr',          'zlahr'           ),
-    ('', 'slamc3',         'dlamc3',         'slamc3',         'dlamc3'          ),
-    ('', 'slamch',         'dlamch',         'slamch',         'dlamch'          ),
-    ('', 'slamrg',         'dlamrg',         'slamrg',         'dlamrg'          ),
-    ('', 'slange',         'dlange',         'clange',         'zlange'          ),
-    ('', 'slanst',         'dlanst',         'clanht',         'zlanht'          ),
-    ('', 'slansy',         'dlansy',         'clansy',         'zlansy'          ),
-    ('', 'slantr',         'dlantr',         'clantr',         'zlantr'          ),
-    ('', 'slaqps',         'dlaqps',         'claqps',         'zlaqps'          ),
-    ('', 'slaqp2',         'dlaqp2',         'claqp2',         'zlaqp2'          ),
-    ('', 'slarfb',         'dlarfb',         'clarfb',         'zlarfb'          ),
-    ('', 'slarfg',         'dlarfg',         'clarfg',         'zlarfg'          ),
-    ('', 'slarft',         'dlarft',         'clarft',         'zlarft'          ),
-    ('', 'slarfx',         'dlarfx',         'clarfx',         'zlarfx'          ),
-    ('', 'slarfy',         'dlarfy',         'clarfy',         'zlarfy'          ),
-    ('', 'slarnv',         'dlarnv',         'clarnv',         'zlarnv'          ),
-    ('', 'slarnv',         'dlarnv',         'slarnv',         'dlarnv'          ),
-    ('', 'slartg',         'dlartg',         'clartg',         'zlartg'          ),
-    ('', 'slascl',         'dlascl',         'clascl',         'zlascl'          ),
-    ('', 'slaset',         'dlaset',         'claset',         'zlaset'          ),
-    ('', 'slaswp',         'dlaswp',         'claswp',         'zlaswp'          ),
-    ('', 'slatro',         'dlatro',         'clatro',         'zlatro'          ),
-    ('', 'slatrd',         'dlatrd',         'clatrd',         'zlatrd'          ),
-    ('', 'slauum',         'dlauum',         'clauum',         'zlauum'          ),
-    ('', 'spack',          'dpack',          'cpack',          'zpack'           ),
-    ('', 'splgsy',         'dplgsy',         'cplgsy',         'zplgsy'          ),
-    ('', 'splrnt',         'dplrnt',         'cplrnt',         'zplrnt'          ),
-    ('', 'splssq',         'dplssq',         'cplssq',         'zplssq'          ),
-    ('', 'sposv',          'dposv',          'cposv',          'zposv'           ),
-    ('', 'ssysv',          'dsysv',          'csysv',          'zsysv'           ),
-    ('', 'sposv',          'sposv',          'cposv',          'cposv'           ),
-    ('', 'spotrf',         'dpotrf',         'cpotrf',         'zpotrf'          ),
-    ('', 'spotrf',         'dpotrf',         'cpxtrf',         'zpxtrf'          ),
-    ('', 'ssytrf',         'dsytrf',         'csytrf',         'zsytrf'          ),
-    ('', 'spotri',         'dpotri',         'cpotri',         'zpotri'          ),
-    ('', 'spotrs',         'dpotrs',         'cpotrs',         'zpotrs'          ),
-    ('', 'ssytrs',         'dsytrs',         'csytrs',         'zsytrs'          ),
-    ('', 'sqpt01',         'dqpt01',         'cqpt01',         'zqpt01'          ),
-    ('', 'sqrt02',         'dqrt02',         'cqrt02',         'zqrt02'          ),
-    ('', 'sshift',         'dshift',         'cshift',         'zshift'          ),
-    ('', 'sssssm',         'dssssm',         'cssssm',         'zssssm'          ),
-    ('', 'sstebz',         'dstebz',         'sstebz',         'dstebz'          ),
-    ('', 'sstedc',         'dstedc',         'cstedc',         'zstedc'          ),
-    ('', 'sstedx',         'dstedx',         'cstedx',         'zstedx'          ),
-    ('', 'sstedx',         'dstedx',         'sstedx',         'dstedx'          ),
-    ('', 'sstein',         'dstein',         'cstein',         'zstein'          ),
-    ('', 'sstemr',         'dstemr',         'cstemr',         'zstemr'          ),
-    ('', 'ssteqr',         'dsteqr',         'csteqr',         'zsteqr'          ),
-    ('', 'ssterf',         'dsterf',         'ssterf',         'dsterf'          ),
-    ('', 'ssterm',         'dsterm',         'csterm',         'zsterm'          ),
-    ('', 'sstt21',         'dstt21',         'cstt21',         'zstt21'          ),
-    ('', 'strasm',         'dtrasm',         'ctrasm',         'ztrasm'          ),
-    ('', 'strevc',         'dtrevc',         'ctrevc',         'ztrevc'          ),
-    ('', 'strsmpl',        'dtrsmpl',        'ctrsmpl',        'ztrsmpl'         ),
-    ('', 'strssq',         'dtrssq',         'ctrssq',         'ztrssq'          ),
-    ('', 'strtri',         'dtrtri',         'ctrtri',         'ztrtri'          ),
-    ('', 'stslqt',         'dtslqt',         'ctslqt',         'ztslqt'          ),
-    ('', 'stsmlq_sy',      'dtsmlq_sy',      'ctsmlq_he',      'ztsmlq_he'       ),
-    ('', 'stsmqr_sy',      'dtsmqr_sy',      'ctsmqr_he',      'ztsmqr_he'       ),
-    ('', 'stsmqr',         'dtsmqr',         'ctsmqr',         'ztsmqr'          ),
-    ('', 'stsmlq',         'dtsmlq',         'ctsmlq',         'ztsmlq'          ),
-    ('', 'stsqrt',         'dtsqrt',         'ctsqrt',         'ztsqrt'          ),
-    ('', 'stpgqrt',        'dtpgqrt',        'ctpgqrt',        'ztpgqrt'         ),
-    ('', 'stplqt',         'dtplqt',         'ctplqt',         'ztplqt'          ),
-    ('', 'stpqrt',         'dtpqrt',         'ctpqrt',         'ztpqrt'          ),
-    ('', 'stpmqrt',        'dtpmqrt',        'ctpmqrt',        'ztpmqrt'         ),
-    ('', 'stpmlqt',        'dtpmlqt',        'ctpmlqt',        'ztpmlqt'         ),
-    ('', 'stslqt',         'dtslqt',         'ctslqt',         'ztslqt'          ),
-    ('', 'ststrf',         'dtstrf',         'ctstrf',         'ztstrf'          ),
-    ('', 'sttlqt',         'dttlqt',         'cttlqt',         'zttlqt'          ),
-    ('', 'sttmlq',         'dttmlq',         'cttmlq',         'zttmlq'          ),
-    ('', 'sttmqr',         'dttmqr',         'cttmqr',         'zttmqr'          ),
-    ('', 'sttqrt',         'dttqrt',         'cttqrt',         'zttqrt'          ),
-    ('', 'sungesv',        'sungesv',        'cungesv',        'cungesv'         ),
-    ('', 'sstegr',         'dstegr',         'cstegr',         'zstegr'          ),
-    ('', 'ssyssq',         'dsyssq',         'csyssq',         'zsyssq'          ),
-
-    # ----- LAPACK Eigenvalues
-    ('', 'slatms',         'dlatms',         'slatms',         'dlatms'          ),
-    ('', 'slasrt',         'dlasrt',         'slasrt',         'dlasrt'          ),
-
-    # ----- BLAS and LAPACK, where complex base name != real base name
-    # BLAS, with precision
-    ('', 'sasum',          'dasum',          'scasum',         'dzasum'          ),
-    ('', 'sasum',          'dasum',          'casum',          'zasum'           ),
-    ('', 'sdot',           'ddot',           'cdotc',          'zdotc'           ),
-    ('', 'sdot_sub',       'ddot_sub',       'cdotc_sub',      'zdotc_sub'       ),
-    ('', 'sdot_sub',       'ddot_sub',       'cdotu_sub',      'zdotu_sub'       ),
-    ('', 'sger',           'dger',           'cgerc',          'zgerc'           ),
-    ('', 'sger',           'dger',           'cgeru',          'zgeru'           ),
-    ('', 'snrm2',          'dnrm2',          'scnrm2',         'dznrm2'          ),
-    ('', 'snrm2',          'dnrm2',          'snrm2',          'dnrm2'           ),
-    ('', 'ssymm',          'dsymm',          'chemm',          'zhemm'           ),
-    ('', 'ssymv',          'dsymv',          'chemv',          'zhemv'           ),
-    ('', 'ssyr2',          'dsyr2',          'cher2',          'zher2'           ),
-    ('', 'ssyr2k',         'dsyr2k',         'cher2k',         'zher2k'          ),
-    ('', 'ssyrk',          'dsyrk',          'cherk',          'zherk'           ),
-    ('', 'ssyr',           'dsyr',           'cher',           'zher'            ),
-
-    # LAPACK, with precision
-    ('', 'slag2d',         'dlag2s',         'clag2z',         'zlag2c'          ),
-    ('', 'slagsy',         'dlagsy',         'claghe',         'zlaghe'          ),
-    ('', 'slasyf',         'dlasyf',         'clahef',         'zlahef'          ),
-    ('', 'slansy',         'dlansy',         'clanhe',         'zlanhe'          ),
-    ('', 'slavsy',         'dlavsy',         'clavhe',         'zlavhe'          ),
-    ('', 'sorg2r',         'dorg2r',         'cung2r',         'zung2r'          ),
-    ('', 'sorgbr',         'dorgbr',         'cungbr',         'zungbr'          ),
-    ('', 'sorghr',         'dorghr',         'cunghr',         'zunghr'          ),
-    ('', 'sorglq',         'dorglq',         'cunglq',         'zunglq'          ),
-    ('', 'sorgql',         'dorgql',         'cungql',         'zungql'          ),
-    ('', 'sorgqr',         'dorgqr',         'cungqr',         'zungqr'          ),
-    ('', 'sorgtr',         'dorgtr',         'cungtr',         'zungtr'          ),
-    ('', 'sorm2r',         'dorm2r',         'cunm2r',         'zunm2r'          ),
-    ('', 'sormbr',         'dormbr',         'cunmbr',         'zunmbr'          ),
-    ('', 'sormlq',         'dormlq',         'cunmlq',         'zunmlq'          ),
-    ('', 'sormql',         'dormql',         'cunmql',         'zunmql'          ),
-    ('', 'sormqr',         'dormqr',         'cunmqr',         'zunmqr'          ),
-    ('', 'sormr2',         'dormr2',         'cunmr2',         'zunmr2'          ),
-    ('', 'sormtr',         'dormtr',         'cunmtr',         'zunmtr'          ),
-    ('', 'sort01',         'dort01',         'cunt01',         'zunt01'          ),
-    ('', 'splgsy',         'dplgsy',         'cplghe',         'zplghe'          ),
-    ('', 'ssbtrd',         'dsbtrd',         'chbtrd',         'zhbtrd'          ),
-    ('', 'ssybbd',         'dsybbd',         'chebbd',         'zhebbd'          ),
-    ('', 'ssyev',          'dsyev',          'cheev',          'zheev'           ),
-    ('', 'ssyevd',         'dsyevd',         'cheevd',         'zheevd'          ),
-    ('', 'ssygs2',         'dsygs2',         'chegs2',         'zhegs2'          ),
-    ('', 'ssygst',         'dsygst',         'chegst',         'zhegst'          ),
-    ('', 'ssygvd',         'dsygvd',         'chegvd',         'zhegvd'          ),
-    ('', 'ssygvr',         'dsygvr',         'chegvr',         'zhegvr'          ),
-    ('', 'ssygvx',         'dsygvx',         'chegvx',         'zhegvx'          ),
-    ('', 'ssyssq',         'dsyssq',         'chessq',         'zhessq'          ),
-    ('', 'ssyt21',         'dsyt21',         'chet21',         'zhet21'          ),
-    ('', 'ssytd2',         'dsytd2',         'chetd2',         'zhetd2'          ),
-    ('', 'ssytrd',         'dsytrd',         'chetrd',         'zhetrd'          ),
-    ('', 'ssytrf',         'dsytrf',         'chetrf',         'zhetrf'          ),
-
-    # ----- Auxiliary routines with precision
-    ('', 'sgemerge',       'dgemerge',       'cgemerge',       'zgemerge'        ),
-    ('', 'sparfb',         'dparfb',         'cparfb',         'zparfb'          ),
-
-    # BLAS, without precision
-    # must be after BLAS with precision
-    # Ex: cublasZhemm -> cublasShemm -> cublasSsymm
-    ('', 'Dot',            'Dot',            'Dotc',           'Dotc'            ),
-    ('', 'Dot',            'Dot',            'Dotu',           'Dotu'            ),
-    ('', 'dot',            'dot',            'dotc',           'dotc'            ),
-    ('', 'dot',            'dot',            'dotu',           'dotu'            ),
-    ('', 'ger',            'ger',            'gerc',           'gerc'            ),
-    ('', 'ger',            'ger',            'geru',           'geru'            ),
-    ('', 'nrm2',           'nrm2',           'cnrm2',          'znrm2'           ),  # dznrm2 -> dnrm2
-    ('', 'symm',           'symm',           'hemm',           'hemm'            ),
-    ('', 'symv',           'symv',           'hemv',           'hemv'            ),
-    ('', 'syr2',           'syr2',           'her2',           'her2'            ),
-    ('', 'syr2k',          'syr2k',          'her2k',          'her2k'           ),
-    ('', 'syrk',           'syrk',           'herk',           'herk'            ),
-
-    # LAPACK, without precision
-    ('', 'lag2d',          'lag2s',          'lag2z',          'lag2c'           ),
-    ('', 'lagsy',          'lagsy',          'laghe',          'laghe'           ),
-    ('', 'lasyf',          'lasyf',          'lahef',          'lahef'           ),
-    ('', 'lansy',          'lansy',          'lanhe',          'lanhe'           ),
-    ('', 'lanst',          'lanst',          'lanht',          'lanht'           ),
-    ('', 'lavsy',          'lavsy',          'lavhe',          'lavhe'           ),
-    ('', 'org2r',          'org2r',          'ung2r',          'ung2r'           ),
-    ('', 'orgbr',          'orgbr',          'ungbr',          'ungbr'           ),
-    ('', 'orghr',          'orghr',          'unghr',          'unghr'           ),
-    ('', 'orglq',          'orglq',          'unglq',          'unglq'           ),
-    ('', 'orgql',          'orgql',          'ungql',          'ungql'           ),
-    ('', 'orgqr',          'orgqr',          'ungqr',          'ungqr'           ),
-    ('', 'orgtr',          'orgtr',          'ungtr',          'ungtr'           ),
-    ('', 'orm2r',          'orm2r',          'unm2r',          'unm2r'           ),
-    ('', 'ormbr',          'ormbr',          'unmbr',          'unmbr'           ),
-    ('', 'ormlq',          'ormlq',          'unmlq',          'unmlq'           ),
-    ('', 'ormql',          'ormql',          'unmql',          'unmql'           ),
-    ('', 'ormqr',          'ormqr',          'unmqr',          'unmqr'           ),
-    ('', 'ormr2',          'ormr2',          'unmr2',          'unmr2'           ),
-    ('', 'ormtr',          'ormtr',          'unmtr',          'unmtr'           ),
-    ('', 'ort01',          'ort01',          'unt01',          'unt01'           ),
-    ('', 'plgsy',          'plgsy',          'plghe',          'plghe'           ),
-    ('', 'sbtrd',          'sbtrd',          'hbtrd',          'hbtrd'           ),
-    ('', 'sybbd',          'sybbd',          'hebbd',          'hebbd'           ),
-    ('', 'syev',           'syev',           'heev',           'heev'            ),
-    ('', 'syevd',          'syevd',          'heevd',          'heevd'           ),
-    ('', 'sygs2',          'sygs2',          'hegs2',          'hegs2'           ),
-    ('', 'sygst',          'sygst',          'hegst',          'hegst'           ),
-    ('', 'sygvd',          'sygvd',          'hegvd',          'hegvd'           ),
-    ('', 'sygvr',          'sygvr',          'hegvr',          'hegvr'           ),
-    ('', 'sygvx',          'sygvx',          'hegvx',          'hegvx'           ),
-    ('', 'syssq',          'syssq',          'hessq',          'hessq'           ),
-    ('', 'syt21',          'syt21',          'het21',          'het21'           ),
-    ('', 'sytd2',          'sytd2',          'hetd2',          'hetd2'           ),
-    ('', 'sytrd',          'sytrd',          'hetrd',          'hetrd'           ),
-    ('', 'sytrf',          'sytrf',          'hetrf',          'hetrf'           ),
-    ('', 'syrfb',          'syrfb',          'herfb',          'herfb'           ),
-
-    # ----- For norms: compute result in Real or Double
-    ('', 'slange',         'dlange',         'slange',         'dlange'          ),
-    ('', 'slaset',         'dlaset',         'slaset',         'dlaset'          ),
-    ('', 'splssq',         'dplssq',         'splssq',         'dplssq'          ),
-    ('', 'slacpy',         'dlacpy',         'slacpy',         'dlacpy'          ),
-    ('', 'saxpy',          'daxpy',          'saxpy',          'daxpy'           ),
-
-    # QUARK codelets protection (to prevent conversion with LAPACK WITH PRECISION)
-    ('', 'DAG_CORE_U-NG2R', 'DAG_CORE_U-NG2R', 'DAG_CORE_UNG2R', 'DAG_CORE_UNG2R' ),
-    ('', 'DAG_CORE_U-NGBR', 'DAG_CORE_U-NGBR', 'DAG_CORE_UNGBR', 'DAG_CORE_UNGBR' ),
-    ('', 'DAG_CORE_U-NGHR', 'DAG_CORE_U-NGHR', 'DAG_CORE_UNGHR', 'DAG_CORE_UNGHR' ),
-    ('', 'DAG_CORE_U-NGLQ', 'DAG_CORE_U-NGLQ', 'DAG_CORE_UNGLQ', 'DAG_CORE_UNGLQ' ),
-    ('', 'DAG_CORE_U-NGQL', 'DAG_CORE_U-NGQL', 'DAG_CORE_UNGQL', 'DAG_CORE_UNGQL' ),
-    ('', 'DAG_CORE_U-NGQR', 'DAG_CORE_U-NGQR', 'DAG_CORE_UNGQR', 'DAG_CORE_UNGQR' ),
-    ('', 'DAG_CORE_U-NGTR', 'DAG_CORE_U-NGTR', 'DAG_CORE_UNGTR', 'DAG_CORE_UNGTR' ),
-    ('', 'DAG_CORE_U-NM2R', 'DAG_CORE_U-NM2R', 'DAG_CORE_UNM2R', 'DAG_CORE_UNM2R' ),
-    ('', 'DAG_CORE_U-NMBR', 'DAG_CORE_U-NMBR', 'DAG_CORE_UNMBR', 'DAG_CORE_UNMBR' ),
-    ('', 'DAG_CORE_U-NMLQ', 'DAG_CORE_U-NMLQ', 'DAG_CORE_UNMLQ', 'DAG_CORE_UNMLQ' ),
-    ('', 'DAG_CORE_U-NMQL', 'DAG_CORE_U-NMQL', 'DAG_CORE_UNMQL', 'DAG_CORE_UNMQL' ),
-    ('', 'DAG_CORE_U-NMQR', 'DAG_CORE_U-NMQR', 'DAG_CORE_UNMQR', 'DAG_CORE_UNMQR' ),
-
-    # ----- BLAS AND LAPACK, UPPERCASE, ALPHABETIC ORDER
-    # COPY & PASTE THESE TO UPPERCASE BELOW AND FIX CASE.
-    # USED FOR FILENAMES LACKING MAGMA_Z, ETC. PREFIX
-    ('', 'ISAMAX',         'IDAMAX',         'ICAMAX',         'IZAMAX'          ),
-    ('', 'ISAMAX',         'IDAMAX',         'ISAMAX',         'IDAMAX'          ),
-    ('', 'SAXPY',          'DAXPY',          'CAXPY',          'ZAXPY'           ),
-    ('', 'SCOPY',          'DCOPY',          'CCOPY',          'ZCOPY'           ),
-    ('', 'SGEADD',         'DGEADD',         'CGEADD',         'ZGEADD'          ),
-    ('', 'SGECFI',         'DGECFI',         'CGECFI',         'ZGECFI'          ),
-    ('', 'SGEMDM',         'DGEMDM',         'CGEMDM',         'ZGEMDM'          ),
-    ('', 'SGEMM',          'DGEMM',          'CGEMM',          'ZGEMM'           ),
-    ('', 'SGEMV',          'DGEMV',          'CGEMV',          'ZGEMV'           ),
-    ('', 'SSCAL',          'DSCAL',          'CSCAL',          'ZSCAL'           ),
-    ('', 'SSCAL',          'DSCAL',          'CSSCAL',         'ZDSCAL'          ),
-    ('', 'SSCAL',          'DSCAL',          'SSCAL',          'DSCAL'           ),  # ZDSCAL -> CSSCAL
-    ('', 'SSWAP',          'DSWAP',          'CSWAP',          'ZSWAP'           ),
-    ('', 'SSYMM',          'DSYMM',          'CSYMM',          'ZSYMM'           ),
-    ('', 'SSYMV',          'DSYMV',          'CSYMV',          'ZSYMV'           ),
-    ('', 'SSYR2K',         'DSYR2K',         'CSYR2K',         'ZSYR2K'          ),
-    ('', 'SSYRK',          'DSYRK',          'CSYRK',          'ZSYRK'           ),
-    ('', 'STRADD',         'DTRADD',         'CTRADD',         'ZTRADD'          ),
-    ('', 'STRMM',          'DTRMM',          'CTRMM',          'ZTRMM'           ),
-    ('', 'STRMV',          'DTRMV',          'CTRMV',          'ZTRMV'           ),
-    ('', 'STRSM',          'DTRSM',          'CTRSM',          'ZTRSM'           ),
-    ('', 'STRSV',          'DTRSV',          'CTRSV',          'ZTRSV'           ),
-
-    # LAPACK
-    ('', 'SBDSQR',         'DBDSQR',         'CBDSQR',         'ZBDSQR'          ),
-    ('', 'SBDT01',         'DBDT01',         'CBDT01',         'ZBDT01'          ),
-    ('', 'SCHECK',         'DCHECK',         'CCHECK',         'ZCHECK'          ),
-    ('', 'SGEBAK',         'DGEBAK',         'CGEBAK',         'ZGEBAK'          ),
-    ('', 'SGEBAL',         'DGEBAL',         'CGEBAL',         'ZGEBAL'          ),
-    ('', 'SGEBD2',         'DGEBD2',         'CGEBD2',         'ZGEBD2'          ),
-    ('', 'SGEBRD',         'DGEBRD',         'CGEBRD',         'ZGEBRD'          ),
-    ('', 'SGEEV',          'DGEEV',          'CGEEV',          'ZGEEV'           ),
-    ('', 'SGEHD2',         'DGEHD2',         'CGEHD2',         'ZGEHD2'          ),
-    ('', 'SGEHRD',         'DGEHRD',         'CGEHRD',         'ZGEHRD'          ),
-    ('', 'SGELQ2',         'DGELQ2',         'CGELQ2',         'ZGELQ2'          ),
-    ('', 'SGELQF',         'DGELQF',         'CGELQF',         'ZGELQF'          ),
-    ('', 'SGELQS',         'DGELQS',         'CGELQS',         'ZGELQS'          ),
-    ('', 'SGELS',          'DGELS',          'CGELS',          'ZGELS'           ),
-    ('', 'SGEQLF',         'DGEQLF',         'CGEQLF',         'ZGEQLF'          ),
-    ('', 'SGEQP3',         'DGEQP3',         'CGEQP3',         'ZGEQP3'          ),
-    ('', 'SGEQR2',         'DGEQR2',         'CGEQR2',         'ZGEQR2'          ),
-    ('', 'SGEQRF',         'DGEQRF',         'CGEQRF',         'ZGEQRF'          ),
-    ('', 'SGEQRS',         'DGEQRS',         'CGEQRS',         'ZGEQRS'          ),
-    ('', 'SGESSM',         'DGESSM',         'CGESSM',         'ZGESSM'          ),
-    ('', 'SGESV',          'DGESV',          'CGESV',          'ZGESV'           ),
-    ('', 'SGESV',          'SGESV',          'CGESV',          'CGESV'           ),
-    ('', 'SGET22',         'DGET22',         'CGET22',         'ZGET22'          ),
-    ('', 'SGETF2',         'DGETF2',         'CGETF2',         'ZGETF2'          ),
-    ('', 'SGETRF',         'DGETRF',         'CGETRF',         'ZGETRF'          ),
-    ('', 'SGETRI',         'DGETRI',         'CGETRI',         'ZGETRI'          ),
-    ('', 'SGETRL',         'DGETRL',         'CGETRL',         'ZGETRL'          ),
-    ('', 'SGETRS',         'DGETRS',         'CGETRS',         'ZGETRS'          ),
-    ('', 'SHSEQR',         'DHSEQR',         'CHSEQR',         'ZHSEQR'          ),
-    ('', 'SHST01',         'DHST01',         'CHST01',         'ZHST01'          ),
-    ('', 'SLABAD',         'DLABAD',         'SLABAD',         'DLABAD'          ),
-    ('', 'SLABRD',         'DLABRD',         'CLABRD',         'ZLABRD'          ),
-    ('', 'SLACGV',         'DLACGV',         'CLACGV',         'ZLACGV'          ),
-    ('', 'SLACPY',         'DLACPY',         'CLACPY',         'ZLACPY'          ),
-    ('', 'SLAED',          'DLAED',          'SLAED',          'DLAED'           ),
-    ('', 'SLAEX',          'DLAEX',          'SLAEX',          'DLAEX'           ),
-    ('', 'SLAGSY',         'DLAGSY',         'CLAGSY',         'ZLAGSY'          ),
-    ('', 'SLAHR',          'DLAHR',          'CLAHR',          'ZLAHR'           ),
-    ('', 'SLAMC3',         'DLAMC3',         'SLAMC3',         'DLAMC3'          ),
-    ('', 'SLAMCH',         'DLAMCH',         'SLAMCH',         'DLAMCH'          ),
-    ('', 'SLAMRG',         'DLAMRG',         'SLAMRG',         'DLAMRG'          ),
-    ('', 'SLANGE',         'DLANGE',         'CLANGE',         'ZLANGE'          ),
-    ('', 'SLANST',         'DLANST',         'CLANHT',         'ZLANHT'          ),
-    ('', 'SLANSY',         'DLANSY',         'CLANSY',         'ZLANSY'          ),
-    ('', 'SLANTR',         'DLANTR',         'CLANTR',         'ZLANTR'          ),
-    ('', 'SLAQPS',         'DLAQPS',         'CLAQPS',         'ZLAQPS'          ),
-    ('', 'SLAQP2',         'DLAQP2',         'CLAQP2',         'ZLAQP2'          ),
-    ('', 'SLARFB',         'DLARFB',         'CLARFB',         'ZLARFB'          ),
-    ('', 'SLARFG',         'DLARFG',         'CLARFG',         'ZLARFG'          ),
-    ('', 'SLARFT',         'DLARFT',         'CLARFT',         'ZLARFT'          ),
-    ('', 'SLARFX',         'DLARFX',         'CLARFX',         'ZLARFX'          ),
-    ('', 'SLARFY',         'DLARFY',         'CLARFY',         'ZLARFY'          ),
-    ('', 'SLARNV',         'DLARNV',         'CLARNV',         'ZLARNV'          ),
-    ('', 'SLARNV',         'DLARNV',         'SLARNV',         'DLARNV'          ),
-    ('', 'SLARTG',         'DLARTG',         'CLARTG',         'ZLARTG'          ),
-    ('', 'SLASCL',         'DLASCL',         'CLASCL',         'ZLASCL'          ),
-    ('', 'SLASET',         'DLASET',         'CLASET',         'ZLASET'          ),
-    ('', 'SLASWP',         'DLASWP',         'CLASWP',         'ZLASWP'          ),
-    ('', 'SLATRD',         'DLATRD',         'CLATRD',         'ZLATRD'          ),
-    ('', 'SLAUUM',         'DLAUUM',         'CLAUUM',         'ZLAUUM'          ),
-    ('', 'SPOSV',          'DPOSV',          'CPOSV',          'ZPOSV'           ),
-    ('', 'SSYSV',          'DSYSV',          'CSYSV',          'ZSYSV'           ),
-    ('', 'SPOSV',          'SPOSV',          'CPOSV',          'CPOSV'           ),
-    ('', 'SPOTRF',         'DPOTRF',         'CPOTRF',         'ZPOTRF'          ),
-    ('', 'SPOTRF',         'DPOTRF',         'CPXTRF',         'ZPXTRF'          ),
-    ('', 'SSYTRF',         'DSYTRF',         'CSYTRF',         'ZSYTRF'          ),
-    ('', 'SPOTRI',         'DPOTRI',         'CPOTRI',         'ZPOTRI'          ),
-    ('', 'SPOTRS',         'DPOTRS',         'CPOTRS',         'ZPOTRS'          ),
-    ('', 'SSYTRS',         'DSYTRS',         'CSYTRS',         'ZSYTRS'          ),
-    ('', 'SQPT01',         'DQPT01',         'CQPT01',         'ZQPT01'          ),
-    ('', 'SQRT02',         'DQRT02',         'CQRT02',         'ZQRT02'          ),
-    ('', 'SSSSSM',         'DSSSSM',         'CSSSSM',         'ZSSSSM'          ),
-    ('', 'SSTEBZ',         'DSTEBZ',         'SSTEBZ',         'DSTEBZ'          ),
-    ('', 'SSTEDC',         'DSTEDC',         'CSTEDC',         'ZSTEDC'          ),
-    ('', 'SSTEDX',         'DSTEDX',         'CSTEDX',         'ZSTEDX'          ),
-    ('', 'SSTEDX',         'DSTEDX',         'SSTEDX',         'DSTEDX'          ),
-    ('', 'SSTEIN',         'DSTEIN',         'CSTEIN',         'ZSTEIN'          ),
-    ('', 'SSTEMR',         'DSTEMR',         'CSTEMR',         'ZSTEMR'          ),
-    ('', 'SSTEQR',         'DSTEQR',         'CSTEQR',         'ZSTEQR'          ),
-    ('', 'SSTERF',         'DSTERF',         'SSTERF',         'DSTERF'          ),
-    ('', 'SSTERM',         'DSTERM',         'CSTERM',         'ZSTERM'          ),
-    ('', 'SSTT21',         'DSTT21',         'CSTT21',         'ZSTT21'          ),
-    ('', 'STREVC',         'DTREVC',         'CTREVC',         'ZTREVC'          ),
-    ('', 'STRTRI',         'DTRTRI',         'CTRTRI',         'ZTRTRI'          ),
-    ('', 'STSQRT',         'DTSQRT',         'CTSQRT',         'ZTSQRT'          ),
-    ('', 'STSTRF',         'DTSTRF',         'CTSTRF',         'ZTSTRF'          ),
-    ('', 'SUNGESV',        'SUNGESV',        'CUNGESV',        'CUNGESV'         ),
-    ('', 'SSTEGR',         'DSTEGR',         'CSTEGR',         'ZSTEGR'          ),
-
-    # ----- BLAS AND LAPACK, WHERE COMPLEX BASE NAME != REAL BASE NAME
-    # BLAS, WITH PRECISION
-    ('', 'SDOT',           'DDOT',           'CDOTC',          'ZDOTC'           ),
-    ('', 'SDOT',           'DDOT',           'CDOTU',          'ZDOTU'           ),
-    ('', 'SGER',           'DGER',           'CGERC',          'ZGERC'           ),
-    ('', 'SGER',           'DGER',           'CGERU',          'ZGERU'           ),
-    ('', 'SNRM2',          'DNRM2',          'SCNRM2',         'DZNRM2'          ),
-    ('', 'SSYMM',          'DSYMM',          'CHEMM',          'ZHEMM'           ),
-    ('', 'SSYMV',          'DSYMV',          'CHEMV',          'ZHEMV'           ),
-    ('', 'SSYR2',          'DSYR2',          'CHER2',          'ZHER2'           ),
-    ('', 'SSYR2K',         'DSYR2K',         'CHER2K',         'ZHER2K'          ),
-    ('', 'SSYRK',          'DSYRK',          'CHERK',          'ZHERK'           ),
-    ('', 'SSYR',           'DSYR',           'CHER',           'ZHER'            ),
-
-    # LAPACK, WITH PRECISION
-    ('', 'SLAG2D',         'DLAG2S',         'CLAG2Z',         'ZLAG2C'          ),
-    ('', 'SLAGSY',         'DLAGSY',         'CLAGHE',         'ZLAGHE'          ),
-    ('', 'SLASYF',         'DLASYF',         'CLAHEF',         'ZLAHEF'          ),
-    ('', 'SLANSY',         'DLANSY',         'CLANHE',         'ZLANHE'          ),
-    ('', 'SLAVSY',         'DLAVSY',         'CLAVHE',         'ZLAVHE'          ),
-    ('', 'SORG2R',         'DORG2R',         'CUNG2R',         'ZUNG2R'          ),
-    ('', 'SORGBR',         'DORGBR',         'CUNGBR',         'ZUNGBR'          ),
-    ('', 'SORGHR',         'DORGHR',         'CUNGHR',         'ZUNGHR'          ),
-    ('', 'SORGLQ',         'DORGLQ',         'CUNGLQ',         'ZUNGLQ'          ),
-    ('', 'SORGQL',         'DORGQL',         'CUNGQL',         'ZUNGQL'          ),
-    ('', 'SORGQR',         'DORGQR',         'CUNGQR',         'ZUNGQR'          ),
-    ('', 'SORGTR',         'DORGTR',         'CUNGTR',         'ZUNGTR'          ),
-    ('', 'SORM2R',         'DORM2R',         'CUNM2R',         'ZUNM2R'          ),
-    ('', 'SORMBR',         'DORMBR',         'CUNMBR',         'ZUNMBR'          ),
-    ('', 'SORMLQ',         'DORMLQ',         'CUNMLQ',         'ZUNMLQ'          ),
-    ('', 'SORMQL',         'DORMQL',         'CUNMQL',         'ZUNMQL'          ),
-    ('', 'SORMQR',         'DORMQR',         'CUNMQR',         'ZUNMQR'          ),
-    ('', 'SORMR2',         'DORMR2',         'CUNMR2',         'ZUNMR2'          ),
-    ('', 'SORMTR',         'DORMTR',         'CUNMTR',         'ZUNMTR'          ),
-    ('', 'SORT01',         'DORT01',         'CUNT01',         'ZUNT01'          ),
-    ('', 'SPLGSY',         'DPLGSY',         'CPLGHE',         'ZPLGHE'          ),
-    ('', 'SSBTRD',         'DSBTRD',         'CHBTRD',         'ZHBTRD'          ),
-    ('', 'SSYBBD',         'DSYBBD',         'CHEBBD',         'ZHEBBD'          ),
-    ('', 'SSYEV',          'DSYEV',          'CHEEV',          'ZHEEV'           ),
-    ('', 'SSYEVD',         'DSYEVD',         'CHEEVD',         'ZHEEVD'          ),
-    ('', 'SSYGS2',         'DSYGS2',         'CHEGS2',         'ZHEGS2'          ),
-    ('', 'SSYGST',         'DSYGST',         'CHEGST',         'ZHEGST'          ),
-    ('', 'SSYGVD',         'DSYGVD',         'CHEGVD',         'ZHEGVD'          ),
-    ('', 'SSYGVR',         'DSYGVR',         'CHEGVR',         'ZHEGVR'          ),
-    ('', 'SSYGVX',         'DSYGVX',         'CHEGVX',         'ZHEGVX'          ),
-    ('', 'SSYT21',         'DSYT21',         'CHET21',         'ZHET21'          ),
-    ('', 'SSYTD2',         'DSYTD2',         'CHETD2',         'ZHETD2'          ),
-    ('', 'SSYTRD',         'DSYTRD',         'CHETRD',         'ZHETRD'          ),
-    ('', 'SSYTRF',         'DSYTRF',         'CHETRF',         'ZHETRF'          ),
-
-    # BLAS, WITHOUT PRECISION
-    # MUST BE AFTER BLAS WITH PRECISION
-    # EX: CUBLASZHEMM -> CUBLASSHEMM -> CUBLASSSYMM
-    ('', 'DOT',            'DOT',            'DOTC',           'DOTC'            ),
-    ('', 'DOT',            'DOT',            'DOTU',           'DOTU'            ),
-    ('', 'GER',            'GER',            'GERC',           'GERC'            ),
-    ('', 'GER',            'GER',            'GERU',           'GERU'            ),
-    ('', 'NRM2',           'NRM2',           'CNRM2',          'ZNRM2'           ),  # DZNRM2 -> DNRM2
-    ('', 'SYMM',           'SYMM',           'HEMM',           'HEMM'            ),
-    ('', 'SYMV',           'SYMV',           'HEMV',           'HEMV'            ),
-    ('', 'SYR2',           'SYR2',           'HER2',           'HER2'            ),
-    ('', 'SYR2K',          'SYR2K',          'HER2K',          'HER2K'           ),
-    ('', 'SYRK',           'SYRK',           'HERK',           'HERK'            ),
-
-    # LAPACK, WITHOUT PRECISION
-    ('', 'LAG2D',          'LAG2S',          'LAG2Z',          'LAG2C'           ),
-    ('', 'LAGSY',          'LAGSY',          'LAGHE',          'LAGHE'           ),
-    ('', 'LASYF',          'LASYF',          'LAHEF',          'LAHEF'           ),
-    ('', 'LANSY',          'LANSY',          'LANHE',          'LANHE'           ),
-    ('', 'LAVSY',          'LAVSY',          'LAVHE',          'LAVHE'           ),
-    ('', 'ORG2R',          'ORG2R',          'UNG2R',          'UNG2R'           ),
-    ('', 'ORGBR',          'ORGBR',          'UNGBR',          'UNGBR'           ),
-    ('', 'ORGHR',          'ORGHR',          'UNGHR',          'UNGHR'           ),
-    ('', 'ORGLQ',          'ORGLQ',          'UNGLQ',          'UNGLQ'           ),
-    ('', 'ORGQL',          'ORGQL',          'UNGQL',          'UNGQL'           ),
-    ('', 'ORGQR',          'ORGQR',          'UNGQR',          'UNGQR'           ),
-    ('', 'ORGTR',          'ORGTR',          'UNGTR',          'UNGTR'           ),
-    ('', 'ORM2R',          'ORM2R',          'UNM2R',          'UNM2R'           ),
-    ('', 'ORMBR',          'ORMBR',          'UNMBR',          'UNMBR'           ),
-    ('', 'ORMLQ',          'ORMLQ',          'UNMLQ',          'UNMLQ'           ),
-    ('', 'ORMQL',          'ORMQL',          'UNMQL',          'UNMQL'           ),
-    ('', 'ORMQR',          'ORMQR',          'UNMQR',          'UNMQR'           ),
-    ('', 'ORMR2',          'ORMR2',          'UNMR2',          'UNMR2'           ),
-    ('', 'ORMTR',          'ORMTR',          'UNMTR',          'UNMTR'           ),
-    ('', 'ORT01',          'ORT01',          'UNT01',          'UNT01'           ),
-    ('', 'PLGSY',          'PLGSY',          'PLGHE',          'PLGHE'           ),
-    ('', 'SBTRD',          'SBTRD',          'HBTRD',          'HBTRD'           ),
-    ('', 'SYBBD',          'SYBBD',          'HEBBD',          'HEBBD'           ),
-    ('', 'SYEV',           'SYEV',           'HEEV',           'HEEV'            ),
-    ('', 'SYEVD',          'SYEVD',          'HEEVD',          'HEEVD'           ),
-    ('', 'SYGS2',          'SYGS2',          'HEGS2',          'HEGS2'           ),
-    ('', 'SYGST',          'SYGST',          'HEGST',          'HEGST'           ),
-    ('', 'SYGVD',          'SYGVD',          'HEGVD',          'HEGVD'           ),
-    ('', 'SYGVR',          'SYGVR',          'HEGVR',          'HEGVR'           ),
-    ('', 'SYGVX',          'SYGVX',          'HEGVX',          'HEGVX'           ),
-    ('', 'SYT21',          'SYT21',          'HET21',          'HET21'           ),
-    ('', 'SYTD2',          'SYTD2',          'HETD2',          'HETD2'           ),
-    ('', 'SYTRD',          'SYTRD',          'HETRD',          'HETRD'           ),
-    ('', 'SYTRF',          'SYTRF',          'HETRF',          'HETRF'           ),
-
-    # QUARK codelets protection (to prevent conversion with LAPACK WITH PRECISION)
-    ('', 'DAG_CORE_UNG2R', 'DAG_CORE_UNG2R', 'DAG_CORE_UNG2R', 'DAG_CORE_U-NG2R' ),
-    ('', 'DAG_CORE_UNGBR', 'DAG_CORE_UNGBR', 'DAG_CORE_UNGBR', 'DAG_CORE_U-NGBR' ),
-    ('', 'DAG_CORE_UNGHR', 'DAG_CORE_UNGHR', 'DAG_CORE_UNGHR', 'DAG_CORE_U-NGHR' ),
-    ('', 'DAG_CORE_UNGLQ', 'DAG_CORE_UNGLQ', 'DAG_CORE_UNGLQ', 'DAG_CORE_U-NGLQ' ),
-    ('', 'DAG_CORE_UNGQL', 'DAG_CORE_UNGQL', 'DAG_CORE_UNGQL', 'DAG_CORE_U-NGQL' ),
-    ('', 'DAG_CORE_UNGQR', 'DAG_CORE_UNGQR', 'DAG_CORE_UNGQR', 'DAG_CORE_U-NGQR' ),
-    ('', 'DAG_CORE_UNGTR', 'DAG_CORE_UNGTR', 'DAG_CORE_UNGTR', 'DAG_CORE_U-NGTR' ),
-    ('', 'DAG_CORE_UNM2R', 'DAG_CORE_UNM2R', 'DAG_CORE_UNM2R', 'DAG_CORE_U-NM2R' ),
-    ('', 'DAG_CORE_UNMBR', 'DAG_CORE_UNMBR', 'DAG_CORE_UNMBR', 'DAG_CORE_U-NMBR' ),
-    ('', 'DAG_CORE_UNMLQ', 'DAG_CORE_UNMLQ', 'DAG_CORE_UNMLQ', 'DAG_CORE_U-NMLQ' ),
-    ('', 'DAG_CORE_UNMQL', 'DAG_CORE_UNMQL', 'DAG_CORE_UNMQL', 'DAG_CORE_U-NMQL' ),
-    ('', 'DAG_CORE_UNMQR', 'DAG_CORE_UNMQR', 'DAG_CORE_UNMQR', 'DAG_CORE_U-NMQR' ),
-
-    # PaStiX
-    ('', 'sutils.h',       'dutils.h',       'cutils.h',       'zutils.h'        ),
-    ('', 'SMURGE_',        'DMURGE_',        'CMURGE_',        'ZMURGE_'         ),
-    ('', 'smurge_',        'dmurge_',        'cmurge_',        'zmurge_'         ),
-    ('', 'smurge.h',       'dmurge.h',       'cmurge.h',       'zmurge.h'        ),
-    ('', 'smurge.inc',     'dmurge.inc',     'cmurge.inc',     'zmurge.inc'      ),
-    ('', 'smurge.c',       'dmurge.c',       'cmurge.c',       'zmurge.c'        ),
-    ('', 'ssimple',        'dsimple',        'csimple',        'zsimple'         ),
-    ('', 'sstep-by-step',  'dstep-by-step',  'cstep-by-step',  'zstep-by-step'   ),
-    ('', 'starpu_s',       'starpu_d',       'starpu_c',       'starpu_z'        ),
-    ('', 'STARPU_S',       'STARPU_D',       'STARPU_C',       'STARPU_Z'        ),
-    ('', 'pastix_s',       'pastix_d',       'pastix_c',       'pastix_z'        ),
-    ('', 'PASTIX_S',       'PASTIX_D',       'PASTIX_C',       'PASTIX_Z'        ),
-    ('', 'spm_s',          'spm_d',          'spm_c',          r'\bspm_z'        ),
-    ('', 'SPM_S',          'SPM_D',          'SPM_C',          r'\bSPM_Z'        ),
-    ('', 's_',             'd_',             'c_',             'z_'              ),
-    ('', 'S_',             'D_',             'C_',             'Z_'              ),
-    ('', 'FLT_EPSILON',    'DBL_EPSILON',    'FLT_EPSILON',    'DBL_EPSILON'     ),
-    ('', 's_RAFF_FLOAT',   'd_RAFF_FLOAT',   'c_RAFF_FLOAT',   'z_RAFF_FLOAT'    ),
-    ('', 'MPI_FLOAT',      'MPI_DOUBLE',     'MPI_COMPLEX32',  'MPI_COMPLEX64'   ),
-    ('', 'MPI_FLOAT',      'MPI_DOUBLE',     'MPI_COMPLEX',    'MPI_DOUBLE_COMPLEX'),
-    ('', 'MPI_FLOAT',      'MPI_DOUBLE',     'MPI_FLOAT',      'MPI_DOUBLE'      ),
-    # ----- unused?
-    ('', 's_check',        'd_check',        'c_check',        'z_check'         ),
-    ('', 's_get_idparm',   'd_get_idparm',   's_get_idparm',   'd_get_idparm',   ),
-    #('', 'stesting',       'dtesting',       'ctesting',       'ztesting'        ),
-    #('', 'SAUXILIARY',     'DAUXILIARY',     'CAUXILIARY',     'ZAUXILIARY'      ),
-    # BUILD
-    ('', 'sbuild',         'dbuild',         'cbuild',         'zbuild'          ),
-
-  ],
-
-  # ------------------------------------------------------------
-  # replacements applied for profiling with tau
-  'tracing' :[
-    # ----- Special line indicating column types
-    ['plain', 'tau'],
-
-    # ----- Replacements
-    ('(\w+\*?)\s+(\w+)\s*\(([a-z* ,A-Z_0-9]*)\)\s*{\s+(.*)\s*#pragma tracing_start\s+(.*)\s+#pragma tracing_end\s+(.*)\s+}',
-      r'\1 \2(\3){\n\4tau("\2");\5tau();\6}'),
-    ('\.c','.c.tau'),
-  ],
-};
+        self.subs = subs
+        self.subs_search  = subs_search
+        self.subs_replace = subs_replace

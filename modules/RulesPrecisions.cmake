@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2016 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+# @copyright (c) 2012-2019 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
 #
@@ -29,15 +29,15 @@
 cmake_minimum_required(VERSION 2.8)
 include(CMakeDependentOption)
 
-set(RP_GENDEPENDENCIES ${MORSE_CMAKE_MODULE_PATH}/precision_generator/genDependencies.py)
-set(RP_CODEGEN         ${MORSE_CMAKE_MODULE_PATH}/precision_generator/codegen.py)
+set(RP_CODEGEN ${MORSE_CMAKE_MODULE_PATH}/precision_generator/codegen.py)
+
+set(RP_DEFAULT_DICTIONNARY ${MORSE_CMAKE_MODULE_PATH}/precision_generator/subs.py
+    CACHE INTERNAL "Default dictionnary used for precision generation" )
 
 # Dictionnary
 # -----------
 if( NOT DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
-  message( WARNING "RulesPrecisions included before RP_${CMAKE_PROJECT_NAME}_DICTIONNARY was defined (Default is used)" )
-  set(RP_${CMAKE_PROJECT_NAME}_DICTIONNARY ${MORSE_CMAKE_MODULE_PATH}/precision_generator/subs.py
-    CACHE INTERNAL "Dictionnary used for precision generation" )
+  message( WARNING "RulesPrecisions included before RP_${CMAKE_PROJECT_NAME}_DICTIONNARY was defined (Only the default one is used)" )
 else()
   set(RP_${CMAKE_PROJECT_NAME}_DICTIONNARY ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}
     CACHE INTERNAL "Dictionnary used for precision generation" )
@@ -177,10 +177,6 @@ MACRO(precisions_rules_py)
     message( FATAL_ERROR "precisions_rules_init must be called before any call to precisions_rules_py" )
   endif()
 
-  if( NOT DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
-    message( FATAL_ERROR "precisions_rules_init must be called before any call to precisions_rules_py" )
-  endif()
-
   # By default the TARGETDIR is the current binary directory
   if( "${PREC_RULE_TARGETDIR}" STREQUAL "" )
     set(PREC_RULE_TARGETDIR "./")
@@ -205,7 +201,11 @@ MACRO(precisions_rules_py)
     set(sources_list "${sources_list} ${_src}")
   endforeach()
 
-  set(gencmd ${PYTHON_EXECUTABLE} ${RP_GENDEPENDENCIES} -f "${sources_list}" -p "${options_list}" -s "${CMAKE_CURRENT_SOURCE_DIR}" ${PRECISIONPP_arg} ${PRECISIONPP_prefix})
+  set( gencmd ${PYTHON_EXECUTABLE} ${RP_CODEGEN} -c -f "${sources_list}" -p "${options_list}" -s "${CMAKE_CURRENT_SOURCE_DIR}" ${PRECISIONPP_arg} ${PRECISIONPP_prefix} )
+  if( DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
+    set( gencmd ${gencmd} -D "${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}" )
+  endif()
+
   EXECUTE_PROCESS(COMMAND ${gencmd} OUTPUT_VARIABLE dependencies_list)
 
   foreach(_dependency ${dependencies_list})
@@ -218,7 +218,10 @@ MACRO(precisions_rules_py)
       set(_dependency_PREC   "${CMAKE_MATCH_2}")
       set(_dependency_OUTPUT "${CMAKE_MATCH_3}")
 
-      set(pythoncmd ${PYTHON_EXECUTABLE} ${RP_CODEGEN} -f ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} -p ${_dependency_PREC} ${PRECISIONPP_arg} ${PRECISIONPP_prefix})
+      set(pythoncmd ${PYTHON_EXECUTABLE} ${RP_CODEGEN} -g -f ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} -p ${_dependency_PREC} ${PRECISIONPP_arg} ${PRECISIONPP_prefix})
+      if( DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
+        set( pythoncmd ${pythoncmd} -D "${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}" )
+      endif()
 
       string(STRIP "${_dependency_OUTPUT}" _dependency_OUTPUT)
       string(COMPARE NOTEQUAL "${_dependency_OUTPUT}" "" got_file)
@@ -244,7 +247,7 @@ MACRO(precisions_rules_py)
 	  ADD_CUSTOM_COMMAND(
 	    OUTPUT ${_dependency_OUTPUT}
 	    COMMAND ${CMAKE_COMMAND} -E remove -f ${_dependency_OUTPUT} && ${pythoncmd} && chmod a-w ${_dependency_OUTPUT}
-	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY})
+	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY} ${RP_DEFAULT_DICTIONNARY} )
           set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS ${_compile_flags} GENERATED 1 IS_IN_BINARY_DIR 1 )
 	else( generate_out )
           set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS ${_compile_flags} GENERATED 0 )

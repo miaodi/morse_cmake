@@ -109,6 +109,7 @@ if (ENABLE_CTEST)
       SCOTCH
       SIMGRID
       SPM
+      SLEPC
       STARPU
       SUITESPARSE
       TMG)

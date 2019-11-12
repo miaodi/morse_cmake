@@ -54,7 +54,7 @@ endif()
 # Define some auxilary flags
 include(AuxilaryFlags)
 
-# Define some variables to et info about ressources
+# Define some variables to set info about ressources
 include(Ressources)
 
 # Add the path where we handle our FindFOO.cmake to seek for liraries
@@ -62,6 +62,14 @@ list(APPEND CMAKE_MODULE_PATH ${MORSE_CMAKE_MODULE_PATH}/find)
 
 # To load some macros used in Finds (could be useful for other projects)
 include(FindInit)
+
+### Build type
+set( CMAKE_BUILD_TYPE_DROP_LIST "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+include(Sanitizer)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the type of build, options are None, Debug, Release, RelWithDebInfo, MinSizeRel, ..." FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_BUILD_TYPE_DROP_LIST})
 
 ##
 ## @end file MorseInit.cmake

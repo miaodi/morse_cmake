@@ -329,7 +329,7 @@ set(SCOTCH_C_TEST_SCOTCH_Num_4 "
 #include <stdio.h>
 #include <stdint.h>
 #include <scotch.h>
-int main(int argc, char **argv) {
+int main() {
   if (sizeof(SCOTCH_Num) == 4)
     return 0;
   else
@@ -341,7 +341,7 @@ set(SCOTCH_C_TEST_SCOTCH_Num_8 "
 #include <stdio.h>
 #include <stdint.h>
 #include <scotch.h>
-int main(int argc, char **argv) {
+int main() {
   if (sizeof(SCOTCH_Num) == 8)
     return 0;
   else

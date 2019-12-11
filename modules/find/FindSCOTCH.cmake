@@ -286,6 +286,11 @@ if(SCOTCH_LIBRARIES)
   check_function_exists(SCOTCH_graphInit SCOTCH_WORKS)
   mark_as_advanced(SCOTCH_WORKS)
 
+  # test scotch version
+  unset(HAVE_SCOTCH_CONTEXT_INIT)
+  check_function_exists(SCOTCH_contextInit HAVE_SCOTCH_CONTEXT_INIT)
+  mark_as_advanced(HAVE_SCOTCH_CONTEXT_INIT)
+
   if(SCOTCH_WORKS)
     # save link with dependencies
     set(SCOTCH_LIBRARIES "${REQUIRED_LIBS}")

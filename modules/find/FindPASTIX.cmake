@@ -20,7 +20,7 @@
 #   - MPI
 #   - HWLOC
 #   - BLAS
-#   - SPM
+#   - SPM (for versions >= 6)
 #
 #  COMPONENTS are optional libraries PASTIX could be linked with,
 #  Use it to drive detection of a specific compilation chain
@@ -38,6 +38,8 @@
 #   - PTSCOTCH: to activate detection of PASTIX linked with SCOTCH
 #   - METIS: to activate detection of PASTIX linked with SCOTCH
 #   - FORTRAN: to provide Fortran libraries of PASTIX in LIBRARIES
+#   - SPM: for PASTIX versions >=6 SPM is required so that you must add
+#   this component in this case
 #
 # This module finds headers and pastix library.
 # Results are reported in variables:
@@ -116,6 +118,7 @@ set(PASTIX_LOOK_FOR_SCOTCH ON)
 set(PASTIX_LOOK_FOR_PTSCOTCH OFF)
 set(PASTIX_LOOK_FOR_METIS OFF)
 set(PASTIX_LOOK_FOR_FORTRAN OFF)
+set(PASTIX_LOOK_FOR_SPM OFF)
 
 if( PASTIX_FIND_COMPONENTS )
   foreach( component ${PASTIX_FIND_COMPONENTS} )
@@ -156,6 +159,9 @@ if( PASTIX_FIND_COMPONENTS )
     endif()
     if (${component} STREQUAL "FORTRAN")
       set(PASTIX_LOOK_FOR_FORTRAN ON)
+    endif()
+    if (${component} STREQUAL "SPM")
+      set(PASTIX_LOOK_FOR_SPM ON)
     endif()
   endforeach()
 endif()
@@ -249,20 +255,6 @@ else()
   find_package(BLAS)
 endif()
 
-# PASTIX depends on SPM
-#------------------------
-if (NOT PASTIX_FIND_QUIETLY)
-  message(STATUS "Looking for PASTIX - Try to detect SPM")
-endif()
-set(SPM_COMPONENTS "")
-if(PASTIX_LOOK_FOR_FORTRAN)
-  list(APPEND SPM_COMPONENTS "FORTRAN" )
-endif()
-if (PASTIX_FIND_REQUIRED)
-  find_package(SPM REQUIRED COMPONENTS ${SPM_COMPONENTS})
-else()
-  find_package(SPM COMPONENTS ${SPM_COMPONENTS})
-endif()
 
 # Optional dependencies
 # ---------------------
@@ -290,8 +282,8 @@ if (PASTIX_LOOK_FOR_MPI)
   endif()
 endif (PASTIX_LOOK_FOR_MPI)
 
-# PASTIX may depends on SCOTCH
-#-----------------------------
+# PASTIX may depend on PARSEC
+#----------------------------
 if (PASTIX_LOOK_FOR_PARSEC)
   if (NOT PASTIX_FIND_QUIETLY)
     message(STATUS "Looking for PASTIX - Try to detect PARSEC")
@@ -344,7 +336,7 @@ if(PASTIX_LOOK_FOR_STARPU)
 
 endif(PASTIX_LOOK_FOR_STARPU)
 
-# PASTIX may depends on SCOTCH
+# PASTIX may depend on SCOTCH
 #-----------------------------
 if (PASTIX_LOOK_FOR_SCOTCH)
   if (NOT PASTIX_FIND_QUIETLY)
@@ -357,7 +349,7 @@ if (PASTIX_LOOK_FOR_SCOTCH)
   endif()
 endif()
 
-# PASTIX may depends on PTSCOTCH
+# PASTIX may depend on PTSCOTCH
 #-------------------------------
 if (PASTIX_LOOK_FOR_PTSCOTCH)
   if (NOT PASTIX_FIND_QUIETLY)
@@ -370,7 +362,7 @@ if (PASTIX_LOOK_FOR_PTSCOTCH)
   endif()
 endif()
 
-# PASTIX may depends on METIS
+# PASTIX may depend on METIS
 #----------------------------
 if (PASTIX_LOOK_FOR_METIS)
   if (NOT PASTIX_FIND_QUIETLY)
@@ -380,6 +372,23 @@ if (PASTIX_LOOK_FOR_METIS)
     find_package(METIS REQUIRED)
   else()
     find_package(METIS)
+  endif()
+endif()
+
+# PASTIX may depend on SPM
+#--------------------------
+if (PASTIX_LOOK_FOR_SPM)
+  if (NOT PASTIX_FIND_QUIETLY)
+    message(STATUS "Looking for PASTIX - Try to detect SPM")
+  endif()
+  set(SPM_COMPONENTS "")
+  if(PASTIX_LOOK_FOR_FORTRAN)
+    list(APPEND SPM_COMPONENTS "FORTRAN" )
+  endif()
+  if (PASTIX_FIND_REQUIRED)
+    find_package(SPM REQUIRED COMPONENTS ${SPM_COMPONENTS})
+  else()
+    find_package(SPM COMPONENTS ${SPM_COMPONENTS})
   endif()
 endif()
 
@@ -730,7 +739,7 @@ if(PASTIX_LIBRARIES)
     list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
   endif()
   # SPM
-  if (SPM_FOUND)
+  if (PASTIX_LOOK_FOR_SPM AND SPM_FOUND)
     if (SPM_INCLUDE_DIRS)
       list(APPEND REQUIRED_INCDIRS "${SPM_INCLUDE_DIRS}")
     endif()

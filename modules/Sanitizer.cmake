@@ -34,16 +34,16 @@ foreach(sanitizer ${SANITIZERS} )
     check_c_compiler_flag(   "${${sanitizer}_OPTION} ${${sanitizer}_FLAGS}" HAVE_C_${sanitizer} )
     if ( HAVE_C_${sanitizer} )
       set( CMAKE_C_FLAGS_${sanitizer} "${${sanitizer}_OPTION} ${${sanitizer}_FLAGS}" CACHE STRING
-        "Flags used by the C compiler during ${sanitizer} builds."
-        FORCE )
+	"Flags used by the C compiler during ${sanitizer} builds."
+	FORCE )
     endif()
   endif()
   if ( "CXX" IN_LIST languages )
     check_cxx_compiler_flag( "${${sanitizer}_OPTION} ${${sanitizer}_FLAGS}" HAVE_CXX_${sanitizer} )
     if ( HAVE_CXX_${sanitizer} )
       set( CMAKE_CXX_FLAGS_${sanitizer} "${${sanitizer}_OPTION} ${${sanitizer}_FLAGS}" CACHE STRING
-        "Flags used by the C++ compiler during ${sanitizer} builds."
-        FORCE )
+	"Flags used by the C++ compiler during ${sanitizer} builds."
+	FORCE )
     endif()
   endif()
 
@@ -81,3 +81,5 @@ foreach(sanitizer ${SANITIZERS} )
   endif()
 endforeach()
 
+# Restore CMAKE_REQUIRED_FLAGS
+set(CMAKE_REQUIRED_FLAGS)

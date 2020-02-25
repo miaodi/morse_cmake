@@ -76,30 +76,43 @@ if (MORSE_ENABLE_STATIC_ANALYSIS)
 endif()
 
 if (MORSE_ENABLE_COVERAGE)
+  get_property( languages GLOBAL PROPERTY ENABLED_LANGUAGES )
+  set( _enable_coverage FALSE )
 
-  if(CMAKE_C_COMPILER_ID MATCHES GNU)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -fno-inline --coverage")
-  else()
-    message(FATAL_ERROR "Code coverage is only available with the GNU C (gcc)"
-      "\n   compiler, please turn MORSE_ENABLE_COVERAGE OFF\n.")
+  if ( "C" IN_LIST languages )
+    if(CMAKE_C_COMPILER_ID MATCHES GNU)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -fno-inline --coverage")
+      set( _enable_coverage TRUE )
+    else()
+      message(FATAL_ERROR "Code coverage is only available with the GNU C (gcc)"
+        "\n   compiler, please turn MORSE_ENABLE_COVERAGE OFF\n.")
+    endif()
   endif()
 
-  if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fno-inline --coverage")
-  else()
-    message(FATAL_ERROR "Code coverage is only available with the GNU CXX"
-      "\n   (g++) compiler, please turn MORSE_ENABLE_COVERAGE OFF\n.")
+  if ( "CXX" IN_LIST languages )
+    if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fno-inline --coverage")
+      set( _enable_coverage TRUE )
+    else()
+      message(FATAL_ERROR "Code coverage is only available with the GNU CXX"
+        "\n   (g++) compiler, please turn MORSE_ENABLE_COVERAGE OFF\n.")
+    endif()
   endif()
 
-  if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fPIC -fno-inline --coverage")
-  else()
-    message(FATAL_ERROR "Code coverage is only available with the GNU"
-      "\n   Fortran (gfortran) compiler, please turn MORSE_ENABLE_COVERAGE"
-      "\n   OFF\n.")
+  if ( "Fortran" IN_LIST languages )
+    if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fPIC -fno-inline --coverage")
+      set( _enable_coverage TRUE )
+    else()
+      message(FATAL_ERROR "Code coverage is only available with the GNU"
+        "\n   Fortran (gfortran) compiler, please turn MORSE_ENABLE_COVERAGE"
+        "\n   OFF\n.")
+    endif()
   endif()
 
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+  if ( _enable_coverage )
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+  endif()
 
 endif(MORSE_ENABLE_COVERAGE)
 

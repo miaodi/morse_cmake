@@ -26,7 +26,7 @@
 #  @date 13-07-2012
 #
 ###
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.3)
 include(CMakeDependentOption)
 
 set(RP_CODEGEN ${MORSE_CMAKE_MODULE_PATH}/precision_generator/codegen.py)

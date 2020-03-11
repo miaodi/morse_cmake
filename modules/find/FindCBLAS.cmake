@@ -137,6 +137,10 @@ if (BLAS_FOUND)
       endif()
       # test succeeds: CBLAS is in BLAS
       set(CBLAS_LIBRARIES "${BLAS_LIBRARIES}")
+      set(CBLAS_INCLUDE_DIRS "${BLAS_INCLUDE_DIRS}")
+      set(CBLAS_CFLAGS_OTHER "${BLAS_CFLAGS_OTHER}")
+      set(CBLAS_LIBRARY_DIRS "${BLAS_LIBRARY_DIRS}")
+      set(CBLAS_LDFLAGS_OTHER "${BLAS_LDFLAGS_OTHER}")
 
     endif()
 

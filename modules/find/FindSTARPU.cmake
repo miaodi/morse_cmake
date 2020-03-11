@@ -279,13 +279,16 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
         endif()
       endif()
     else()
-      # if the version found is older than the required then error
-      if( (STARPU_FIND_VERSION_MAJOR STRGREATER STARPU_VERSION_MAJOR) OR
-         (STARPU_FIND_VERSION_MINOR STRGREATER STARPU_VERSION_MINOR) )
-        if(NOT STARPU_FIND_QUIETLY)
-         message(WARNING
-           "STARPU version found is ${STARPU_VERSION}"
-           " when required is ${STARPU_FIND_VERSION} or newer")
+      # check only if a version is given in the find_package by user
+      if(STARPU_FIND_VERSION_MAJOR)
+        # if the version found is older than the required then error
+        if( (STARPU_FIND_VERSION_MAJOR STRGREATER STARPU_VERSION_MAJOR) OR
+           (STARPU_FIND_VERSION_MINOR STRGREATER STARPU_VERSION_MINOR) )
+          if(NOT STARPU_FIND_QUIETLY)
+           message(WARNING
+             "STARPU version found is ${STARPU_VERSION}"
+             " when required is ${STARPU_FIND_VERSION} or newer")
+          endif()
         endif()
       endif()
     endif()

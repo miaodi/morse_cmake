@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
+# @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -395,7 +395,7 @@ if (BLAS_FOUND)
       set(REQUIRED_DEFINITIONS)
       foreach(_flag ${REQUIRED_FLAGS_COPY})
         if (_flag MATCHES "^-D")
-         list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+          list(APPEND REQUIRED_DEFINITIONS "${_flag}")
         endif()
         string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
         list(APPEND REQUIRED_FLAGS "${_flag}")

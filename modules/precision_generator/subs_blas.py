@@ -260,8 +260,6 @@ lapack = [
     ('', 'splgsy',               'dplgsy',               'cplgsy',               'zplgsy'              ),
     ('', 'splrnt',               'dplrnt',               'cplrnt',               'zplrnt'              ),
     ('', 'splrnt',               'dplrnt',               'splrnt',               'dplrnt'              ),
-    ('', 'splrnk',               'dplrnk',               'cplrnk',               'zplrnk'              ),
-    ('', 'splrnk',               'dplrnk',               'splrnk',               'dplrnk'              ),
     ('', 'spoinv',               'dpoinv',               'cpoinv',               'zpoinv'              ),
     ('', 'sposv',                'dposv',                'cposv',                'zposv'               ),
     ('', 'spotf2',               'dpotf2',               'cpotf2',               'zpotf2'              ),

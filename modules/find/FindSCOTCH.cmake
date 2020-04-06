@@ -287,7 +287,7 @@ if(SCOTCH_LIBRARIES)
   mark_as_advanced(SCOTCH_WORKS)
 
   # test scotch version
-  unset(HAVE_SCOTCH_CONTEXT_INIT)
+  unset(HAVE_SCOTCH_CONTEXT_INIT CACHE)
   check_function_exists(SCOTCH_contextInit HAVE_SCOTCH_CONTEXT_INIT)
   mark_as_advanced(HAVE_SCOTCH_CONTEXT_INIT)
 

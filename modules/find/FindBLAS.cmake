@@ -74,7 +74,7 @@
 ##  Intel10_32 (intel mkl v10 32 bit), Intel10_64lp (intel mkl v10 64 bit,lp thread model, lp64 model),
 ##  Intel10_64lp_seq (intel mkl v10 64 bit,sequential code, lp64 model),
 ##  Intel( older versions of mkl 32 and 64 bit),
-##  ARMPL, ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic, User (see BLAS_LIBRARIES_USER)
+##  ARMPL, FLAME, ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic, User (see BLAS_LIBRARIES_USER)
 # C/CXX should be enabled to use Intel mkl
 ###
 # We handle different modes to find the dependency
@@ -930,14 +930,22 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         endif()
       endif()
 
-      check_fortran_libraries(
-        BLAS_LIBRARIES
-        BLAS
-        sgemm
-        ""
-        "armpl"
-        ""
-        )
+      find_package(Threads)
+      if( THREADS_FOUND )
+        libraries_absolute_path(CMAKE_THREAD_LIBS_INIT "")
+      endif ()
+
+      if(NOT BLAS_LIBRARIES)
+        check_fortran_libraries(
+          BLAS_LIBRARIES
+          BLAS
+          sgemm
+          ""
+          "armpl"
+          "${CMAKE_THREAD_LIBS_INIT}"
+          )
+      endif()
+
       if(NOT BLAS_FIND_QUIETLY)
         if(BLAS_LIBRARIES)
           message(STATUS "Looking for ARMPL BLAS: found")
@@ -951,6 +959,111 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
 
     endif (NOT BLAS_LIBRARIES OR BLA_VENDOR MATCHES "ARMPL*")
   endif (BLA_VENDOR MATCHES "ARMPL*" OR BLA_VENDOR STREQUAL "All")
+
+  # FLAME's blis library? (https://github.com/flame/blis)
+  if(BLA_VENDOR STREQUAL "FLAME" OR BLA_VENDOR STREQUAL "All")
+    if(NOT BLAS_LIBRARIES OR BLA_VENDOR MATCHES "FLAME")
+      # Looking for include
+      # -------------------
+
+      # Add system include paths to search include
+      # ------------------------------------------
+      unset(_inc_env)
+      set(ENV_FLAME "$ENV{FLAME_DIR}")
+      set(ENV_BLAS_DIR "$ENV{BLAS_DIR}")
+      set(ENV_BLAS_INCDIR "$ENV{BLAS_INCDIR}")
+      if(ENV_BLAS_INCDIR)
+        list(APPEND _inc_env "${ENV_BLAS_INCDIR}")
+      elseif(ENV_BLAS_DIR)
+        list(APPEND _inc_env "${ENV_BLAS_DIR}")
+        list(APPEND _inc_env "${ENV_BLAS_DIR}/include")
+      else()
+        if (ENV_FLAME)
+          list(APPEND _inc_env "${ENV_FLAME}/include")
+        endif()
+        # system variables
+        if(WIN32)
+          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+          list(APPEND _inc_env "${_path_env}")
+        else()
+          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+          list(APPEND _inc_env "${_path_env}")
+          string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+          list(APPEND _inc_env "${_path_env}")
+          string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+          list(APPEND _inc_env "${_path_env}")
+          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+          list(APPEND _inc_env "${_path_env}")
+        endif()
+      endif()
+      list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+      list(REMOVE_DUPLICATES _inc_env)
+
+      # set paths where to look for
+      set(PATH_TO_LOOK_FOR "${_inc_env}")
+
+      # Try to find the blis header in the given paths
+      # -------------------------------------------------
+      # call cmake macro to find the header path
+      if(BLAS_INCDIR)
+        set(BLAS_blis.h_DIRS "BLAS_blis.h_DIRS-NOTFOUND")
+        find_path(BLAS_blis.h_DIRS
+          NAMES blis.h
+          HINTS ${BLAS_INCDIR})
+      else()
+        if(BLAS_DIR)
+          set(BLAS_blis.h_DIRS "BLAS_blis.h_DIRS-NOTFOUND")
+          find_path(BLAS_blis.h_DIRS
+            NAMES blis.h
+            HINTS ${BLAS_DIR}
+            PATH_SUFFIXES "include")
+        else()
+          set(BLAS_blis.h_DIRS "BLAS_blis.h_DIRS-NOTFOUND")
+          find_path(BLAS_blis.h_DIRS
+            NAMES blis.h
+            HINTS ${PATH_TO_LOOK_FOR})
+        endif()
+      endif()
+      mark_as_advanced(BLAS_blis.h_DIRS)
+
+      # If found, add path to cmake variable
+      # ------------------------------------
+      if (BLAS_blis.h_DIRS)
+        set(BLAS_INCLUDE_DIRS "${BLAS_blis.h_DIRS}")
+      else ()
+        set(BLAS_INCLUDE_DIRS "BLAS_INCLUDE_DIRS-NOTFOUND")
+        if(NOT BLAS_FIND_QUIETLY)
+          message(STATUS "Looking for BLAS -- blis.h not found")
+        endif()
+      endif()
+
+      find_package(Threads)
+      if( THREADS_FOUND )
+        libraries_absolute_path(CMAKE_THREAD_LIBS_INIT "")
+      endif ()
+
+      if(NOT BLAS_LIBRARIES)
+        check_fortran_libraries(
+          BLAS_LIBRARIES
+          BLAS
+          sgemm
+          ""
+          "blis"
+          "${CMAKE_THREAD_LIBS_INIT}"
+          )
+      endif()
+      if(NOT BLAS_FIND_QUIETLY)
+        if(BLAS_LIBRARIES)
+          message(STATUS "Looking for FLAME (blis) BLAS: found")
+        else()
+          message(STATUS "Looking for FLAME (blis) BLAS: not found")
+        endif()
+      endif()
+      if (BLAS_LIBRARIES)
+        set (BLAS_VENDOR_FOUND "FLAME")
+      endif()
+    endif(NOT BLAS_LIBRARIES OR BLA_VENDOR MATCHES "FLAME")
+  endif(BLA_VENDOR STREQUAL "FLAME" OR BLA_VENDOR STREQUAL "All")
 
   if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
 

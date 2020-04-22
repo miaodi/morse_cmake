@@ -64,7 +64,7 @@
 # The user can also give directly the LAPACK libraries to be used with:
 # LAPACK_LIBRARIES_USER
 ### List of vendors (LAP_VENDOR) valid in this module
-##  Intel(mkl), ACML, Apple, NAS, Generic, User (See LAPACK_LIBRARIES_USER)
+##  Intel(mkl), ARMPL, FLAME, ACML, Apple, NAS, Generic, User (See LAPACK_LIBRARIES_USER)
 # LAPACK could be directly embedded in BLAS library (ex: Intel MKL) so that
 # we test a lapack function with the blas libraries found. To skip this feature
 # and look for a stand alone lapack, please set LAPACK_STANDALONE to TRUE
@@ -405,7 +405,7 @@ if(BLAS_FOUND)
   include(FindPkgConfig)
   find_package(PkgConfig QUIET)
   if( PKG_CONFIG_EXECUTABLE AND NOT LAPACK_GIVEN_BY_USER AND LAP_VENDOR STREQUAL "All"
-      AND NOT LAPACK_LIBRARIES AND LAP_PREFER_PKGCONFIG)
+      AND NOT LAPACK_LIBRARIES AND LAP_PREFER_PKGCONFIG )
 
     if (LAP_STATIC)
       set(MKL_STR_LAP_STATIC "static")
@@ -484,7 +484,8 @@ if(BLAS_FOUND)
       set(LAPACK_FOUND_WITH_PKGCONFIG "FALSE")
     endif()
 
-  endif()
+  endif( PKG_CONFIG_EXECUTABLE AND NOT LAPACK_GIVEN_BY_USER AND LAP_VENDOR STREQUAL "All"
+         AND NOT LAPACK_LIBRARIES AND LAP_PREFER_PKGCONFIG )
 
   if( (NOT LAPACK_FOUND_WITH_PKGCONFIG) OR LAPACK_GIVEN_BY_USER )
     #intel lapack
@@ -573,6 +574,207 @@ if(BLAS_FOUND)
         endif (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
       endif(NOT LAPACK_LIBRARIES)
     endif(LAP_VENDOR MATCHES "Intel" OR LAP_VENDOR STREQUAL "All")
+
+    if (BLA_VENDOR MATCHES "ARMPL*" OR BLA_VENDOR STREQUAL "All")
+      if(NOT LAPACK_LIBRARIES OR BLA_VENDOR MATCHES "ARMPL*")
+        # Looking for include
+        # -------------------
+
+        # Add system include paths to search include
+        # ------------------------------------------
+        unset(_inc_env)
+        set(ENV_ARMPL "$ENV{ARMPL_DIR}")
+        set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
+        set(ENV_LAPACK_INCDIR "$ENV{LAPACK_INCDIR}")
+        if(ENV_LAPACK_INCDIR)
+          list(APPEND _inc_env "${ENV_LAPACK_INCDIR}")
+        elseif(ENV_LAPACK_DIR)
+          list(APPEND _inc_env "${ENV_LAPACK_DIR}")
+          list(APPEND _inc_env "${ENV_LAPACK_DIR}/include")
+        else()
+          if (ENV_ARMPL)
+            list(APPEND _inc_env "${ENV_ARMPL}/include")
+          endif()
+          # system variables
+          if(WIN32)
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+          else()
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+          endif()
+        endif()
+        list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+        list(REMOVE_DUPLICATES _inc_env)
+
+        # set paths where to look for
+        set(PATH_TO_LOOK_FOR "${_inc_env}")
+
+        # Try to find the armpl header in the given paths
+        # -------------------------------------------------
+        # call cmake macro to find the header path
+        if(LAPACK_INCDIR)
+          set(LAPACK_armpl.h_DIRS "LAPACK_armpl.h_DIRS-NOTFOUND")
+          find_path(LAPACK_armpl.h_DIRS
+            NAMES armpl.h
+            HINTS ${LAPACK_INCDIR})
+        else()
+          if(LAPACK_DIR)
+            set(LAPACK_armpl.h_DIRS "LAPACK_armpl.h_DIRS-NOTFOUND")
+            find_path(LAPACK_armpl.h_DIRS
+              NAMES armpl.h
+              HINTS ${LAPACK_DIR}
+              PATH_SUFFIXES "include")
+          else()
+            set(LAPACK_armpl.h_DIRS "LAPACK_armpl.h_DIRS-NOTFOUND")
+            find_path(LAPACK_armpl.h_DIRS
+              NAMES armpl.h
+              HINTS ${PATH_TO_LOOK_FOR})
+          endif()
+        endif()
+        mark_as_advanced(LAPACK_armpl.h_DIRS)
+
+        # If found, add path to cmake variable
+        # ------------------------------------
+        if (LAPACK_armpl.h_DIRS)
+          set(LAPACK_INCLUDE_DIRS "${LAPACK_armpl.h_DIRS}")
+        else ()
+          set(LAPACK_INCLUDE_DIRS "LAPACK_INCLUDE_DIRS-NOTFOUND")
+          if(NOT LAPACK_FIND_QUIETLY)
+            message(STATUS "Looking for LAPACK -- armpl.h not found")
+          endif()
+        endif()
+
+        if(NOT LAPACK_LIBRARIES)
+          check_lapack_libraries(
+            LAPACK_LIBRARIES
+            LAPACK
+            cheev
+            ""
+            "armpl"
+            "${BLAS_LIBRARIES}"
+            ""
+          )
+        endif()
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for ARMPL LAPACK: found")
+          else()
+            message(STATUS "Looking for ARMPL LAPACK: not found")
+          endif()
+        endif()
+        if (LAPACK_LIBRARIES)
+          set (LAPACK_VENDOR_FOUND "ARMPL")
+        endif()
+      endif (NOT LAPACK_LIBRARIES OR BLA_VENDOR MATCHES "ARMPL*")
+    endif (BLA_VENDOR MATCHES "ARMPL*" OR BLA_VENDOR STREQUAL "All")
+
+    # FLAME's blis library? (https://github.com/flame/blis)
+    if(BLA_VENDOR STREQUAL "FLAME" OR BLA_VENDOR STREQUAL "All")
+      if(NOT LAPACK_LIBRARIES OR BLA_VENDOR MATCHES "FLAME")
+        # Looking for include
+        # -------------------
+
+        # Add system include paths to search include
+        # ------------------------------------------
+        unset(_inc_env)
+        set(ENV_FLAME "$ENV{FLAME_DIR}")
+        set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
+        set(ENV_LAPACK_INCDIR "$ENV{LAPACK_INCDIR}")
+        if(ENV_LAPACK_INCDIR)
+          list(APPEND _inc_env "${ENV_LAPACK_INCDIR}")
+        elseif(ENV_LAPACK_DIR)
+          list(APPEND _inc_env "${ENV_LAPACK_DIR}")
+          list(APPEND _inc_env "${ENV_LAPACK_DIR}/include")
+        else()
+          if (ENV_FLAME)
+            list(APPEND _inc_env "${ENV_FLAME}/include")
+          endif()
+          # system variables
+          if(WIN32)
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+          else()
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+          endif()
+        endif()
+        list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+        list(REMOVE_DUPLICATES _inc_env)
+
+        # set paths where to look for
+        set(PATH_TO_LOOK_FOR "${_inc_env}")
+
+        # Try to find the FLAME header in the given paths
+        # -------------------------------------------------
+        # call cmake macro to find the header path
+        if(LAPACK_INCDIR)
+          set(LAPACK_FLAME.h_DIRS "LAPACK_FLAME.h_DIRS-NOTFOUND")
+          find_path(LAPACK_FLAME.h_DIRS
+            NAMES FLAME.h
+            HINTS ${LAPACK_INCDIR})
+        else()
+          if(LAPACK_DIR)
+            set(LAPACK_FLAME.h_DIRS "LAPACK_FLAME.h_DIRS-NOTFOUND")
+            find_path(LAPACK_FLAME.h_DIRS
+              NAMES FLAME.h
+              HINTS ${LAPACK_DIR}
+              PATH_SUFFIXES "include")
+          else()
+            set(LAPACK_FLAME.h_DIRS "LAPACK_FLAME.h_DIRS-NOTFOUND")
+            find_path(LAPACK_FLAME.h_DIRS
+              NAMES FLAME.h
+              HINTS ${PATH_TO_LOOK_FOR})
+          endif()
+        endif()
+        mark_as_advanced(LAPACK_FLAME.h_DIRS)
+
+        # If found, add path to cmake variable
+        # ------------------------------------
+        if (LAPACK_FLAME.h_DIRS)
+          set(LAPACK_INCLUDE_DIRS "${LAPACK_FLAME.h_DIRS}")
+        else ()
+          set(LAPACK_INCLUDE_DIRS "LAPACK_INCLUDE_DIRS-NOTFOUND")
+          if(NOT LAPACK_FIND_QUIETLY)
+            message(STATUS "Looking for LAPACK -- FLAME.h not found")
+          endif()
+        endif()
+
+        if(NOT LAPACK_LIBRARIES)
+          check_lapack_libraries(
+            LAPACK_LIBRARIES
+            LAPACK
+            cheev
+            ""
+            "flame"
+            "${BLAS_LIBRARIES}"
+            ""
+          )
+        endif()
+        if(NOT LAPACK_FIND_QUIETLY)
+          if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for FLAME LAPACK: found")
+          else()
+            message(STATUS "Looking for FLAME LAPACK: not found")
+          endif()
+        endif()
+        if (LAPACK_LIBRARIES)
+          set (LAPACK_VENDOR_FOUND "FLAME")
+        endif()
+      endif(NOT LAPACK_LIBRARIES OR BLA_VENDOR MATCHES "FLAME")
+    endif(BLA_VENDOR STREQUAL "FLAME" OR BLA_VENDOR STREQUAL "All")
 
     #goto lapack
     if (LAP_VENDOR STREQUAL "Goto" OR LAP_VENDOR STREQUAL "All")
@@ -863,7 +1065,7 @@ if(BLAS_FOUND)
       if (LAPACK_LIBRARIES)
         set (LAPACK_VENDOR_FOUND "User")
       endif()
-    endif()
+    endif(LAP_VENDOR STREQUAL "User" AND LAPACK_LIBRARIES_USER)
 
   endif( (NOT LAPACK_FOUND_WITH_PKGCONFIG) OR LAPACK_GIVEN_BY_USER )
 

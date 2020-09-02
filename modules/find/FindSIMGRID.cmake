@@ -146,7 +146,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
 
   # Try to find the simgrid header in the given paths
   # -------------------------------------------------
-  set(SIMGRID_hdrs_to_find "simgrid_config.h")
+  set(SIMGRID_hdrs_to_find "xbt.h")
 
   # call cmake macro to find the header path
   if(SIMGRID_INCDIR)
@@ -164,7 +164,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
         find_path(SIMGRID_${simgrid_hdr}_DIRS
           NAMES ${simgrid_hdr}
           HINTS ${SIMGRID_DIR}
-          PATH_SUFFIXES "include" "include/simgrid")
+          PATH_SUFFIXES "include")
           mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
       endforeach()
     else()
@@ -172,8 +172,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
         set(SIMGRID_${simgrid_hdr}_DIRS "SIMGRID_${simgrid_hdr}_DIRS-NOTFOUND")
         find_path(SIMGRID_${simgrid_hdr}_DIRS
           NAMES ${simgrid_hdr}
-          HINTS ${_inc_env}
-          PATH_SUFFIXES "simgrid")
+          HINTS ${_inc_env})
           mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
       endforeach()
     endif()
@@ -181,12 +180,12 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
 
   # Add path to cmake variable
   # ------------------------------------
-  if (SIMGRID_simgrid_config.h_DIRS)
-    set(SIMGRID_INCLUDE_DIRS "${SIMGRID_simgrid_config.h_DIRS}")
+  if (SIMGRID_xbt.h_DIRS)
+    set(SIMGRID_INCLUDE_DIRS "${SIMGRID_xbt.h_DIRS}")
   else ()
     set(SIMGRID_INCLUDE_DIRS "SIMGRID_INCLUDE_DIRS-NOTFOUND")
     if(NOT SIMGRID_FIND_QUIETLY)
-      message(STATUS "Looking for simgrid -- simgrid_config.h not found")
+      message(STATUS "Looking for simgrid -- xbt.h not found")
     endif()
   endif ()
 

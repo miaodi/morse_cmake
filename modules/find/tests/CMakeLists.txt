@@ -97,7 +97,7 @@ if (ENABLE_CTEST)
       METIS
       MPIEXT
       MUMPS
-      PAMPA
+      # PAMPA # not compatible with openmpi 4
       PAPI
       PARMETIS
       PARSEC

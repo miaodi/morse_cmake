@@ -125,15 +125,15 @@ satisfied with this one and want to give some hints to look for it:
 Specific information about a precise Find module are given directly at
 the head of the module file. The usage, the optional parameters that
 can be used and the output variables are explained here.
-* Hint for Intel MKl
+* Hint for Intel MKL
 To look for the Intel MKL BLAS, LAPACK (or CBLAS, LAPACKE), one can
 enforce Intel MKL search with the CMake variable *BLA_VENDOR* as it is
-documented in BLAS and LAPACK officiel modules ~cmake --help-module
-FindLAPACK~
+documented in BLAS and LAPACK officiel modules ~cmake --help-module FindLAPACK~
 #+BEGIN_EXAMPLE
 # for sequential blas/lapack
 cmake .. -DBLA_VENDOR=Intel10_64lp_seq
-# for multithreaded blas/lapack, play with MKL_NUM_THREADS to set number of threads used internally
+# for multithreaded blas/lapack
 cmake .. -DBLA_VENDOR=Intel10_64lp
+# play with MKL_NUM_THREADS env. var. to set number of threads used internally
 #+END_EXAMPLE
 or set BLA_VENDOR directly in your CMake files.

@@ -489,14 +489,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PASTIX_FOUND) 
     set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
     find_path(PASTIX_pastix.h_DIRS
       NAMES pastix.h
-      HINTS ${PASTIX_INCDIR})
+      HINTS ${PASTIX_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(PASTIX_DIR)
       set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
       find_path(PASTIX_pastix.h_DIRS
         NAMES pastix.h
         HINTS ${PASTIX_DIR}
-        PATH_SUFFIXES "include" "include/pastix")
+        PATH_SUFFIXES "include" "include/pastix"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
       find_path(PASTIX_pastix.h_DIRS
@@ -567,13 +569,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PASTIX_FOUND) 
       if(PASTIX_LIBDIR)
         find_library(PASTIX_${pastix_lib}_LIBRARY
           NAMES ${pastix_lib}
-          HINTS ${PASTIX_LIBDIR})
+          HINTS ${PASTIX_LIBDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(PASTIX_DIR)
           find_library(PASTIX_${pastix_lib}_LIBRARY
             NAMES ${pastix_lib}
             HINTS ${PASTIX_DIR}
-            PATH_SUFFIXES lib lib32 lib64)
+            PATH_SUFFIXES lib lib32 lib64
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           find_library(PASTIX_${pastix_lib}_LIBRARY
             NAMES ${pastix_lib}

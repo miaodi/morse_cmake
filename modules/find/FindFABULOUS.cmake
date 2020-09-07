@@ -95,7 +95,7 @@ if (FABULOUS_FIND_REQUIRED)
 else()
   find_package(LAPACKE)
 endif()
-  
+
 set(ENV_FABULOUS_DIR "$ENV{FABULOUS_DIR}")
 set(ENV_FABULOUS_INCDIR "$ENV{FABULOUS_INCDIR}")
 set(ENV_FABULOUS_LIBDIR "$ENV{FABULOUS_LIBDIR}")
@@ -183,7 +183,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_FOUND
       set(FABULOUS_${_file}_DIRS "FABULOUS_${_file}_DIRS-NOTFOUND")
       find_path(FABULOUS_${_file}_DIRS
         NAMES ${_file}
-        HINTS "${FABULOUS_INCDIR}" "${FABULOUS_INCDIR}/fabulous")
+        HINTS "${FABULOUS_INCDIR}" "${FABULOUS_INCDIR}/fabulous"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       mark_as_advanced(FABULOUS_${_file}_DIRS)
     endforeach()
   else()
@@ -193,7 +194,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_FOUND
         find_path(FABULOUS_${_file}_DIRS
           NAMES ${_file}
           HINTS ${FABULOUS_DIR}
-          PATH_SUFFIXES "include" "include/fabulous")
+          PATH_SUFFIXES "include" "include/fabulous"
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         mark_as_advanced(FABULOUS_${_file}_DIRS)
       endforeach()
     else()
@@ -268,14 +270,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FABULOUS_FOUND
     set(FABULOUS_fabulous_LIBRARY "FABULOUS_fabulous_LIBRARY-NOTFOUND")
     find_library(FABULOUS_fabulous_LIBRARY
       NAMES fabulous
-      HINTS ${FABULOUS_LIBDIR})
+      HINTS ${FABULOUS_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(FABULOUS_DIR)
       set(FABULOUS_fabulous_LIBRARY "FABULOUS_fabulous_LIBRARY-NOTFOUND")
       find_library(FABULOUS_fabulous_LIBRARY
         NAMES fabulous
         HINTS ${FABULOUS_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(FABULOUS_fabulous_LIBRARY "FABULOUS_fabulous_LIBRARY-NOTFOUND")
       find_library(FABULOUS_fabulous_LIBRARY
@@ -365,7 +369,7 @@ if(FABULOUS_LIBRARIES)
       list(APPEND REQUIRED_LIBS "${CBLAS_LIBRARIES_DEP}")
     endif()
   endif()
-  
+
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
   if (REQUIRED_FLAGS)

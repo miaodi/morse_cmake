@@ -155,14 +155,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
     set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
     find_path(HWLOC_hwloc.h_DIRS
       NAMES hwloc.h
-      HINTS ${HWLOC_INCDIR})
+      HINTS ${HWLOC_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(HWLOC_DIR)
       set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
       find_path(HWLOC_hwloc.h_DIRS
         NAMES hwloc.h
         HINTS ${HWLOC_DIR}
-        PATH_SUFFIXES "include" "include/hwloc")
+        PATH_SUFFIXES "include" "include/hwloc"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
       find_path(HWLOC_hwloc.h_DIRS
@@ -225,14 +227,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
     set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
     find_library(HWLOC_hwloc_LIBRARY
       NAMES hwloc
-      HINTS ${HWLOC_LIBDIR})
+      HINTS ${HWLOC_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(HWLOC_DIR)
       set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
       find_library(HWLOC_hwloc_LIBRARY
         NAMES hwloc
         HINTS ${HWLOC_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
       find_library(HWLOC_hwloc_LIBRARY

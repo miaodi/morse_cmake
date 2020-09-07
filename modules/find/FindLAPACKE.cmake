@@ -251,14 +251,16 @@ if (LAPACK_FOUND)
         set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
         find_path(LAPACKE_lapacke.h_DIRS
           NAMES lapacke.h
-          HINTS ${LAPACKE_INCDIR})
+          HINTS ${LAPACKE_INCDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(LAPACKE_DIR)
           set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
           find_path(LAPACKE_lapacke.h_DIRS
             NAMES lapacke.h
             HINTS ${LAPACKE_DIR}
-            PATH_SUFFIXES "include" "include/lapacke")
+            PATH_SUFFIXES "include" "include/lapacke"
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
           find_path(LAPACKE_lapacke.h_DIRS
@@ -314,14 +316,16 @@ if (LAPACK_FOUND)
         set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
         find_library(LAPACKE_lapacke_LIBRARY
           NAMES lapacke
-          HINTS ${LAPACKE_LIBDIR})
+          HINTS ${LAPACKE_LIBDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(LAPACKE_DIR)
           set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
           find_library(LAPACKE_lapacke_LIBRARY
             NAMES lapacke
             HINTS ${LAPACKE_DIR}
-            PATH_SUFFIXES lib lib32 lib64)
+            PATH_SUFFIXES lib lib32 lib64
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
           find_library(LAPACKE_lapacke_LIBRARY

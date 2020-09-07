@@ -199,14 +199,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SPM_FOUND) OR 
     set(SPM_spm.h_DIRS "SPM_spm.h_DIRS-NOTFOUND")
     find_path(SPM_spm.h_DIRS
       NAMES spm.h
-      HINTS ${SPM_INCDIR})
+      HINTS ${SPM_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(SPM_DIR)
       set(SPM_spm.h_DIRS "SPM_spm.h_DIRS-NOTFOUND")
       find_path(SPM_spm.h_DIRS
         NAMES spm.h
         HINTS ${SPM_DIR}
-        PATH_SUFFIXES "include" "include/spm")
+        PATH_SUFFIXES "include" "include/spm"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(SPM_spm.h_DIRS "SPM_spm.h_DIRS-NOTFOUND")
       find_path(SPM_spm.h_DIRS
@@ -266,13 +268,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SPM_FOUND) OR 
     if(SPM_LIBDIR)
       find_library(SPM_${spm_lib}_LIBRARY
         NAMES ${spm_lib}
-        HINTS ${SPM_LIBDIR})
+        HINTS ${SPM_LIBDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       if(SPM_DIR)
         find_library(SPM_${spm_lib}_LIBRARY
           NAMES ${spm_lib}
           HINTS ${SPM_DIR}
-          PATH_SUFFIXES lib lib32 lib64)
+          PATH_SUFFIXES lib lib32 lib64
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         find_library(SPM_${spm_lib}_LIBRARY
           NAMES ${spm_lib}
@@ -280,7 +284,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SPM_FOUND) OR 
       endif()
     endif()
   endforeach()
-  
+
   # If found, add path to cmake variable
   # ------------------------------------
   foreach(spm_lib ${SPM_libs_to_find})

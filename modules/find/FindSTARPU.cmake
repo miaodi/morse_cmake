@@ -358,7 +358,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
       set(STARPU_${starpu_hdr}_INCLUDE_DIRS "STARPU_${starpu_hdr}_INCLUDE_DIRS-NOTFOUND")
       find_path(STARPU_${starpu_hdr}_INCLUDE_DIRS
         NAMES ${starpu_hdr}
-        HINTS ${STARPU_INCDIR})
+        HINTS ${STARPU_INCDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     if(STARPU_DIR)
@@ -371,7 +372,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
           "include/starpu/1.0"
           "include/starpu/1.1"
           "include/starpu/1.2"
-          "include/starpu/1.3")
+          "include/starpu/1.3"
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       endforeach()
     else()
       foreach(starpu_hdr ${STARPU_hdrs_to_find})
@@ -473,7 +475,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
       set(STARPU_${starpu_hdr}_INCLUDE_DIRS "STARPU_${starpu_hdr}_INCLUDE_DIRS-NOTFOUND")
       find_path(STARPU_${starpu_hdr}_INCLUDE_DIRS
         NAMES ${starpu_hdr}
-        HINTS ${STARPU_INCDIR})
+        HINTS ${STARPU_INCDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     if(STARPU_DIR)
@@ -486,7 +489,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
           "include/starpu/1.0"
           "include/starpu/1.1"
           "include/starpu/1.2"
-          "include/starpu/1.3")
+          "include/starpu/1.3"
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       endforeach()
     else()
       foreach(starpu_hdr ${STARPU_hdrs_to_find})
@@ -586,7 +590,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
         set(STARPU_${starpu_lib}_LIBRARY "STARPU_${starpu_lib}_LIBRARY-NOTFOUND")
         find_library(STARPU_${starpu_lib}_LIBRARY
           NAMES ${starpu_lib}
-          HINTS ${STARPU_LIBDIR})
+          HINTS ${STARPU_LIBDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       endforeach()
     else()
       if(STARPU_DIR)
@@ -595,7 +600,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
           find_library(STARPU_${starpu_lib}_LIBRARY
             NAMES ${starpu_lib}
             HINTS ${STARPU_DIR}
-            PATH_SUFFIXES lib lib32 lib64)
+            PATH_SUFFIXES lib lib32 lib64
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         endforeach()
       else()
         foreach(starpu_lib ${STARPU_libs_to_find})

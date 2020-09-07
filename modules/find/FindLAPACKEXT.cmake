@@ -111,13 +111,15 @@ if(BLA_VENDOR MATCHES "Intel*")
   if(LAPACK_INCDIR)
     find_path(LAPACK_mkl_lapack.h_INCLUDE_DIRS
       NAMES mkl_lapack.h
-      HINTS ${LAPACK_INCDIR})
+      HINTS ${LAPACK_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(LAPACK_DIR)
       find_path(LAPACK_mkl_lapack.h_INCLUDE_DIRS
         NAMES mkl_lapack.h
         HINTS ${LAPACK_DIR}
         PATH_SUFFIXES include)
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
     else()
       find_path(LAPACK_mkl_lapack.h_INCLUDE_DIRS
         NAMES mkl_lapack.h

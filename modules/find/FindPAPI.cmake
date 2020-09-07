@@ -151,14 +151,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PAPI_FOUND) OR
     set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
     find_path(PAPI_papi.h_DIRS
       NAMES papi.h
-      HINTS ${PAPI_INCDIR})
+      HINTS ${PAPI_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(PAPI_DIR)
       set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
       find_path(PAPI_papi.h_DIRS
         NAMES papi.h
         HINTS ${PAPI_DIR}
-        PATH_SUFFIXES "include" "include/papi")
+        PATH_SUFFIXES "include" "include/papi"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
       find_path(PAPI_papi.h_DIRS
@@ -219,14 +221,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PAPI_FOUND) OR
     set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
     find_library(PAPI_papi_LIBRARY
       NAMES papi
-      HINTS ${PAPI_LIBDIR})
+      HINTS ${PAPI_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(PAPI_DIR)
       set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
       find_library(PAPI_papi_LIBRARY
         NAMES papi
         HINTS ${PAPI_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
       find_library(PAPI_papi_LIBRARY

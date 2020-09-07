@@ -250,14 +250,16 @@ if (BLAS_FOUND)
         set(CBLAS_cblas.h_DIRS "CBLAS_cblas.h_DIRS-NOTFOUND")
         find_path(CBLAS_cblas.h_DIRS
           NAMES cblas.h
-          HINTS ${CBLAS_INCDIR})
+          HINTS ${CBLAS_INCDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(CBLAS_DIR)
           set(CBLAS_cblas.h_DIRS "CBLAS_cblas.h_DIRS-NOTFOUND")
           find_path(CBLAS_cblas.h_DIRS
             NAMES cblas.h
             HINTS ${CBLAS_DIR}
-            PATH_SUFFIXES "include" "include/cblas")
+            PATH_SUFFIXES "include" "include/cblas"
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           set(CBLAS_cblas.h_DIRS "CBLAS_cblas.h_DIRS-NOTFOUND")
           find_path(CBLAS_cblas.h_DIRS
@@ -314,14 +316,16 @@ if (BLAS_FOUND)
         set(CBLAS_cblas_LIBRARY "CBLAS_cblas_LIBRARY-NOTFOUND")
         find_library(CBLAS_cblas_LIBRARY
           NAMES cblas
-          HINTS ${CBLAS_LIBDIR})
+          HINTS ${CBLAS_LIBDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(CBLAS_DIR)
           set(CBLAS_cblas_LIBRARY "CBLAS_cblas_LIBRARY-NOTFOUND")
           find_library(CBLAS_cblas_LIBRARY
             NAMES cblas
             HINTS ${CBLAS_DIR}
-            PATH_SUFFIXES lib lib32 lib64)
+            PATH_SUFFIXES lib lib32 lib64
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           set(CBLAS_cblas_LIBRARY "CBLAS_cblas_LIBRARY-NOTFOUND")
           find_library(CBLAS_cblas_LIBRARY

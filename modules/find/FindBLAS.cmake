@@ -162,7 +162,14 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
   set(ENV_MKLROOT "$ENV{MKLROOT}")
   set(ENV_ARMPL "$ENV{ARMPL_DIR}")
   set(ENV_BLAS_DIR "$ENV{BLAS_DIR}")
+  set(ENV_BLAS_INCDIR "$ENV{BLAS_INCDIR}")
   set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
+
+  set(BLAS_GIVEN_BY_USER "FALSE")
+  if ( BLAS_DIR OR BLAS_LIBDIR OR ENV_BLAS_DIR OR ENV_BLAS_LIBDIR OR ENV_MKLROOT OR ENV_ARMPL)
+    set(BLAS_GIVEN_BY_USER "TRUE")
+  endif()
+
   if (NOT _libdir)
     if (BLAS_LIBDIR)
       list(APPEND _libdir "${BLAS_LIBDIR}")
@@ -241,10 +248,18 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
       if (EXISTS ${_library})
         set(${_prefix}_${_library}_LIBRARY ${_library})
       else()
-        find_library(${_prefix}_${_library}_LIBRARY
-          NAMES ${_library}
-          HINTS ${_libdir}
-          )
+        if ( BLAS_GIVEN_BY_USER )
+          find_library(${_prefix}_${_library}_LIBRARY
+            NAMES ${_library}
+            HINTS ${_libdir}
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
+            )
+        else()
+          find_library(${_prefix}_${_library}_LIBRARY
+            NAMES ${_library}
+            HINTS ${_libdir}
+            )
+        endif()
       endif()
       mark_as_advanced(${_prefix}_${_library}_LIBRARY)
       # Print status if not found
@@ -308,15 +323,6 @@ else ()
     set(BLA_VENDOR "All")
   endif()
 endif ()
-
-set(ENV_BLAS_DIR "$ENV{BLAS_DIR}")
-set(ENV_MKL_DIR "$ENV{MKLROOT}")
-set(ENV_BLAS_INCDIR "$ENV{BLAS_INCDIR}")
-set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
-set(BLAS_GIVEN_BY_USER "FALSE")
-if ( BLAS_LIBRARIES_USER OR BLAS_DIR OR ( BLAS_INCDIR AND BLAS_LIBDIR) OR ENV_BLAS_DIR OR (ENV_BLAS_INCDIR AND ENV_BLAS_LIBDIR) )
-  set(BLAS_GIVEN_BY_USER "TRUE")
-endif()
 
 # Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
 # -------------------------------------------------------------------------------------
@@ -460,14 +466,16 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         set(BLAS_mkl.h_DIRS "BLAS_mkl.h_DIRS-NOTFOUND")
         find_path(BLAS_mkl.h_DIRS
           NAMES mkl.h
-          HINTS ${BLAS_INCDIR})
+          HINTS ${BLAS_INCDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(BLAS_DIR)
           set(BLAS_mkl.h_DIRS "BLAS_mkl.h_DIRS-NOTFOUND")
           find_path(BLAS_mkl.h_DIRS
             NAMES mkl.h
             HINTS ${BLAS_DIR}
-            PATH_SUFFIXES "include")
+            PATH_SUFFIXES "include"
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           set(BLAS_mkl.h_DIRS "BLAS_mkl.h_DIRS-NOTFOUND")
           find_path(BLAS_mkl.h_DIRS
@@ -902,14 +910,16 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         set(BLAS_armpl.h_DIRS "BLAS_armpl.h_DIRS-NOTFOUND")
         find_path(BLAS_armpl.h_DIRS
           NAMES armpl.h
-          HINTS ${BLAS_INCDIR})
+          HINTS ${BLAS_INCDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(BLAS_DIR)
           set(BLAS_armpl.h_DIRS "BLAS_armpl.h_DIRS-NOTFOUND")
           find_path(BLAS_armpl.h_DIRS
             NAMES armpl.h
             HINTS ${BLAS_DIR}
-            PATH_SUFFIXES "include")
+            PATH_SUFFIXES "include"
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           set(BLAS_armpl.h_DIRS "BLAS_armpl.h_DIRS-NOTFOUND")
           find_path(BLAS_armpl.h_DIRS
@@ -1009,14 +1019,16 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         set(BLAS_blis.h_DIRS "BLAS_blis.h_DIRS-NOTFOUND")
         find_path(BLAS_blis.h_DIRS
           NAMES blis.h
-          HINTS ${BLAS_INCDIR})
+          HINTS ${BLAS_INCDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(BLAS_DIR)
           set(BLAS_blis.h_DIRS "BLAS_blis.h_DIRS-NOTFOUND")
           find_path(BLAS_blis.h_DIRS
             NAMES blis.h
             HINTS ${BLAS_DIR}
-            PATH_SUFFIXES "include")
+            PATH_SUFFIXES "include"
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           set(BLAS_blis.h_DIRS "BLAS_blis.h_DIRS-NOTFOUND")
           find_path(BLAS_blis.h_DIRS
@@ -1143,14 +1155,16 @@ if( (NOT BLAS_FOUND_WITH_PKGCONFIG) OR BLAS_GIVEN_BY_USER )
         set(BLAS_cblas.h_DIRS "BLAS_cblas.h_DIRS-NOTFOUND")
         find_path(BLAS_cblas.h_DIRS
           NAMES cblas.h
-          HINTS ${BLAS_INCDIR})
+          HINTS ${BLAS_INCDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(BLAS_DIR)
           set(BLAS_cblas.h_DIRS "BLAS_cblas.h_DIRS-NOTFOUND")
           find_path(BLAS_cblas.h_DIRS
             NAMES cblas.h
             HINTS ${BLAS_DIR}
-            PATH_SUFFIXES "include")
+            PATH_SUFFIXES "include"
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           set(BLAS_cblas.h_DIRS "BLAS_cblas.h_DIRS-NOTFOUND")
           find_path(BLAS_cblas.h_DIRS

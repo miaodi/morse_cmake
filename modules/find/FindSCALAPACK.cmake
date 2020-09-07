@@ -109,6 +109,12 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
   set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
   set(ENV_SCALAPACK_DIR "$ENV{SCALAPACK_DIR}")
   set(ENV_SCALAPACK_LIBDIR "$ENV{SCALAPACK_LIBDIR}")
+
+  set(SCALAPACK_GIVEN_BY_USER "FALSE")
+  if ( SCALAPACK_DIR OR SCALAPACK_LIBDIR OR ENV_SCALAPACK_DIR OR ENV_SCALAPACK_LIBDIR OR ENV_MKLROOT)
+    set(SCALAPACK_GIVEN_BY_USER "TRUE")
+  endif()
+
   if (NOT _libdir)
     if (BLAS_LIBDIR)
       list(APPEND _libdir "${BLAS_LIBDIR}")
@@ -206,10 +212,18 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
           set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} .so.3gf)
         endif ()
       endif (BLA_STATIC)
-      find_library(${_prefix}_${_library}_LIBRARY
-        NAMES ${_library}
-        HINTS ${_libdir}
-        )
+      if ( SCALAPACK_GIVEN_BY_USER )
+        find_library(${_prefix}_${_library}_LIBRARY
+          NAMES ${_library}
+          HINTS ${_libdir}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
+          )
+      else()
+        find_library(${_prefix}_${_library}_LIBRARY
+          NAMES ${_library}
+          HINTS ${_libdir}
+          )
+      endif()
       mark_as_advanced(${_prefix}_${_library}_LIBRARY)
       # Print status if not found
       # -------------------------

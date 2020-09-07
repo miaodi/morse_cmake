@@ -262,7 +262,8 @@ if(PKG_CONFIG_EXECUTABLE AND NOT PARSEC_GIVEN_BY_USER)
       find_path(PARSEC_${parsec_bin}_BIN_DIR
         NAMES ${parsec_bin}
         HINTS ${PARSEC_PREFIX}
-        PATH_SUFFIXES "bin")
+        PATH_SUFFIXES "bin"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     if (PARSEC_FIND_REQUIRED)
@@ -327,7 +328,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) 
       set(PARSEC_${parsec_hdr}_INCLUDE_DIRS "PARSEC_${parsec_hdr}_INCLUDE_DIRS-NOTFOUND")
       find_path(PARSEC_${parsec_hdr}_INCLUDE_DIRS
         NAMES ${parsec_hdr}
-        HINTS ${PARSEC_INCDIR})
+        HINTS ${PARSEC_INCDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     if(PARSEC_DIR)
@@ -336,7 +338,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) 
         find_path(PARSEC_${parsec_hdr}_INCLUDE_DIRS
           NAMES ${parsec_hdr}
           HINTS ${PARSEC_DIR}
-          PATH_SUFFIXES "include")
+          PATH_SUFFIXES "include"
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       endforeach()
     else()
       foreach(parsec_hdr ${PARSEC_hdrs_to_find})
@@ -410,7 +413,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) 
       set(PARSEC_${parsec_lib}_LIBRARY "PARSEC_${parsec_lib}_LIBRARY-NOTFOUND")
       find_library(PARSEC_${parsec_lib}_LIBRARY
         NAMES ${parsec_lib}
-        HINTS ${PARSEC_LIBDIR})
+        HINTS ${PARSEC_LIBDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     if(PARSEC_DIR)
@@ -419,7 +423,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) 
         find_library(PARSEC_${parsec_lib}_LIBRARY
           NAMES ${parsec_lib}
           HINTS ${PARSEC_DIR}
-          PATH_SUFFIXES lib lib32 lib64)
+          PATH_SUFFIXES lib lib32 lib64
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       endforeach()
     else()
       foreach(parsec_lib ${PARSEC_libs_to_find})
@@ -483,7 +488,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) 
       find_path(PARSEC_${parsec_bin}_BIN_DIR
         NAMES ${parsec_bin}
         HINTS ${PARSEC_DIR}
-        PATH_SUFFIXES "bin")
+        PATH_SUFFIXES "bin"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     foreach(parsec_bin ${PARSEC_bins_to_find})

@@ -214,14 +214,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) O
     set(MAGMA_magma.h_DIRS "MAGMA_magma.h_DIRS-NOTFOUND")
     find_path(MAGMA_magma.h_DIRS
       NAMES magma.h
-      HINTS ${MAGMA_INCDIR})
+      HINTS ${MAGMA_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(MAGMA_DIR)
       set(MAGMA_magma.h_DIRS "MAGMA_magma.h_DIRS-NOTFOUND")
       find_path(MAGMA_magma.h_DIRS
         NAMES magma.h
         HINTS ${MAGMA_DIR}
-        PATH_SUFFIXES "include" "include/magma")
+        PATH_SUFFIXES "include" "include/magma"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(MAGMA_magma.h_DIRS "MAGMA_magma.h_DIRS-NOTFOUND")
       find_path(MAGMA_magma.h_DIRS
@@ -277,14 +279,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) O
     set(MAGMA_magma_LIBRARY "MAGMA_magma_LIBRARY-NOTFOUND")
     find_library(MAGMA_magma_LIBRARY
       NAMES magma
-      HINTS ${MAGMA_LIBDIR})
+      HINTS ${MAGMA_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(MAGMA_DIR)
       set(MAGMA_magma_LIBRARY "MAGMA_magma_LIBRARY-NOTFOUND")
       find_library(MAGMA_magma_LIBRARY
         NAMES magma
         HINTS ${MAGMA_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(MAGMA_magma_LIBRARY "MAGMA_magma_LIBRARY-NOTFOUND")
       find_library(MAGMA_magma_LIBRARY

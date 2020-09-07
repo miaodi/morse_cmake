@@ -177,7 +177,8 @@ if(SUITESPARSE_INCDIR)
     set(SUITESPARSE_${suitesparse_hdr}_DIRS "SUITESPARSE_${suitesparse_hdr}_INCLUDE_DIRS-NOTFOUND")
     find_path(SUITESPARSE_${suitesparse_hdr}_DIRS
       NAMES ${suitesparse_hdr}
-      HINTS ${SUITESPARSE_INCDIR})
+      HINTS ${SUITESPARSE_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     mark_as_advanced(SUITESPARSE_${suitesparse_hdr}_DIRS)
   endforeach()
 else()
@@ -187,7 +188,8 @@ else()
       find_path(SUITESPARSE_${suitesparse_hdr}_DIRS
         NAMES ${suitesparse_hdr}
         HINTS ${SUITESPARSE_DIR}
-        PATH_SUFFIXES "include")
+        PATH_SUFFIXES "include"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       mark_as_advanced(SUITESPARSE_${suitesparse_hdr}_DIRS)
     endforeach()
   else()
@@ -245,7 +247,8 @@ if(SUITESPARSE_LIBDIR)
     set(SUITESPARSE_${suitesparse_lib}_LIBRARY "SUITESPARSE_${suitesparse_lib}_LIBRARY-NOTFOUND")
     find_library(SUITESPARSE_${suitesparse_lib}_LIBRARY
       NAMES ${suitesparse_lib}
-      HINTS ${SUITESPARSE_LIBDIR})
+      HINTS ${SUITESPARSE_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     mark_as_advanced(SUITESPARSE_${suitesparse_lib}_LIBRARY)
   endforeach()
 else()
@@ -255,7 +258,8 @@ else()
       find_library(SUITESPARSE_${suitesparse_lib}_LIBRARY
         NAMES ${suitesparse_lib}
         HINTS ${SUITESPARSE_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       mark_as_advanced(SUITESPARSE_${suitesparse_lib}_LIBRARY)
     endforeach()
   else()

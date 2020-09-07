@@ -148,13 +148,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     set(HQR_HQR.h_DIRS "HQR_libhqr.h_DIRS-NOTFOUND")
     find_path(HQR_libhqr.h_DIRS
       NAMES libhqr.h
-      HINTS ${HQR_INCDIR})
+      HINTS ${HQR_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(HQR_DIR)
       set(HQR_libhqr.h_DIRS "HQR_libhqr.h_DIRS-NOTFOUND")
       find_path(HQR_libhqr.h_DIRS
         NAMES libhqr.h
-        HINTS ${HQR_DIR})
+        HINTS ${HQR_DIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(HQR_libhqr.h_DIRS "HQR_libhqr.h_DIRS-NOTFOUND")
       find_path(HQR_libhqr.h_DIRS
@@ -214,14 +216,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     set(HQR_hqr_LIBRARY "HQR_hqr_LIBRARY-NOTFOUND")
     find_library(HQR_hqr_LIBRARY
       NAMES hqr
-      HINTS ${HQR_LIBDIR})
+      HINTS ${HQR_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(HQR_DIR)
       set(HQR_hqr_LIBRARY "HQR_hqr_LIBRARY-NOTFOUND")
       find_library(HQR_hqr_LIBRARY
         NAMES hqr
         HINTS ${HQR_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(HQR_hqr_LIBRARY "HQR_hqr_LIBRARY-NOTFOUND")
       find_library(HQR_hqr_LIBRARY

@@ -228,7 +228,7 @@ endif()
 if( THREADS_FOUND )
   libraries_absolute_path(CMAKE_THREAD_LIBS_INIT "")
 endif ()
-  
+
 set(ENV_FFTW_DIR "$ENV{FFTW_DIR}")
 set(ENV_FFTW_INCDIR "$ENV{FFTW_INCDIR}")
 set(ENV_FFTW_LIBDIR "$ENV{FFTW_LIBDIR}")
@@ -455,14 +455,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     set(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS "FFTW_${FFTW3_HEADER_TO_FIND}_DIRS-NOTFOUND")
     find_path(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS
       NAMES ${FFTW3_HEADER_TO_FIND}
-      HINTS ${FFTW_INCDIR})
+      HINTS ${FFTW_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(FFTW_DIR)
       set(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS "FFTW_${FFTW3_HEADER_TO_FIND}_DIRS-NOTFOUND")
       find_path(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS
         NAMES ${FFTW3_HEADER_TO_FIND}
         HINTS ${FFTW_DIR}
-        PATH_SUFFIXES "include" "include/fftw")
+        PATH_SUFFIXES "include" "include/fftw"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS "FFTW_${FFTW3_HEADER_TO_FIND}_DIRS-NOTFOUND")
       find_path(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS
@@ -576,7 +578,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
         set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
         find_library(FFTW_${fftw_lib}_LIBRARY
           NAMES ${fftw_lib}
-          HINTS ${FFTW_LIBDIR})
+          HINTS ${FFTW_LIBDIR}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       endforeach()
     else()
       if(FFTW_DIR)
@@ -585,7 +588,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
           find_library(FFTW_${fftw_lib}_LIBRARY
             NAMES ${fftw_lib}
             HINTS ${FFTW_DIR}
-            PATH_SUFFIXES lib lib32 lib64)
+            PATH_SUFFIXES lib lib32 lib64
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         endforeach()
       else()
         foreach(fftw_lib ${FFTW_libs_to_find})

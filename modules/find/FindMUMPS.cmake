@@ -336,7 +336,8 @@ if(MUMPS_INCDIR)
     set(MUMPS_${mumps_hdr}_DIRS "MUMPS_${mumps_hdr}_INCLUDE_DIRS-NOTFOUND")
     find_path(MUMPS_${mumps_hdr}_DIRS
       NAMES ${mumps_hdr}
-      HINTS ${MUMPS_INCDIR})
+      HINTS ${MUMPS_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   endforeach()
 else()
   if(MUMPS_DIR)
@@ -345,7 +346,8 @@ else()
       find_path(MUMPS_${mumps_hdr}_DIRS
         NAMES ${mumps_hdr}
         HINTS ${MUMPS_DIR}
-        PATH_SUFFIXES "include")
+        PATH_SUFFIXES "include"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     foreach(mumps_hdr ${MUMPS_hdrs_to_find})
@@ -429,7 +431,8 @@ if(MUMPS_LIBDIR)
     set(MUMPS_${mumps_lib}_LIBRARY "MUMPS_${mumps_lib}_LIBRARY-NOTFOUND")
     find_library(MUMPS_${mumps_lib}_LIBRARY
       NAMES ${mumps_lib}
-      HINTS ${MUMPS_LIBDIR})
+      HINTS ${MUMPS_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   endforeach()
 else()
   if(MUMPS_DIR)
@@ -438,7 +441,8 @@ else()
       find_library(MUMPS_${mumps_lib}_LIBRARY
         NAMES ${mumps_lib}
         HINTS ${MUMPS_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     foreach(mumps_lib ${MUMPS_libs_to_find})

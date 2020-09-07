@@ -96,14 +96,16 @@ if(METIS_INCDIR)
   set(METIS_metis.h_DIRS "METIS_metis.h_DIRS-NOTFOUND")
   find_path(METIS_metis.h_DIRS
     NAMES metis.h
-    HINTS ${METIS_INCDIR})
+    HINTS ${METIS_INCDIR}
+    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
 else()
   if(METIS_DIR)
     set(METIS_metis.h_DIRS "METIS_metis.h_DIRS-NOTFOUND")
     find_path(METIS_metis.h_DIRS
       NAMES metis.h
       HINTS ${METIS_DIR}
-      PATH_SUFFIXES "include" "include/metis")
+      PATH_SUFFIXES "include" "include/metis"
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     set(METIS_metis.h_DIRS "METIS_metis.h_DIRS-NOTFOUND")
     find_path(METIS_metis.h_DIRS
@@ -159,14 +161,16 @@ if(METIS_LIBDIR)
   set(METIS_metis_LIBRARY "METIS_metis_LIBRARY-NOTFOUND")
   find_library(METIS_metis_LIBRARY
     NAMES metis
-    HINTS ${METIS_LIBDIR})
+    HINTS ${METIS_LIBDIR}
+    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
 else()
   if(METIS_DIR)
     set(METIS_metis_LIBRARY "METIS_metis_LIBRARY-NOTFOUND")
     find_library(METIS_metis_LIBRARY
       NAMES metis
       HINTS ${METIS_DIR}
-      PATH_SUFFIXES lib lib32 lib64)
+      PATH_SUFFIXES lib lib32 lib64
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     set(METIS_metis_LIBRARY "METIS_metis_LIBRARY-NOTFOUND")
     find_library(METIS_metis_LIBRARY

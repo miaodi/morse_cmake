@@ -419,14 +419,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
     set(CHAMELEON_chameleon.h_DIRS "CHAMELEON_chameleon.h_DIRS-NOTFOUND")
     find_path(CHAMELEON_chameleon.h_DIRS
       NAMES chameleon.h
-      HINTS ${CHAMELEON_INCDIR})
+      HINTS ${CHAMELEON_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(CHAMELEON_DIR)
       set(CHAMELEON_chameleon.h_DIRS "CHAMELEON_chameleon.h_DIRS-NOTFOUND")
       find_path(CHAMELEON_chameleon.h_DIRS
         NAMES chameleon.h
         HINTS ${CHAMELEON_DIR}
-        PATH_SUFFIXES "include" "include/chameleon")
+        PATH_SUFFIXES "include" "include/chameleon"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(CHAMELEON_chameleon.h_DIRS "CHAMELEON_chameleon.h_DIRS-NOTFOUND")
       find_path(CHAMELEON_chameleon.h_DIRS
@@ -496,7 +498,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
       set(CHAMELEON_${chameleon_lib}_LIBRARY "CHAMELEON_${chameleon_lib}_LIBRARY-NOTFOUND")
       find_library(CHAMELEON_${chameleon_lib}_LIBRARY
         NAMES ${chameleon_lib}
-        HINTS ${CHAMELEON_LIBDIR})
+        HINTS ${CHAMELEON_LIBDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     if(CHAMELEON_DIR)
@@ -505,7 +508,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
         find_library(CHAMELEON_${chameleon_lib}_LIBRARY
           NAMES ${chameleon_lib}
           HINTS ${CHAMELEON_DIR}
-          PATH_SUFFIXES lib lib32 lib64)
+          PATH_SUFFIXES lib lib32 lib64
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       endforeach()
     else()
       foreach(chameleon_lib ${CHAMELEON_libs_to_find})

@@ -154,7 +154,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
       set(SIMGRID_${simgrid_hdr}_DIRS "SIMGRID_${simgrid_hdr}_DIRS-NOTFOUND")
       find_path(SIMGRID_${simgrid_hdr}_DIRS
         NAMES ${simgrid_hdr}
-        HINTS ${SIMGRID_INCDIR})
+        HINTS ${SIMGRID_INCDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
     endforeach()
   else()
@@ -164,7 +165,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
         find_path(SIMGRID_${simgrid_hdr}_DIRS
           NAMES ${simgrid_hdr}
           HINTS ${SIMGRID_DIR}
-          PATH_SUFFIXES "include")
+          PATH_SUFFIXES "include"
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
           mark_as_advanced(SIMGRID_${simgrid_hdr}_DIRS)
       endforeach()
     else()
@@ -228,14 +230,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT SIMGRID_FOUND)
     set(SIMGRID_simgrid_LIBRARY "SIMGRID_simgrid_LIBRARY-NOTFOUND")
     find_library(SIMGRID_simgrid_LIBRARY
       NAMES simgrid
-      HINTS ${SIMGRID_LIBDIR})
+      HINTS ${SIMGRID_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(SIMGRID_DIR)
       set(SIMGRID_simgrid_LIBRARY "SIMGRID_simgrid_LIBRARY-NOTFOUND")
       find_library(SIMGRID_simgrid_LIBRARY
         NAMES simgrid
         HINTS ${SIMGRID_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(SIMGRID_simgrid_LIBRARY "SIMGRID_simgrid_LIBRARY-NOTFOUND")
       find_library(SIMGRID_simgrid_LIBRARY

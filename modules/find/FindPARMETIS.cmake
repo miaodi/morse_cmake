@@ -120,14 +120,16 @@ if(PARMETIS_INCDIR)
   set(PARMETIS_parmetis.h_DIRS "PARMETIS_parmetis.h_DIRS-NOTFOUND")
   find_path(PARMETIS_parmetis.h_DIRS
     NAMES parmetis.h
-    HINTS ${PARMETIS_INCDIR})
+    HINTS ${PARMETIS_INCDIR}
+    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
 else()
   if(PARMETIS_DIR)
     set(PARMETIS_parmetis.h_DIRS "PARMETIS_parmetis.h_DIRS-NOTFOUND")
     find_path(PARMETIS_parmetis.h_DIRS
       NAMES parmetis.h
       HINTS ${PARMETIS_DIR}
-      PATH_SUFFIXES "include" "include/parmetis")
+      PATH_SUFFIXES "include" "include/parmetis"
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     set(PARMETIS_parmetis.h_DIRS "PARMETIS_parmetis.h_DIRS-NOTFOUND")
     find_path(PARMETIS_parmetis.h_DIRS
@@ -183,14 +185,16 @@ if(PARMETIS_LIBDIR)
   set(PARMETIS_parmetis_LIBRARY "PARMETIS_parmetis_LIBRARY-NOTFOUND")
   find_library(PARMETIS_parmetis_LIBRARY
     NAMES parmetis
-    HINTS ${PARMETIS_LIBDIR})
+    HINTS ${PARMETIS_LIBDIR}
+    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
 else()
   if(PARMETIS_DIR)
     set(PARMETIS_parmetis_LIBRARY "PARMETIS_parmetis_LIBRARY-NOTFOUND")
     find_library(PARMETIS_parmetis_LIBRARY
       NAMES parmetis
       HINTS ${PARMETIS_DIR}
-      PATH_SUFFIXES lib lib32 lib64)
+      PATH_SUFFIXES lib lib32 lib64
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     set(PARMETIS_parmetis_LIBRARY "PARMETIS_parmetis_LIBRARY-NOTFOUND")
     find_library(PARMETIS_parmetis_LIBRARY

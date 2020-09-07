@@ -125,7 +125,8 @@ if(PAMPA_INCDIR)
     set(PAMPA_${pampa_hdr}_DIRS "PAMPA_${pampa_hdr}_DIRS-NOTFOUND")
     find_path(PAMPA_${pampa_hdr}_DIRS
       NAMES ${pampa_hdr}
-      HINTS ${PAMPA_INCDIR})
+      HINTS ${PAMPA_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     mark_as_advanced(PAMPA_${pampa_hdr}_DIRS)
   endforeach()
 else()
@@ -135,7 +136,8 @@ else()
       find_path(PAMPA_${pampa_hdr}_DIRS
         NAMES ${pampa_hdr}
         HINTS ${PAMPA_DIR}
-        PATH_SUFFIXES "include" "include/pampa")
+        PATH_SUFFIXES "include" "include/pampa"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       mark_as_advanced(PAMPA_${pampa_hdr}_DIRS)
     endforeach()
   else()
@@ -200,7 +202,8 @@ if(PAMPA_LIBDIR)
     set(PAMPA_${pampa_lib}_LIBRARY "PAMPA_${pampa_lib}_LIBRARY-NOTFOUND")
     find_library(PAMPA_${pampa_lib}_LIBRARY
       NAMES ${pampa_lib}
-      HINTS ${PAMPA_LIBDIR})
+      HINTS ${PAMPA_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   endforeach()
 else()
   if(PAMPA_DIR)
@@ -209,7 +212,8 @@ else()
       find_library(PAMPA_${pampa_lib}_LIBRARY
         NAMES ${pampa_lib}
         HINTS ${PAMPA_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     foreach(pampa_lib ${PAMPA_libs_to_find})

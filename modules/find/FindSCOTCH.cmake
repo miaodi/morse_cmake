@@ -122,14 +122,16 @@ if(SCOTCH_INCDIR)
   set(SCOTCH_scotch.h_DIRS "SCOTCH_scotch.h_DIRS-NOTFOUND")
   find_path(SCOTCH_scotch.h_DIRS
     NAMES scotch.h
-    HINTS ${SCOTCH_INCDIR})
+    HINTS ${SCOTCH_INCDIR}
+    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
 else()
   if(SCOTCH_DIR)
     set(SCOTCH_scotch.h_DIRS "SCOTCH_scotch.h_DIRS-NOTFOUND")
     find_path(SCOTCH_scotch.h_DIRS
       NAMES scotch.h
       HINTS ${SCOTCH_DIR}
-      PATH_SUFFIXES "include" "include/scotch")
+      PATH_SUFFIXES "include" "include/scotch"
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     set(SCOTCH_scotch.h_DIRS "SCOTCH_scotch.h_DIRS-NOTFOUND")
     find_path(SCOTCH_scotch.h_DIRS
@@ -192,7 +194,8 @@ if(SCOTCH_LIBDIR)
     set(SCOTCH_${scotch_lib}_LIBRARY "SCOTCH_${scotch_lib}_LIBRARY-NOTFOUND")
     find_library(SCOTCH_${scotch_lib}_LIBRARY
       NAMES ${scotch_lib}
-      HINTS ${SCOTCH_LIBDIR})
+      HINTS ${SCOTCH_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   endforeach()
 else()
   if(SCOTCH_DIR)
@@ -201,7 +204,8 @@ else()
       find_library(SCOTCH_${scotch_lib}_LIBRARY
         NAMES ${scotch_lib}
         HINTS ${SCOTCH_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     foreach(scotch_lib ${SCOTCH_libs_to_find})

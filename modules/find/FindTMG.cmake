@@ -155,14 +155,16 @@ if (LAPACK_FOUND)
       set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
       find_library(TMG_tmg_LIBRARY
         NAMES tmglib tmg
-        HINTS ${TMG_LIBDIR} )
+        HINTS ${TMG_LIBDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       if(TMG_DIR)
         set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
         find_library(TMG_tmg_LIBRARY
           NAMES tmglib tmg
           HINTS ${TMG_DIR}
-          PATH_SUFFIXES lib lib32 lib64 )
+          PATH_SUFFIXES lib lib32 lib64
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
         find_library(TMG_tmg_LIBRARY

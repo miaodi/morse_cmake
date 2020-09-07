@@ -146,10 +146,18 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
   set(${LIBRARIES})
   set(_combined_name)
   set(ENV_MKLROOT "$ENV{MKLROOT}")
+  set(ENV_ARMPL "$ENV{ARMPL_DIR}")
   set(ENV_BLAS_DIR "$ENV{BLAS_DIR}")
   set(ENV_BLAS_LIBDIR "$ENV{BLAS_LIBDIR}")
   set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
+  set(ENV_LAPACK_INCDIR "$ENV{LAPACK_INCDIR}")
   set(ENV_LAPACK_LIBDIR "$ENV{LAPACK_LIBDIR}")
+
+  set(LAPACK_GIVEN_BY_USER "FALSE")
+  if ( LAPACK_DIR OR LAPACK_LIBDIR OR ENV_LAPACK_DIR OR ENV_LAPACK_LIBDIR OR ENV_MKLROOT OR ENV_ARMPL )
+    set(LAPACK_GIVEN_BY_USER "TRUE")
+  endif()
+
   if (NOT _libdir)
     if (BLAS_LIBDIR)
       list(APPEND _libdir "${BLAS_LIBDIR}")
@@ -211,6 +219,9 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
           list(APPEND _libdir "${ENV_MKLROOT}/lib/ia32")
         endif()
       endif()
+      if (ENV_ARMPL)
+        list(APPEND _libdir "${ENV_ARMPL}/lib")
+      endif()
       list(APPEND _libdir "$ENV{LIBRARY_PATH}")
       if (WIN32)
         string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
@@ -250,10 +261,18 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
       if (EXISTS ${_library})
         set(${_prefix}_${_library}_LIBRARY ${_library})
       else()
-        find_library(${_prefix}_${_library}_LIBRARY
-          NAMES ${_library}
-          HINTS ${_libdir}
-          )
+        if ( LAPACK_GIVEN_BY_USER )
+          find_library(${_prefix}_${_library}_LIBRARY
+            NAMES ${_library}
+            HINTS ${_libdir}
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
+            )
+        else()
+          find_library(${_prefix}_${_library}_LIBRARY
+            NAMES ${_library}
+            HINTS ${_libdir}
+            )
+        endif()
       endif()
       mark_as_advanced(${_prefix}_${_library}_LIBRARY)
       # Print status if not found
@@ -391,14 +410,6 @@ if(BLAS_FOUND)
   endif(BLAS_LIBRARIES AND NOT LAPACK_STANDALONE)
 
   # if not lapack in blas libs, try to find lapack with pkg-config
-  set(ENV_LAPACK_DIR "$ENV{LAPACK_DIR}")
-  set(ENV_MKL_DIR "$ENV{MKLROOT}")
-  set(ENV_LAPACK_INCDIR "$ENV{LAPACK_INCDIR}")
-  set(ENV_LAPACK_LIBDIR "$ENV{LAPACK_LIBDIR}")
-  set(LAPACK_GIVEN_BY_USER "FALSE")
-  if ( LAPACK_LIBRARIES_USER OR LAPACK_DIR OR ( LAPACK_INCDIR AND LAPACK_LIBDIR) OR ENV_LAPACK_DIR OR (ENV_LAPACK_INCDIR AND ENV_LAPACK_LIBDIR) )
-    set(LAPACK_GIVEN_BY_USER "TRUE")
-  endif()
 
   # Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
   # -------------------------------------------------------------------------------------
@@ -623,14 +634,16 @@ if(BLAS_FOUND)
           set(LAPACK_armpl.h_DIRS "LAPACK_armpl.h_DIRS-NOTFOUND")
           find_path(LAPACK_armpl.h_DIRS
             NAMES armpl.h
-            HINTS ${LAPACK_INCDIR})
+            HINTS ${LAPACK_INCDIR}
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           if(LAPACK_DIR)
             set(LAPACK_armpl.h_DIRS "LAPACK_armpl.h_DIRS-NOTFOUND")
             find_path(LAPACK_armpl.h_DIRS
               NAMES armpl.h
               HINTS ${LAPACK_DIR}
-              PATH_SUFFIXES "include")
+              PATH_SUFFIXES "include"
+              NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
           else()
             set(LAPACK_armpl.h_DIRS "LAPACK_armpl.h_DIRS-NOTFOUND")
             find_path(LAPACK_armpl.h_DIRS
@@ -724,14 +737,16 @@ if(BLAS_FOUND)
           set(LAPACK_FLAME.h_DIRS "LAPACK_FLAME.h_DIRS-NOTFOUND")
           find_path(LAPACK_FLAME.h_DIRS
             NAMES FLAME.h
-            HINTS ${LAPACK_INCDIR})
+            HINTS ${LAPACK_INCDIR}
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           if(LAPACK_DIR)
             set(LAPACK_FLAME.h_DIRS "LAPACK_FLAME.h_DIRS-NOTFOUND")
             find_path(LAPACK_FLAME.h_DIRS
               NAMES FLAME.h
               HINTS ${LAPACK_DIR}
-              PATH_SUFFIXES "include")
+              PATH_SUFFIXES "include"
+              NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
           else()
             set(LAPACK_FLAME.h_DIRS "LAPACK_FLAME.h_DIRS-NOTFOUND")
             find_path(LAPACK_FLAME.h_DIRS
@@ -851,14 +866,16 @@ if(BLAS_FOUND)
           set(LAPACK_lapacke.h_DIRS "LAPACK_lapacke.h_DIRS-NOTFOUND")
           find_path(LAPACK_lapacke.h_DIRS
             NAMES lapacke.h
-            HINTS ${LAPACK_INCDIR})
+            HINTS ${LAPACK_INCDIR}
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           if(LAPACK_DIR)
             set(LAPACK_lapacke.h_DIRS "LAPACK_lapacke.h_DIRS-NOTFOUND")
             find_path(LAPACK_lapacke.h_DIRS
               NAMES lapacke.h
               HINTS ${LAPACK_DIR}
-              PATH_SUFFIXES "include")
+              PATH_SUFFIXES "include"
+              NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
           else()
             set(LAPACK_lapacke.h_DIRS "LAPACK_lapacke.h_DIRS-NOTFOUND")
             find_path(LAPACK_lapacke.h_DIRS

@@ -143,14 +143,16 @@ if(QUARK_INCDIR)
   set(QUARK_quark.h_DIRS "QUARK_quark.h_DIRS-NOTFOUND")
   find_path(QUARK_quark.h_DIRS
     NAMES quark.h
-    HINTS ${QUARK_INCDIR})
+    HINTS ${QUARK_INCDIR}
+    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
 else()
   if(QUARK_DIR)
     set(QUARK_quark.h_DIRS "QUARK_quark.h_DIRS-NOTFOUND")
     find_path(QUARK_quark.h_DIRS
       NAMES quark.h
       HINTS ${QUARK_DIR}
-      PATH_SUFFIXES "include" "include/quark" "include/plasma")
+      PATH_SUFFIXES "include" "include/quark" "include/plasma"
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     set(QUARK_quark.h_DIRS "QUARK_quark.h_DIRS-NOTFOUND")
     find_path(QUARK_quark.h_DIRS
@@ -206,14 +208,16 @@ if(QUARK_LIBDIR)
   set(QUARK_quark_LIBRARY "QUARK_quark_LIBRARY-NOTFOUND")
   find_library(QUARK_quark_LIBRARY
     NAMES quark
-    HINTS ${QUARK_LIBDIR})
+    HINTS ${QUARK_LIBDIR}
+    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
 else()
   if(QUARK_DIR)
     set(QUARK_quark_LIBRARY "QUARK_quark_LIBRARY-NOTFOUND")
     find_library(QUARK_quark_LIBRARY
       NAMES quark
       HINTS ${QUARK_DIR}
-      PATH_SUFFIXES lib lib32 lib64)
+      PATH_SUFFIXES lib lib32 lib64
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     set(QUARK_quark_LIBRARY "QUARK_quark_LIBRARY-NOTFOUND")
     find_library(QUARK_quark_LIBRARY

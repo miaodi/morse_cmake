@@ -144,7 +144,8 @@ if(PTSCOTCH_INCDIR)
     set(PTSCOTCH_${ptscotch_hdr}_DIRS "PTSCOTCH_${ptscotch_hdr}_DIRS-NOTFOUND")
     find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
       NAMES ${ptscotch_hdr}
-      HINTS ${PTSCOTCH_INCDIR})
+      HINTS ${PTSCOTCH_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
   endforeach()
 else()
@@ -154,7 +155,8 @@ else()
       find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
         NAMES ${ptscotch_hdr}
         HINTS ${PTSCOTCH_DIR}
-        PATH_SUFFIXES "include" "include/scotch")
+        PATH_SUFFIXES "include" "include/scotch"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
     endforeach()
   else()
@@ -225,7 +227,8 @@ if(PTSCOTCH_LIBDIR)
     set(PTSCOTCH_${ptscotch_lib}_LIBRARY "PTSCOTCH_${ptscotch_lib}_LIBRARY-NOTFOUND")
     find_library(PTSCOTCH_${ptscotch_lib}_LIBRARY
       NAMES ${ptscotch_lib}
-      HINTS ${PTSCOTCH_LIBDIR})
+      HINTS ${PTSCOTCH_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   endforeach()
 else()
   if(PTSCOTCH_DIR)
@@ -234,7 +237,8 @@ else()
       find_library(PTSCOTCH_${ptscotch_lib}_LIBRARY
         NAMES ${ptscotch_lib}
         HINTS ${PTSCOTCH_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
   else()
     foreach(ptscotch_lib ${PTSCOTCH_libs_to_find})

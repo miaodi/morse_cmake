@@ -151,14 +151,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
     set(FXT_fxt.h_DIRS "FXT_fxt.h_DIRS-NOTFOUND")
     find_path(FXT_fxt.h_DIRS
       NAMES fxt.h
-      HINTS ${FXT_INCDIR})
+      HINTS ${FXT_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(FXT_DIR)
       set(FXT_fxt.h_DIRS "FXT_fxt.h_DIRS-NOTFOUND")
       find_path(FXT_fxt.h_DIRS
         NAMES fxt.h
         HINTS ${FXT_DIR}
-        PATH_SUFFIXES "include" "include/fxt")
+        PATH_SUFFIXES "include" "include/fxt"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(FXT_fxt.h_DIRS "FXT_fxt.h_DIRS-NOTFOUND")
       find_path(FXT_fxt.h_DIRS
@@ -219,14 +221,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
     set(FXT_fxt_LIBRARY "FXT_fxt_LIBRARY-NOTFOUND")
     find_library(FXT_fxt_LIBRARY
       NAMES fxt
-      HINTS ${FXT_LIBDIR})
+      HINTS ${FXT_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(FXT_DIR)
       set(FXT_fxt_LIBRARY "FXT_fxt_LIBRARY-NOTFOUND")
       find_library(FXT_fxt_LIBRARY
         NAMES fxt
         HINTS ${FXT_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(FXT_fxt_LIBRARY "FXT_fxt_LIBRARY-NOTFOUND")
       find_library(FXT_fxt_LIBRARY

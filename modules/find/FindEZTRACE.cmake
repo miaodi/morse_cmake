@@ -192,14 +192,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_FOUND)
     set(EZTRACE_eztrace.h_DIRS "EZTRACE_eztrace.h_DIRS-NOTFOUND")
     find_path(EZTRACE_eztrace.h_DIRS
       NAMES eztrace.h
-      HINTS ${EZTRACE_INCDIR})
+      HINTS ${EZTRACE_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(EZTRACE_DIR)
       set(EZTRACE_eztrace.h_DIRS "EZTRACE_eztrace.h_DIRS-NOTFOUND")
       find_path(EZTRACE_eztrace.h_DIRS
         NAMES eztrace.h
         HINTS ${EZTRACE_DIR}
-        PATH_SUFFIXES "include" "include/eztrace")
+        PATH_SUFFIXES "include" "include/eztrace"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(EZTRACE_eztrace.h_DIRS "EZTRACE_eztrace.h_DIRS-NOTFOUND")
       find_path(EZTRACE_eztrace.h_DIRS
@@ -262,14 +264,16 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_FOUND)
     set(EZTRACE_eztrace_LIBRARY "EZTRACE_eztrace_LIBRARY-NOTFOUND")
     find_library(EZTRACE_eztrace_LIBRARY
       NAMES eztrace
-      HINTS ${EZTRACE_LIBDIR})
+      HINTS ${EZTRACE_LIBDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     if(EZTRACE_DIR)
       set(EZTRACE_eztrace_LIBRARY "EZTRACE_eztrace_LIBRARY-NOTFOUND")
       find_library(EZTRACE_eztrace_LIBRARY
         NAMES eztrace
         HINTS ${EZTRACE_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+        PATH_SUFFIXES lib lib32 lib64
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       set(EZTRACE_eztrace_LIBRARY "EZTRACE_eztrace_LIBRARY-NOTFOUND")
       find_library(EZTRACE_eztrace_LIBRARY

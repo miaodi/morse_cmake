@@ -8,6 +8,5 @@ cd build
 
 cmake $CI_PROJECT_DIR/modules/find/tests -DENABLE_CTEST=ON -DLAPACKE_COMPONENTS="TMG" -DQUARK_COMPONENTS="HWLOC" -DCHAMELEON_COMPONENTS="MPI;FXT;STARPU" -DPASTIX_COMPONENTS="SPM"
 
-ctest -D ExperimentalTest
+ctest -D Experimental
 
-exit 0

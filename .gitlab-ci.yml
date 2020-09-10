@@ -6,9 +6,13 @@ Find:
     expire_in: 1 week
     paths:
      - modules/find/tests/build/Testing/
+    reports:
+      junit: report.xml
   script:
     - cd modules/find/tests
     - mkdir -p build
     - cd build
     - cmake .. -DENABLE_CTEST=ON -DLAPACKE_COMPONENTS="TMG" -DQUARK_COMPONENTS="HWLOC" -DCHAMELEON_COMPONENTS="MPI;FXT;STARPU" -DPASTIX_COMPONENTS="SPM"
     - ctest -V
+  after_script:
+    - xsltproc -o report.xml /home/gitlab/ctest-to-junit.xsl modules/find/tests/build/Testing/**/Test.xml

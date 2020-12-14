@@ -1,11 +1,22 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
+# @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 ###
 #
 # - Find SUITESPARSE include dirs and libraries
@@ -22,16 +33,19 @@
 # This module finds headers and suitesparse library.
 # Results are reported in variables:
 #  SUITESPARSE_FOUND             - True if headers and requested libraries were found
+#  SUITESPARSE_PREFIX            - installation path of the lib found
 #  SUITESPARSE_CFLAGS_OTHER      - suitesparse compiler flags without headers paths
 #  SUITESPARSE_LDFLAGS_OTHER     - suitesparse linker flags without libraries
 #  SUITESPARSE_INCLUDE_DIRS      - suitesparse include directories
 #  SUITESPARSE_LIBRARY_DIRS      - suitesparse link directories
 #  SUITESPARSE_LIBRARIES         - suitesparse libraries to be linked (absolute path)
-#  SUITESPARSE_CFLAGS_OTHER_DEP  - suitesparse + dependencies compiler flags without headers paths
-#  SUITESPARSE_LDFLAGS_OTHER_DEP - suitesparse + dependencies linker flags without libraries
-#  SUITESPARSE_INCLUDE_DIRS_DEP  - suitesparse + dependencies include directories
-#  SUITESPARSE_LIBRARY_DIRS_DEP  - suitesparse + dependencies link directories
-#  SUITESPARSE_LIBRARIES_DEP     - suitesparse + dependencies libraries
+#
+# Set SUITESPARSE_STATIC to 1 to force using static libraries if exist.
+#
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::SUITESPARSE``
+#   The headers and libraries to use for SUITESPARSE, if found.
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DSUITESPARSE_DIR=path/to/suitesparse):
@@ -40,24 +54,9 @@
 # are not given as cmake variable: SUITESPARSE_DIR
 
 #=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013-2018 Florent Pruvost
-#
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
-#
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT SUITESPARSE_FOUND)
   set(SUITESPARSE_DIR "" CACHE PATH "Installation directory of SUITESPARSE library")
@@ -224,6 +223,11 @@ endforeach()
 # Looking for lib
 # ---------------
 
+if (SUITESPARSE_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 # create list of libs to find
 set(SUITESPARSE_libs_to_find
   "cholmod"
@@ -273,6 +277,10 @@ else()
   endif()
 endif()
 
+if (SUITESPARSE_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+endif()
+
 # If found, add path to cmake variable
 # ------------------------------------
 set(SUITESPARSE_LIBRARIES "")
@@ -298,11 +306,17 @@ list(REMOVE_DUPLICATES SUITESPARSE_INCLUDE_DIRS)
 # check a function to validate the find
 if(SUITESPARSE_LIBRARIES)
 
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(SUITESPARSE SUITESPARSE_LIBRARIES)
+  if(SUITESPARSE_STATIC)
+    set(STATIC "_STATIC")
+  endif()
+
   set(REQUIRED_INCDIRS)
-  set(REQUIRED_FLAGS)
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
 
   # SUITESPARSE
   if (SUITESPARSE_INCLUDE_DIRS)
@@ -328,19 +342,19 @@ if(SUITESPARSE_LIBRARIES)
   endif()
   # LAPACK
   if (LAPACK_FOUND)
-    if (LAPACK_INCLUDE_DIRS_DEP)
-      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS_DEP}")
+    if (LAPACK_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
     endif()
-    if (LAPACK_CFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
+    if (LAPACK_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
     endif()
-    if (LAPACK_LDFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER_DEP}")
+    if (LAPACK_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER}")
     endif()
-    if (LAPACK_LIBRARY_DIRS_DEP)
-      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS_DEP}")
+    if (LAPACK_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
     endif()
-    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES_DEP}")
+    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
   endif()
   # others
   set(M_LIBRARY "M_LIBRARY-NOTFOUND")
@@ -364,7 +378,7 @@ if(SUITESPARSE_LIBRARIES)
       list(APPEND REQUIRED_FLAGS "${_flag}")
     endforeach()
   endif()
-  finds_remove_duplicates()
+  morse_finds_remove_duplicates()
   set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -379,12 +393,14 @@ if(SUITESPARSE_LIBRARIES)
   mark_as_advanced(SUITESPARSE_WORKS)
 
   if(SUITESPARSE_WORKS)
-    # save link with dependencies
-    set(SUITESPARSE_LIBRARIES_DEP "${REQUIRED_LIBS}")
-    set(SUITESPARSE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-    set(SUITESPARSE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(SUITESPARSE_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
-    set(SUITESPARSE_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+    set(SUITESPARSE_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+    set(SUITESPARSE_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+    if (SUITESPARSE_STATIC OR METIS_STATIC OR BLA_STATIC)
+      # save link with dependencies
+      set(SUITESPARSE_LIBRARIES "${REQUIRED_LIBS}")
+      set(SUITESPARSE_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+      set(SUITESPARSE_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+    endif()
   else()
     if(NOT SUITESPARSE_FIND_QUIETLY)
       message(STATUS "Looking for SUITESPARSE : test of symbol SuiteSparse_start fails")
@@ -398,23 +414,22 @@ if(SUITESPARSE_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif(SUITESPARSE_LIBRARIES)
 
-if (SUITESPARSE_LIBRARIES)
   list(GET SUITESPARSE_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
+  get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   if (NOT SUITESPARSE_LIBRARY_DIRS)
     set(SUITESPARSE_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-    set(SUITESPARSE_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of SUITESPARSE library" FORCE)
+    set(SUITESPARSE_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of SUITESPARSE library" FORCE)
   else()
-    set(SUITESPARSE_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of SUITESPARSE library" FORCE)
+    set(SUITESPARSE_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of SUITESPARSE library" FORCE)
   endif()
-endif()
-mark_as_advanced(SUITESPARSE_DIR)
-mark_as_advanced(SUITESPARSE_DIR_FOUND)
+  mark_as_advanced(SUITESPARSE_DIR)
+  mark_as_advanced(SUITESPARSE_PREFIX)
+
+endif(SUITESPARSE_LIBRARIES)
 
 # check that SUITESPARSE has been found
 # -------------------------------
@@ -422,3 +437,8 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SUITESPARSE DEFAULT_MSG
   SUITESPARSE_LIBRARIES
   SUITESPARSE_WORKS)
+
+# Add imported target
+if (SUITESPARSE_FOUND)
+  morse_create_imported_target(SUITESPARSE)
+endif()

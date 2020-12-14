@@ -1,12 +1,9 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
 # @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+# @copyright (c) 2017-2018 King Abdullah University of Science and Technology (KAUST). All rights reserved.
 #
-# @copyright 2017-2018 King Abdullah University of Science and Technology (KAUST). All rights reserved.
 ###
 #
 # - Find AL4SAN include dirs and libraries
@@ -92,11 +89,11 @@ if(PKG_CONFIG_EXECUTABLE)
       pkg_get_variable(AL4SAN_INCLUDE_DIRS al4san includedir)
     endif()
     set(AL4SAN_FOUND_WITH_PKGCONFIG "TRUE")
-    find_pkgconfig_libraries_absolute_path(AL4SAN)
+    morse_find_pkgconfig_libraries_absolute_path(AL4SAN)
   else()
     set(AL4SAN_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
-  
+
 endif(PKG_CONFIG_EXECUTABLE)
 
 if (AL4SAN_LIBRARIES)
@@ -108,7 +105,7 @@ if (AL4SAN_LIBRARIES)
     endforeach()
   else()
     list(GET AL4SAN_LIBRARIES 0 first_lib)
-    get_filename_component(first_lib_path "${first_lib}" PATH)
+    get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")

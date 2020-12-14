@@ -1,10 +1,22 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
+# @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+#
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 #
 ###
 #
@@ -24,17 +36,13 @@
 #
 # This module finds headers and ptscotch library.
 # Results are reported in variables:
-#  PTSCOTCH_FOUND            - True if headers and requested libraries were found
+#  PTSCOTCH_FOUND             - True if headers and requested libraries were found
+#  PTSCOTCH_PREFIX            - installation path of the lib found
 #  PTSCOTCH_CFLAGS_OTHER      - ptscotch compiler flags without headers paths
 #  PTSCOTCH_LDFLAGS_OTHER     - ptscotch linker flags without libraries
 #  PTSCOTCH_INCLUDE_DIRS      - ptscotch include directories
 #  PTSCOTCH_LIBRARY_DIRS      - ptscotch link directories
 #  PTSCOTCH_LIBRARIES         - ptscotch libraries to be linked (absolute path)
-#  PTSCOTCH_CFLAGS_OTHER_DEP  - ptscotch + dependencies compiler flags without headers paths
-#  PTSCOTCH_LDFLAGS_OTHER_DEP - ptscotch + dependencies linker flags without libraries
-#  PTSCOTCH_INCLUDE_DIRS_DEP  - ptscotch + dependencies include directories
-#  PTSCOTCH_LIBRARY_DIRS_DEP  - ptscotch + dependencies link directories
-#  PTSCOTCH_LIBRARIES_DEP     - ptscotch + dependencies libraries
 #  PTSCOTCH_INTSIZE          - Number of octets occupied by a SCOTCH_Num
 #
 # The user can give specific paths where to find the libraries adding cmake
@@ -44,26 +52,18 @@
 #  PTSCOTCH_LIBDIR           - Where to find the library files
 # The module can also look for the following environment variables if paths
 # are not given as cmake variable: PTSCOTCH_DIR, PTSCOTCH_INCDIR, PTSCOTCH_LIBDIR
-
-#=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013-2016 Florent Pruvost
 #
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
+# Set PTSCOTCH_STATIC to 1 to force using static libraries if exist.
 #
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::PTSCOTCH``
+#   The headers and libraries to use for PTSCOTCH, if found.
+#
 #=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT PTSCOTCH_FOUND)
   set(PTSCOTCH_DIR "" CACHE PATH "Installation directory of PTSCOTCH library")
@@ -214,6 +214,11 @@ list(REMOVE_DUPLICATES _lib_env)
 # Try to find the ptscotch lib in the given paths
 # ----------------------------------------------
 
+if (PTSCOTCH_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 set(PTSCOTCH_libs_to_find "ptscotch;ptscotcherr")
 if (PTSCOTCH_LOOK_FOR_ESMUMPS)
   list(INSERT PTSCOTCH_libs_to_find 0 "ptesmumps")
@@ -250,6 +255,10 @@ else()
   endif()
 endif()
 
+if (PTSCOTCH_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+endif()
+
 set(PTSCOTCH_LIBRARIES "")
 set(PTSCOTCH_LIBRARY_DIRS "")
 # If found, add path to cmake variable
@@ -276,11 +285,17 @@ list(REMOVE_DUPLICATES PTSCOTCH_LIBRARY_DIRS)
 # check a function to validate the find
 if(PTSCOTCH_LIBRARIES)
 
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(PTSCOTCH PTSCOTCH_LIBRARIES)
+  if(PTSCOTCH_STATIC)
+    set(STATIC "_STATIC")
+  endif()
+
   set(REQUIRED_INCDIRS)
-  set(REQUIRED_FLAGS)
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
 
   # PTSCOTCH
   if (PTSCOTCH_INCLUDE_DIRS)
@@ -340,7 +355,7 @@ if(PTSCOTCH_LIBRARIES)
       list(APPEND REQUIRED_FLAGS "${_flag}")
     endforeach()
   endif()
-  finds_remove_duplicates()
+  morse_finds_remove_duplicates()
   set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -355,12 +370,14 @@ if(PTSCOTCH_LIBRARIES)
   mark_as_advanced(PTSCOTCH_WORKS)
 
   if(PTSCOTCH_WORKS)
-    # save link with dependencies
-    set(PTSCOTCH_LIBRARIES_DEP "${REQUIRED_LIBS}")
-    set(PTSCOTCH_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-    set(PTSCOTCH_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(PTSCOTCH_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
-    set(PTSCOTCH_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+    set(PTSCOTCH_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+    set(PTSCOTCH_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+    if (PTSCOTCH_STATIC)
+      # save link with dependencies
+      set(PTSCOTCH_LIBRARIES "${REQUIRED_LIBS}")
+      set(PTSCOTCH_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+      set(PTSCOTCH_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+    endif()
   else()
     if(NOT PTSCOTCH_FIND_QUIETLY)
       message(STATUS "Looking for PTSCOTCH : test of SCOTCH_dgraphInit with PTSCOTCH library fails")
@@ -373,23 +390,22 @@ if(PTSCOTCH_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif(PTSCOTCH_LIBRARIES)
 
-if (PTSCOTCH_LIBRARIES)
   list(GET PTSCOTCH_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
+  get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   if (NOT PTSCOTCH_LIBRARY_DIRS)
     set(PTSCOTCH_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-    set(PTSCOTCH_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of PTSCOTCH library" FORCE)
+    set(PTSCOTCH_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of PTSCOTCH library" FORCE)
   else()
-    set(PTSCOTCH_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of PTSCOTCH library" FORCE)
+    set(PTSCOTCH_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of PTSCOTCH library" FORCE)
   endif()
-endif()
-mark_as_advanced(PTSCOTCH_DIR)
-mark_as_advanced(PTSCOTCH_DIR_FOUND)
+  mark_as_advanced(PTSCOTCH_DIR)
+  mark_as_advanced(PTSCOTCH_PREFIX)
+
+endif(PTSCOTCH_LIBRARIES)
 
 # Check the size of SCOTCH_Num
 # ---------------------------------
@@ -444,6 +460,8 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PTSCOTCH DEFAULT_MSG
   PTSCOTCH_LIBRARIES
   PTSCOTCH_WORKS)
-#
-# TODO: Add possibility to check for specific functions in the library
-#
+
+# Add imported target
+if (PTSCOTCH_FOUND)
+  morse_create_imported_target(PTSCOTCH)
+endif()

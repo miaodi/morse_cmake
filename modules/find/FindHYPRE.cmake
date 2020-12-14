@@ -3,12 +3,19 @@
 # it is surely too simple, must be completed
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
-# @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+# @copyright (c) 2016-2020 Inria. All rights reserved.
 #
+# Copyright 2016-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 ###
 #
 # - Find HYPRE include dirs and libraries
@@ -25,9 +32,13 @@
 #  HYPRE_INCLUDE_DIRS      - hypre include directories
 #  HYPRE_LIBRARY_DIRS      - Link directories for hypre libraries
 #  HYPRE_LIBRARIES         - hypre component libraries to be linked
-#  HYPRE_INCLUDE_DIRS_DEP  - hypre + dependencies include directories
-#  HYPRE_LIBRARY_DIRS_DEP  - hypre + dependencies link directories
-#  HYPRE_LIBRARIES_DEP     - hypre + dependencies libraries
+#
+# Set HYPRE_STATIC to 1 to force using static libraries if exist.
+#
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::HYPRE``
+#   The headers and libraries to use for HYPRE, if found.
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DHYPRE_DIR=path/to/hypre):
@@ -38,21 +49,9 @@
 # are not given as cmake variable: HYPRE_DIR, HYPRE_INCDIR, HYPRE_LIBDIR
 
 #=============================================================================
-# Copyright 2016-2019 Inria
-# Copyright 2016-2018 Florent Pruvost
-#
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
-#
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT HYPRE_FOUND)
   set(HYPRE_DIR "" CACHE PATH "Installation directory of HYPRE library")
@@ -182,6 +181,11 @@ set(PATH_TO_LOOK_FOR "${_lib_env}")
 # Try to find the hypre lib in the given paths
 # ----------------------------------------------
 
+if (HYPRE_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 # call cmake macro to find the lib path
 if(HYPRE_LIBDIR)
   set(HYPRE_HYPRE_LIBRARY "HYPRE_HYPRE_LIBRARY-NOTFOUND")
@@ -206,6 +210,10 @@ else()
 endif()
 mark_as_advanced(HYPRE_HYPRE_LIBRARY)
 
+if (HYPRE_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+endif()
+
 # If found, add path to cmake variable
 # ------------------------------------
 if (HYPRE_HYPRE_LIBRARY)
@@ -228,9 +236,17 @@ endif ()
 # check a function to validate the find
 if(HYPRE_LIBRARIES)
 
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(HYPRE HYPRE_LIBRARIES)
+  if(HYPRE_STATIC)
+    set(STATIC "_STATIC")
+  endif()
+
   set(REQUIRED_INCDIRS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
 
   # HYPRE
   if (HYPRE_INCLUDE_DIRS)
@@ -269,7 +285,7 @@ if(HYPRE_LIBRARIES)
   endif()
 
   # set required libraries for link
-  finds_remove_duplicates()
+  morse_finds_remove_duplicates()
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
   set(CMAKE_REQUIRED_LIBRARIES)
   foreach(lib_dir ${REQUIRED_LIBDIRS})
@@ -285,10 +301,12 @@ if(HYPRE_LIBRARIES)
   mark_as_advanced(HYPRE_WORKS)
 
   if(HYPRE_WORKS)
-    # save link with dependencies
-    set(HYPRE_LIBRARIES_DEP "${REQUIRED_LIBS}")
-    set(HYPRE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-    set(HYPRE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+    if (HYPRE_STATIC)
+      # save link with dependencies
+      set(HYPRE_LIBRARIES "${REQUIRED_LIBS}")
+      set(HYPRE_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+      set(HYPRE_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+    endif()
   else()
     if(NOT HYPRE_FIND_QUIETLY)
       message(STATUS "Looking for HYPRE : test of HYPRE_StructGridCreate with HYPRE library fails")
@@ -300,24 +318,23 @@ if(HYPRE_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif(HYPRE_LIBRARIES)
 
-if (HYPRE_LIBRARIES)
   if (HYPRE_LIBRARY_DIRS)
     list(GET HYPRE_LIBRARY_DIRS 0 first_lib_path)
   else()
     list(GET HYPRE_LIBRARIES 0 first_lib)
-    get_filename_component(first_lib_path "${first_lib}" PATH)
+    get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-    set(HYPRE_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of HYPRE library" FORCE)
+    set(HYPRE_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of HYPRE library" FORCE)
   else()
-    set(HYPRE_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of HYPRE library" FORCE)
+    set(HYPRE_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of HYPRE library" FORCE)
   endif()
-endif()
-mark_as_advanced(HYPRE_DIR)
-mark_as_advanced(HYPRE_DIR_FOUND)
+  mark_as_advanced(HYPRE_DIR)
+  mark_as_advanced(HYPRE_PREFIX)
+
+endif(HYPRE_LIBRARIES)
 
 # check that HYPRE has been found
 # -------------------------------
@@ -325,3 +342,8 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(HYPRE DEFAULT_MSG
   HYPRE_LIBRARIES
   HYPRE_WORKS)
+
+# Add imported target
+if (HYPRE_FOUND)
+  morse_create_imported_target(HYPRE)
+endif()

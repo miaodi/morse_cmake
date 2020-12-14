@@ -1,47 +1,12 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
+# @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
-###
-#
-# - Find TMG include dirs and libraries
-# Use this module by invoking find_package with the form:
-#  find_package(TMG
-#               [REQUIRED]             # Fail with error if tmg is not found
-#              )
-#
-# This module finds headers and tmg library.
-# Results are reported in variables:
-#  TMG_FOUND            - True if headers and requested libraries were found
-#  TMG_CFLAGS_OTHER      - tmglib compiler flags without headers paths
-#  TMG_LDFLAGS_OTHER     - tmglib linker flags without libraries
-#  TMG_INCLUDE_DIRS      - tmglib include directories
-#  TMG_LIBRARY_DIRS      - tmglib link directories
-#  TMG_LIBRARIES         - tmglib libraries to be linked (absolute path)
-#  TMG_CFLAGS_OTHER_DEP  - tmglib + dependencies compiler flags without headers paths
-#  TMG_LDFLAGS_OTHER_DEP - tmglib + dependencies linker flags without libraries
-#  TMG_INCLUDE_DIRS_DEP  - tmglib + dependencies include directories
-#  TMG_LIBRARY_DIRS_DEP  - tmglib + dependencies link directories
-#  TMG_LIBRARIES_DEP     - tmglib + dependencies libraries
-#
-# The user can give specific paths where to find the libraries adding cmake
-# options at configure (ex: cmake path/to/project -DTMG=path/to/tmg):
-#  TMG_DIR              - Where to find the base directory of tmg
-#  TMG_INCDIR           - Where to find the header files
-#  TMG_LIBDIR           - Where to find the library files
-# The module can also look for the following environment variables if paths
-# are not given as cmake variable: TMG_DIR, TMG_INCDIR, TMG_LIBDIR
-
-#=============================================================================
-# Copyright 2012-2019 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2018 Florent Pruvost
+# Copyright 2013-2020 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -52,9 +17,43 @@
 #=============================================================================
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
+###
+#
+# - Find TMG include dirs and libraries
+# Use this module by invoking find_package with the form:
+#  find_package(TMG
+#               [REQUIRED]             # Fail with error if tmg is not found
+#              )
+#
+# This module finds headers and tmg library.
+# Results are reported in variables:
+#  TMG_FOUND             - True if headers and requested libraries were found
+#  TMG_PREFIX            - installation path of the lib found
+#  TMG_CFLAGS_OTHER      - tmglib compiler flags without headers paths
+#  TMG_LDFLAGS_OTHER     - tmglib linker flags without libraries
+#  TMG_INCLUDE_DIRS      - tmglib include directories
+#  TMG_LIBRARY_DIRS      - tmglib link directories
+#  TMG_LIBRARIES         - tmglib libraries to be linked (absolute path)
+#
+# Set TMG_STATIC to 1 to force using static libraries if exist.
+#
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::TMG``
+#   The headers and libraries to use for TMG, if found.
+#
+# The user can give specific paths where to find the libraries adding cmake
+# options at configure (ex: cmake path/to/project -DTMG=path/to/tmg):
+#  TMG_DIR              - Where to find the base directory of tmg
+#  TMG_INCDIR           - Where to find the header files
+#  TMG_LIBDIR           - Where to find the library files
+# The module can also look for the following environment variables if paths
+# are not given as cmake variable: TMG_DIR, TMG_INCDIR, TMG_LIBDIR
+
+#=============================================================================
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT TMG_FOUND)
   set(TMG_DIR "" CACHE PATH "Installation directory of TMG library")
@@ -83,9 +82,9 @@ endif()
 if (LAPACK_FOUND)
 
   # check if a tmg function exists in the LAPACK lib
-  set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER_DEP};${LAPACK_LIBRARIES_DEP}")
-  set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS_DEP}")
-  set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
+  set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER};${LAPACK_LIBRARIES}")
+  set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
   include(CheckFunctionExists)
   include(CheckFortranFunctionExists)
   unset(TMG_WORKS CACHE)
@@ -150,6 +149,11 @@ if (LAPACK_FOUND)
     # Try to find the tmg lib in the given paths
     # ----------------------------------------------
 
+    if (TMG_STATIC)
+      set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+      set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    endif()
+
     # call cmake macro to find the lib path
     if(TMG_LIBDIR)
       set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
@@ -173,6 +177,10 @@ if (LAPACK_FOUND)
       endif()
     endif()
     mark_as_advanced(TMG_tmg_LIBRARY)
+
+    if (TMG_STATIC)
+      set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+    endif()
 
     # If found, add path to cmake variable
     # ------------------------------------
@@ -198,11 +206,17 @@ if (LAPACK_FOUND)
   # check a function to validate the find
   if(TMG_LIBRARIES)
 
+    # check if static or dynamic lib
+    morse_check_static_or_dynamic(TMG TMG_LIBRARIES)
+    if(TMG_STATIC)
+      set(STATIC "_STATIC")
+    endif()
+
     set(REQUIRED_INCDIRS)
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_LDFLAGS)
     set(REQUIRED_LIBDIRS)
     set(REQUIRED_LIBS)
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_LDFLAGS)
 
     # TMG
     if (TMG_INCLUDE_DIRS)
@@ -219,19 +233,19 @@ if (LAPACK_FOUND)
     endif()
     set(REQUIRED_LIBS "${TMG_LIBRARIES}")
     # LAPACK
-    if (LAPACK_INCLUDE_DIRS_DEP)
-      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS_DEP}")
+    if (LAPACK_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
     endif()
-    if (LAPACK_CFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
+    if (LAPACK_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
     endif()
-    if (LAPACK_LDFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER_DEP}")
+    if (LAPACK_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER}")
     endif()
-    if (LAPACK_LIBRARY_DIRS_DEP)
-      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS_DEP}")
+    if (LAPACK_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
     endif()
-    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES_DEP}")
+    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
 
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
@@ -247,7 +261,7 @@ if (LAPACK_FOUND)
         list(APPEND REQUIRED_FLAGS "${_flag}")
       endforeach()
     endif()
-    finds_remove_duplicates()
+    morse_finds_remove_duplicates()
     set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
     set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
     set(CMAKE_REQUIRED_LIBRARIES)
@@ -275,12 +289,14 @@ if (LAPACK_FOUND)
     endif()
 
     if(TMG_WORKS)
-      # save link with dependencies
-      set(TMG_LIBRARIES_DEP "${REQUIRED_LIBS}")
-      set(TMG_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-      set(TMG_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-      set(TMG_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
-      set(TMG_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+      set(TMG_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+      set(TMG_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+      if (TMG_STATIC OR BLA_STATIC)
+        # save link with dependencies
+        set(TMG_LIBRARIES "${REQUIRED_LIBS}")
+        set(TMG_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+        set(TMG_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+      endif()
     else()
       if(NOT TMG_FIND_QUIETLY)
         message(STATUS "Looking for tmg: test of dlarnv and dlagsy with tmg and lapack libraries fails")
@@ -293,6 +309,21 @@ if (LAPACK_FOUND)
     set(CMAKE_REQUIRED_INCLUDES)
     set(CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_LIBRARIES)
+
+    list(GET TMG_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
+    if (NOT TMG_LIBRARY_DIRS)
+      set(TMG_LIBRARY_DIRS "${first_lib_path}")
+    endif()
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+      string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+      set(TMG_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of TMG library" FORCE)
+    else()
+      set(TMG_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of TMG library" FORCE)
+    endif()
+    mark_as_advanced(TMG_DIR)
+    mark_as_advanced(TMG_PREFIX)
+
   endif(TMG_LIBRARIES)
 
 else()
@@ -304,25 +335,14 @@ else()
 
 endif()
 
-if (TMG_LIBRARIES)
-  list(GET TMG_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
-  if (NOT TMG_LIBRARY_DIRS)
-    set(TMG_LIBRARY_DIRS "${first_lib_path}")
-  endif()
-  if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
-    string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-    set(TMG_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of TMG library" FORCE)
-  else()
-    set(TMG_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of TMG library" FORCE)
-  endif()
-endif()
-mark_as_advanced(TMG_DIR)
-mark_as_advanced(TMG_DIR_FOUND)
-
 # check that TMG has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(TMG DEFAULT_MSG
   TMG_LIBRARIES
   TMG_WORKS)
+
+# Add imported target
+if (TMG_FOUND)
+  morse_create_imported_target(TMG)
+endif()

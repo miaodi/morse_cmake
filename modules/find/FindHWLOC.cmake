@@ -1,10 +1,22 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
 # @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+#
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 #
 ###
 #
@@ -13,16 +25,11 @@
 #  find_package(HWLOC
 #               [REQUIRED]) # Fail with error if hwloc is not found
 #
-# This module finds headers and hwloc library.
-# Results are reported in variables:
-#  HWLOC_FOUND           - True if headers and requested libraries were found
-#  HWLOC_INCLUDE_DIRS    - hwloc include directories
-#  HWLOC_LIBRARY_DIRS    - Link directories for hwloc libraries
-#  HWLOC_LIBRARIES       - hwloc component libraries to be linked
-#
-#  HWLOC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
+# This module finds headers and hwloc library using pkg-config file.
 #  if found with pkg-config the following variables are set
 #  <PREFIX>  = HWLOC
+#  <PREFIX>_PREFIX          ... installation path of the lib found
+#  <PREFIX>_VERSION         ... version of the lib
 #  <XPREFIX> = <PREFIX>        for common case
 #  <XPREFIX> = <PREFIX>_STATIC for static linking
 #  <XPREFIX>_FOUND          ... set to 1 if module(s) exist
@@ -34,58 +41,29 @@
 #  <XPREFIX>_CFLAGS         ... all required cflags
 #  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
-# The user can give specific paths where to find the libraries adding cmake
-# options at configure (ex: cmake path/to/project -DHWLOC_DIR=path/to/hwloc):
-#  HWLOC_DIR             - Where to find the base directory of hwloc
-#  HWLOC_INCDIR          - Where to find the header files
-#  HWLOC_LIBDIR          - Where to find the library files
-# The module can also look for the following environment variables if paths
-# are not given as cmake variable: HWLOC_DIR, HWLOC_INCDIR, HWLOC_LIBDIR
-
-#=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013-2018 Florent Pruvost
+# Set HWLOC_STATIC to 1 to force using static libraries if exist.
 #
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
+# This module defines the following :prop_tgt:`IMPORTED` target:
 #
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
+# ``MORSE::HWLOC``
+#   The headers and libraries to use for HWLOC, if found.
+#
 #=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 include(CheckStructHasMember)
 include(CheckCSourceCompiles)
 
-if (NOT HWLOC_FOUND)
-  set(HWLOC_DIR "" CACHE PATH "Installation directory of HWLOC library")
-  if (NOT HWLOC_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely HWLOC_DIR, has been set to specify the install directory of HWLOC")
-  endif()
+if (NOT HWLOC_FIND_QUIETLY)
+  message(STATUS "FindHWLOC needs pkg-config program and PKG_CONFIG_PATH set HWLOC.pc file path.")
 endif()
 
-set(ENV_HWLOC_DIR "$ENV{HWLOC_DIR}")
-set(ENV_HWLOC_INCDIR "$ENV{HWLOC_INCDIR}")
-set(ENV_HWLOC_LIBDIR "$ENV{HWLOC_LIBDIR}")
-set(HWLOC_GIVEN_BY_USER "FALSE")
-if ( HWLOC_DIR OR ( HWLOC_INCDIR AND HWLOC_LIBDIR) OR ENV_HWLOC_DIR OR (ENV_HWLOC_INCDIR AND ENV_HWLOC_LIBDIR) )
-  set(HWLOC_GIVEN_BY_USER "TRUE")
-endif()
-
-# Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
-# -------------------------------------------------------------------------------------
-include(FindPkgConfig)
-find_package(PkgConfig QUIET)
-if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
-
+# use pkg-config to detect include/library dirs (if pkg-config is available)
+# --------------------------------------------------------------------------
+if (PKG_CONFIG_EXECUTABLE)
+  unset(HWLOC_FOUND CACHE)
   pkg_search_module(HWLOC hwloc)
 
   if (NOT HWLOC_FIND_QUIETLY)
@@ -97,221 +75,41 @@ if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
         "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
-
   if (HWLOC_FOUND AND HWLOC_LIBRARIES)
     if (NOT HWLOC_INCLUDE_DIRS)
       pkg_get_variable(HWLOC_INCLUDE_DIRS hwloc includedir)
     endif()
     set(HWLOC_FOUND_WITH_PKGCONFIG "TRUE")
-    find_pkgconfig_libraries_absolute_path(HWLOC)
+    morse_find_pkgconfig_libraries_absolute_path(HWLOC)
   else()
     set(HWLOC_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
 
-endif( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
-
-if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_GIVEN_BY_USER) )
-
-  if (NOT HWLOC_FIND_QUIETLY)
-    message(STATUS "Looking for HWLOC - PkgConfig not used")
-  endif()
-
-  # Looking for include
-  # -------------------
-
-  # Add system include paths to search include
-  # ------------------------------------------
-  unset(_inc_env)
-  if(ENV_HWLOC_INCDIR)
-    list(APPEND _inc_env "${ENV_HWLOC_INCDIR}")
-  elseif(ENV_HWLOC_DIR)
-    list(APPEND _inc_env "${ENV_HWLOC_DIR}")
-    list(APPEND _inc_env "${ENV_HWLOC_DIR}/include")
-    list(APPEND _inc_env "${ENV_HWLOC_DIR}/include/hwloc")
-  else()
-    if(WIN32)
-      string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-    else()
-      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-      list(APPEND _inc_env "${_path_env}")
-      string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-      list(APPEND _inc_env "${_path_env}")
-      string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-      list(APPEND _inc_env "${_path_env}")
-      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-      list(APPEND _inc_env "${_path_env}")
+  if (HWLOC_STATIC AND HWLOC_STATIC_LIBRARIES)
+    set (HWLOC_DEPENDENCIES ${HWLOC_STATIC_LIBRARIES})
+    list (REMOVE_ITEM HWLOC_DEPENDENCIES "hwloc")
+    list (APPEND HWLOC_LIBRARIES ${HWLOC_DEPENDENCIES})
+    set(HWLOC_CFLAGS_OTHER ${HWLOC_STATIC_CFLAGS_OTHER})
+    set(HWLOC_LDFLAGS_OTHER ${HWLOC_STATIC_LDFLAGS_OTHER})
+    if (NOT HWLOC_FIND_QUIETLY)
+      message(STATUS "HWLOC_STATIC set to 1 by user, HWLOC_LIBRARIES: ${HWLOC_LIBRARIES}.")
     endif()
   endif()
-  list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-  list(REMOVE_DUPLICATES _inc_env)
-
-  # set paths where to look for
-  set(PATH_TO_LOOK_FOR "${_inc_env}")
-
-  # Try to find the hwloc header in the given paths
-  # -------------------------------------------------
-  # call cmake macro to find the header path
-  if(HWLOC_INCDIR)
-    set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
-    find_path(HWLOC_hwloc.h_DIRS
-      NAMES hwloc.h
-      HINTS ${HWLOC_INCDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    if(HWLOC_DIR)
-      set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
-      find_path(HWLOC_hwloc.h_DIRS
-        NAMES hwloc.h
-        HINTS ${HWLOC_DIR}
-        PATH_SUFFIXES "include" "include/hwloc"
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    else()
-      set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
-      find_path(HWLOC_hwloc.h_DIRS
-        NAMES hwloc.h
-        HINTS ${PATH_TO_LOOK_FOR}
-        PATH_SUFFIXES "hwloc")
-    endif()
-  endif()
-  mark_as_advanced(HWLOC_hwloc.h_DIRS)
-
-  # Add path to cmake variable
-  # ------------------------------------
-  if (HWLOC_hwloc.h_DIRS)
-    set(HWLOC_INCLUDE_DIRS "${HWLOC_hwloc.h_DIRS}")
-  else ()
-    set(HWLOC_INCLUDE_DIRS "HWLOC_INCLUDE_DIRS-NOTFOUND")
-    if(NOT HWLOC_FIND_QUIETLY)
-      message(STATUS "Looking for hwloc -- hwloc.h not found")
-    endif()
-  endif ()
-
-  if (HWLOC_INCLUDE_DIRS)
-    list(REMOVE_DUPLICATES HWLOC_INCLUDE_DIRS)
-  endif ()
-
-
-  # Looking for lib
-  # ---------------
-
-  # Add system library paths to search lib
-  # --------------------------------------
-  unset(_lib_env)
-  if(ENV_HWLOC_LIBDIR)
-    list(APPEND _lib_env "${ENV_HWLOC_LIBDIR}")
-  elseif(ENV_HWLOC_DIR)
-    list(APPEND _lib_env "${ENV_HWLOC_DIR}")
-    list(APPEND _lib_env "${ENV_HWLOC_DIR}/lib")
-  else()
-    list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-    if(WIN32)
-      string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-    elseif(APPLE)
-      string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-    else()
-      string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-    endif()
-    list(APPEND _lib_env "${_lib_env2}")
-    list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-  endif()
-  list(REMOVE_DUPLICATES _lib_env)
-
-  # set paths where to look for
-  set(PATH_TO_LOOK_FOR "${_lib_env}")
-
-  # Try to find the hwloc lib in the given paths
-  # ----------------------------------------------
-
-  # call cmake macro to find the lib path
-  if(HWLOC_LIBDIR)
-    set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
-    find_library(HWLOC_hwloc_LIBRARY
-      NAMES hwloc
-      HINTS ${HWLOC_LIBDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    if(HWLOC_DIR)
-      set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
-      find_library(HWLOC_hwloc_LIBRARY
-        NAMES hwloc
-        HINTS ${HWLOC_DIR}
-        PATH_SUFFIXES lib lib32 lib64
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    else()
-      set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
-      find_library(HWLOC_hwloc_LIBRARY
-        NAMES hwloc
-        HINTS ${PATH_TO_LOOK_FOR})
-    endif()
-  endif()
-  mark_as_advanced(HWLOC_hwloc_LIBRARY)
-
-  # If found, add path to cmake variable
-  # ------------------------------------
-  if (HWLOC_hwloc_LIBRARY)
-    get_filename_component(hwloc_lib_path ${HWLOC_hwloc_LIBRARY} PATH)
-    # set cmake variables (respects naming convention)
-    set(HWLOC_LIBRARIES    "${HWLOC_hwloc_LIBRARY}")
-    set(HWLOC_LIBRARY_DIRS "${hwloc_lib_path}")
-  else ()
-    set(HWLOC_LIBRARIES    "HWLOC_LIBRARIES-NOTFOUND")
-    set(HWLOC_LIBRARY_DIRS "HWLOC_LIBRARY_DIRS-NOTFOUND")
-    if(NOT HWLOC_FIND_QUIETLY)
-      message(STATUS "Looking for hwloc -- lib hwloc not found")
-    endif()
-  endif ()
-
-  if (HWLOC_LIBRARY_DIRS)
-    list(REMOVE_DUPLICATES HWLOC_LIBRARY_DIRS)
-  endif ()
-
-endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_GIVEN_BY_USER) )
+endif()
 
 # check a function to validate the find
-if(HWLOC_LIBRARIES)
+if(HWLOC_FOUND AND HWLOC_LIBRARIES)
 
-  set(REQUIRED_INCDIRS)
-  set(REQUIRED_FLAGS)
-  set(REQUIRED_LDFLAGS)
-  set(REQUIRED_LIBDIRS)
-  set(REQUIRED_LIBS)
-
-  # HWLOC
-  if (HWLOC_INCLUDE_DIRS)
-    set(REQUIRED_INCDIRS "${HWLOC_INCLUDE_DIRS}")
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(HWLOC HWLOC_LIBRARIES)
+  if(HWLOC_STATIC)
+    set(STATIC "_STATIC")
+  else()
+    set(STATIC "")
   endif()
-  if (HWLOC_CFLAGS_OTHER)
-    set(REQUIRED_FLAGS "${HWLOC_CFLAGS_OTHER}")
-  endif()
-  if (HWLOC_LDFLAGS_OTHER)
-    set(REQUIRED_LDFLAGS "${HWLOC_LDFLAGS_OTHER}")
-  endif()
-  if (HWLOC_LIBRARY_DIRS)
-    set(REQUIRED_LIBDIRS "${HWLOC_LIBRARY_DIRS}")
-  endif()
-  set(REQUIRED_LIBS "${HWLOC_LIBRARIES}")
 
   # set required libraries for link
-  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-  if (REQUIRED_FLAGS)
-    set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_DEFINITIONS)
-    foreach(_flag ${REQUIRED_FLAGS_COPY})
-      if (_flag MATCHES "^-D")
-       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
-      endif()
-      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
-      list(APPEND REQUIRED_FLAGS "${_flag}")
-    endforeach()
-  endif()
-  finds_remove_duplicates()
-  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
-  set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
-  set(CMAKE_REQUIRED_LIBRARIES)
-  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+  morse_set_required_test_lib_link(HWLOC)
 
   # test link
   unset(HWLOC_WORKS CACHE)
@@ -331,25 +129,11 @@ if(HWLOC_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif(HWLOC_LIBRARIES)
 
-if (HWLOC_LIBRARIES)
-  if (HWLOC_LIBRARY_DIRS)
-    list(GET HWLOC_LIBRARY_DIRS 0 first_lib_path)
-  else()
-    list(GET HWLOC_LIBRARIES 0 first_lib)
-    get_filename_component(first_lib_path "${first_lib}" PATH)
-    set(HWLOC_LIBRARY_DIRS "${first_lib_path}")
-  endif()
-  if (${first_lib_path} MATCHES "/lib(32|64)?$")
-    string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-    set(HWLOC_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of HWLOC library" FORCE)
-  else()
-    set(HWLOC_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of HWLOC library" FORCE)
-  endif()
-endif()
-mark_as_advanced(HWLOC_DIR)
-mark_as_advanced(HWLOC_DIR_FOUND)
+  # Add imported target
+  morse_create_imported_target(HWLOC)
+
+endif(HWLOC_FOUND AND HWLOC_LIBRARIES)
 
 # check that HWLOC has been found
 # -------------------------------
@@ -358,29 +142,7 @@ find_package_handle_standard_args(HWLOC DEFAULT_MSG
   HWLOC_LIBRARIES
   HWLOC_WORKS)
 
+# Add imported targe
 if (HWLOC_FOUND)
-  set(HWLOC_SAVE_CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
-  list(APPEND CMAKE_REQUIRED_INCLUDES ${HWLOC_INCLUDE_DIRS})
-  set(CMAKE_REQUIRED_LIBRARIES)
-  if (HWLOC_LIBRARY_DIRS)
-    set (LIBDIR ${HWLOC_LIBRARY_DIRS})
-  elseif(HWLOC_LIBDIR)
-    set (LIBDIR ${HWLOC_LIBDIR})
-  endif()
-  if (LIBDIR)
-    foreach(lib_dir ${LIBDIR})
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-    endforeach()
-  endif()
-  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-  # test headers to guess the version
-  check_struct_has_member( "struct hwloc_obj" parent hwloc.h HAVE_HWLOC_PARENT_MEMBER )
-  check_struct_has_member( "struct hwloc_cache_attr_s" size hwloc.h HAVE_HWLOC_CACHE_ATTR )
-  check_c_source_compiles( "#include <hwloc.h>
-            int main(void) { hwloc_obj_t o; o->type = HWLOC_OBJ_PU; return 0;}" HAVE_HWLOC_OBJ_PU)
-  include(CheckLibraryExists)
-  check_library_exists(${HWLOC_LIBRARIES} hwloc_bitmap_free "" HAVE_HWLOC_BITMAP)
-
-  set(CMAKE_REQUIRED_INCLUDES ${HWLOC_SAVE_CMAKE_REQUIRED_INCLUDES})
+  morse_create_imported_target(HWLOC)
 endif()

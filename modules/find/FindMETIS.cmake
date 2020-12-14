@@ -1,10 +1,22 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
+# @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+#
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 #
 ###
 #
@@ -17,6 +29,7 @@
 # This module finds headers and metis library.
 # Results are reported in variables:
 #  METIS_FOUND           - True if headers and requested libraries were found
+#  METIS_PREFIX          - installation path of the lib found
 #  METIS_INCLUDE_DIRS    - metis include directories
 #  METIS_LIBRARY_DIRS    - Link directories for metis libraries
 #  METIS_LIBRARIES       - metis component libraries to be linked
@@ -29,26 +42,18 @@
 #  METIS_LIBDIR          - Where to find the library files
 # The module can also look for the following environment variables if paths
 # are not given as cmake variable: METIS_DIR, METIS_INCDIR, METIS_LIBDIR
-
-#=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
 #
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
+# Set METIS_STATIC to 1 to force using static libraries if exist.
 #
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::METIS``
+#   The headers and libraries to use for METIS, if found.
+#
 #=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT METIS_FOUND)
   set(METIS_DIR "" CACHE PATH "Installation directory of METIS library")
@@ -156,6 +161,12 @@ list(REMOVE_DUPLICATES _lib_env)
 
 # Try to find the metis lib in the given paths
 # ----------------------------------------------
+
+if (METIS_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 # call cmake macro to find the lib path
 if(METIS_LIBDIR)
   set(METIS_metis_LIBRARY "METIS_metis_LIBRARY-NOTFOUND")
@@ -180,6 +191,9 @@ else()
 endif()
 mark_as_advanced(METIS_metis_LIBRARY)
 
+if (METIS_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+endif()
 
 # If found, add path to cmake variable
 # ------------------------------------
@@ -199,30 +213,16 @@ endif ()
 # check a function to validate the find
 if(METIS_LIBRARIES)
 
-  set(REQUIRED_INCDIRS)
-  set(REQUIRED_LIBDIRS)
-  set(REQUIRED_LIBS)
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(METIS METIS_LIBRARIES)
+  if(METIS_STATIC)
+    set(STATIC "_STATIC")
+  else()
+    set(STATIC "")
+  endif()
 
-  # METIS
-  if (METIS_INCLUDE_DIRS)
-    set(REQUIRED_INCDIRS  "${METIS_INCLUDE_DIRS}")
-  endif()
-  if (METIS_LIBRARY_DIRS)
-    set(REQUIRED_LIBDIRS "${METIS_LIBRARY_DIRS}")
-  endif()
-  set(REQUIRED_LIBS "${METIS_LIBRARIES}")
-  # m
-  find_library(M_LIBRARY NAMES m)
-  mark_as_advanced(M_LIBRARY)
-  if(M_LIBRARY)
-    list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
-  endif()
-  finds_remove_duplicates()
   # set required libraries for link
-  set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-  set(CMAKE_REQUIRED_LIBRARIES)
-  list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+  morse_set_required_test_lib_link(METIS)
 
   # test link
   unset(METIS_WORKS CACHE)
@@ -242,23 +242,22 @@ if(METIS_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif(METIS_LIBRARIES)
 
-if (METIS_LIBRARIES)
   list(GET METIS_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
+  get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   if (NOT METIS_LIBRARY_DIRS)
     set(METIS_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-    set(METIS_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of METIS library" FORCE)
+    set(METIS_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of METIS library" FORCE)
   else()
-    set(METIS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of METIS library" FORCE)
+    set(METIS_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of METIS library" FORCE)
   endif()
-endif()
-mark_as_advanced(METIS_DIR)
-mark_as_advanced(METIS_DIR_FOUND)
+  mark_as_advanced(METIS_DIR)
+  mark_as_advanced(METIS_PREFIX)
+
+endif(METIS_LIBRARIES)
 
 # Check the size of METIS_Idx
 # ---------------------------------
@@ -310,6 +309,8 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(METIS DEFAULT_MSG
   METIS_LIBRARIES
   METIS_WORKS)
-#
-# TODO: Add possibility to check for specific functions in the library
-#
+
+# Add imported target
+if (METIS_FOUND)
+  morse_create_imported_target(METIS)
+endif()

@@ -50,11 +50,19 @@
 #
 # PETSC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::PETSC``
+#   The headers and libraries to use for PETSC, if found.
+#
 # find_package(PETSC [QUIET] [REQUIRED])
 #
 # Setting these changes the behavior of the search
 # PETSC_DIR - directory in which PETSC is installed
 # PETSC_ARCH - build architecture
+
+# Common macros to use in finds
+include(FindMorseInit)
 
 # create a cmake cache variable
 set(PETSC_DIR "" CACHE PATH "Installation directory of PETSC library")
@@ -65,8 +73,6 @@ endif()
 
 # Use pkg-config to detect include/library dirs (if pkg-config is available)
 # -------------------------------------------------------------------------------------
-include(FindPkgConfig)
-find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT PETSC_DIR )
   pkg_search_module(PETSC PETSc)
   if (NOT PETSC_FIND_QUIETLY)
@@ -84,9 +90,17 @@ if( PKG_CONFIG_EXECUTABLE AND NOT PETSC_DIR )
       pkg_get_variable(PETSC_INCLUDE_DIRS PETSc includedir)
     endif()
     set(PETSC_FOUND_WITH_PKGCONFIG "TRUE")
-    find_pkgconfig_libraries_absolute_path(PETSC)
+    morse_find_pkgconfig_libraries_absolute_path(PETSC)
   else()
     set(PETSC_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
+  if (PETSC_STATIC AND PETSC_STATIC_LIBRARIES)
+    set (PETSC_DEPENDENCIES ${PETSC_STATIC_LIBRARIES})
+    list (REMOVE_ITEM SLEPC_DEPENDENCIES "petsc")
+    list (APPEND PETSC_LIBRARIES ${PETSC_DEPENDENCIES})
+    if (NOT PETSC_FIND_QUIETLY)
+      message(STATUS "PETSC_STATIC set to 1 by user, PETSC_LIBRARIES: ${PETSC_LIBRARIES}.")
+    endif()
   endif()
 endif()
 
@@ -213,3 +227,8 @@ include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (PETSC
   "PETSC could not be found. Be sure to set PETSC_DIR."
   PETSC_MPIEXEC PETSC_INCLUDE_DIRS PETSC_LIBRARIES PETSC_LIBRARY_DIRS)
+
+# Add imported target
+if (PETSC_FOUND)
+  morse_create_imported_target(PETSC)
+endif()

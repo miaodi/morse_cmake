@@ -1,11 +1,22 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
 # @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 ###
 #
 # - Find CBLAS include dirs and libraries
@@ -18,23 +29,11 @@
 #  CBLAS depends on the following libraries:
 #   - BLAS
 #
-# This module finds headers and cblas library.
-# Results are reported in variables:
-#  CBLAS_FOUND             - True if headers and requested libraries were found
-#  CBLAS_CFLAGS_OTHER      - cblas compiler flags without headers paths
-#  CBLAS_LDFLAGS_OTHER     - cblas linker flags without libraries
-#  CBLAS_INCLUDE_DIRS      - cblas include directories
-#  CBLAS_LIBRARY_DIRS      - cblas link directories
-#  CBLAS_LIBRARIES         - cblas libraries to be linked (absolute path)
-#  CBLAS_CFLAGS_OTHER_DEP  - cblas + dependencies compiler flags without headers paths
-#  CBLAS_LDFLAGS_OTHER_DEP - cblas + dependencies linker flags without libraries
-#  CBLAS_INCLUDE_DIRS_DEP  - cblas + dependencies include directories
-#  CBLAS_LIBRARY_DIRS_DEP  - cblas + dependencies link directories
-#  CBLAS_LIBRARIES_DEP     - cblas + dependencies libraries
 #  CBLAS_HAS_ZGEMM3M       - True if cblas contains zgemm3m fast complex mat-mat product
 #
 #  CBLAS_FOUND_WITH_PKGCONFIG - True if found with pkg-config
-#  if found with pkg-config the following variables are set
+#  if found the following variables are set
+#  CBLAS_PREFIX            - installation path of the lib found
 #  <PREFIX>  = CBLAS
 #  <XPREFIX> = <PREFIX>        for common case
 #  <XPREFIX> = <PREFIX>_STATIC for static linking
@@ -46,6 +45,13 @@
 #  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
 #  <XPREFIX>_CFLAGS         ... all required cflags
 #  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
+#
+# Set CBLAS_STATIC to 1 to force using static libraries if exist.
+#
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::CBLAS``
+#   The headers and libraries to use for CBLAS, if found.
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DCBLAS_DIR=path/to/cblas):
@@ -71,26 +77,10 @@
 #     4) we look in common system paths depending on the system, see for example paths contained in the following cmake variables:
 #       - CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_C_IMPLICIT_LINK_DIRECTORIES
 #
-
 #=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013-2018 Florent Pruvost
-#
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
-#
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT CBLAS_FOUND)
   set(CBLAS_DIR "" CACHE PATH "Installation directory of CBLAS library")
@@ -138,9 +128,82 @@ if (BLAS_FOUND)
       # test succeeds: CBLAS is in BLAS
       set(CBLAS_LIBRARIES "${BLAS_LIBRARIES}")
       set(CBLAS_INCLUDE_DIRS "${BLAS_INCLUDE_DIRS}")
-      set(CBLAS_CFLAGS_OTHER "${BLAS_CFLAGS_OTHER}")
       set(CBLAS_LIBRARY_DIRS "${BLAS_LIBRARY_DIRS}")
+      set(CBLAS_CFLAGS_OTHER "${BLAS_CFLAGS_OTHER}")
       set(CBLAS_LDFLAGS_OTHER "${BLAS_LDFLAGS_OTHER}")
+
+      if (NOT CBLAS_INCLUDE_DIRS)
+        # Looking for include
+        # -------------------
+
+        # Add system include paths to search include
+        # ------------------------------------------
+        unset(_inc_env)
+        set(ENV_CBLAS_DIR "$ENV{CBLAS_DIR}")
+        set(ENV_CBLAS_INCDIR "$ENV{CBLAS_INCDIR}")
+        if(ENV_CBLAS_INCDIR)
+          list(APPEND _inc_env "${ENV_CBLAS_INCDIR}")
+        elseif(ENV_CBLAS_DIR)
+          list(APPEND _inc_env "${ENV_CBLAS_DIR}")
+          list(APPEND _inc_env "${ENV_CBLAS_DIR}/include")
+          list(APPEND _inc_env "${ENV_CBLAS_DIR}/include/cblas")
+        else()
+          if(WIN32)
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+          else()
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+          endif()
+        endif()
+        list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+        list(REMOVE_DUPLICATES _inc_env)
+
+
+        # Try to find the cblas header in the given paths
+        # -------------------------------------------------
+        # call cmake macro to find the header path
+        if(CBLAS_INCDIR)
+          set(CBLAS_cblas.h_DIRS "CBLAS_cblas.h_DIRS-NOTFOUND")
+          find_path(CBLAS_cblas.h_DIRS
+            NAMES cblas.h
+            HINTS ${CBLAS_INCDIR}
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+        else()
+          if(CBLAS_DIR)
+            set(CBLAS_cblas.h_DIRS "CBLAS_cblas.h_DIRS-NOTFOUND")
+            find_path(CBLAS_cblas.h_DIRS
+              NAMES cblas.h
+              HINTS ${CBLAS_DIR}
+              PATH_SUFFIXES "include" "include/cblas"
+              NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+          else()
+            set(CBLAS_cblas.h_DIRS "CBLAS_cblas.h_DIRS-NOTFOUND")
+            find_path(CBLAS_cblas.h_DIRS
+              NAMES cblas.h
+              HINTS ${_inc_env}
+              PATH_SUFFIXES "cblas")
+          endif()
+        endif()
+        mark_as_advanced(CBLAS_cblas.h_DIRS)
+
+        # If found, add path to cmake variable
+        # ------------------------------------
+        if (CBLAS_cblas.h_DIRS)
+          set(CBLAS_INCLUDE_DIRS "${CBLAS_cblas.h_DIRS}")
+        else ()
+          set(CBLAS_INCLUDE_DIRS "CBLAS_INCLUDE_DIRS-NOTFOUND")
+          if(NOT CBLAS_FIND_QUIETLY)
+            message(STATUS "Looking for cblas -- cblas.h not found")
+          endif()
+        endif()
+      endif()
 
     endif()
 
@@ -150,7 +213,7 @@ if (BLAS_FOUND)
   if (CBLAS_STANDALONE OR NOT CBLAS_WORKS)
 
     if(NOT CBLAS_WORKS AND NOT CBLAS_FIND_QUIETLY)
-      message(STATUS "Looking for cblas : test with blas fails")
+      message(STATUS "Looking for cblas : test with blas fails or CBLAS_STANDALONE enabled")
     endif()
 
     # try with pkg-config
@@ -163,7 +226,6 @@ if (BLAS_FOUND)
       set(CBLAS_GIVEN_BY_USER "TRUE")
     endif()
 
-    include(FindPkgConfig)
     find_package(PkgConfig QUIET)
     if( PKG_CONFIG_EXECUTABLE AND NOT CBLAS_GIVEN_BY_USER)
 
@@ -177,7 +239,7 @@ if (BLAS_FOUND)
         pkg_search_module(CBLAS mkl-${MKL_STR_BLA_STATIC}-lp64-iomp)
       elseif(BLA_VENDOR STREQUAL "Intel10_64lp_seq")
         pkg_search_module(CBLAS mkl-${MKL_STR_BLA_STATIC}-lp64-seq)
-      elseif(BLA_VENDOR STREQUAL "Open")
+      elseif(BLA_VENDOR STREQUAL "OpenBLAS")
         pkg_search_module(CBLAS openblas)
       elseif(BLA_VENDOR STREQUAL "Generic")
         pkg_search_module(CBLAS cblas)
@@ -199,11 +261,21 @@ if (BLAS_FOUND)
 
       if (CBLAS_FOUND AND CBLAS_LIBRARIES)
         set(CBLAS_FOUND_WITH_PKGCONFIG "TRUE")
-        find_pkgconfig_libraries_absolute_path(CBLAS)
+        morse_find_pkgconfig_libraries_absolute_path(CBLAS)
       else()
         set(CBLAS_FOUND_WITH_PKGCONFIG "FALSE")
       endif()
 
+      if (CBLAS_STATIC AND CBLAS_STATIC_LIBRARIES)
+        set (CBLAS_DEPENDENCIES ${CBLAS_STATIC_LIBRARIES})
+        list (REMOVE_ITEM CBLAS_DEPENDENCIES "cblas")
+        list (APPEND CBLAS_LIBRARIES ${CBLAS_DEPENDENCIES})
+        set(CBLAS_CFLAGS_OTHER ${CBLAS_STATIC_CFLAGS_OTHER})
+        set(CBLAS_LDFLAGS_OTHER ${CBLAS_STATIC_LDFLAGS_OTHER})
+            if (NOT CBLAS_FIND_QUIETLY)
+          message(STATUS "CBLAS_STATIC set to 1 by user, CBLAS_LIBRARIES: ${CBLAS_LIBRARIES}.")
+        endif()
+      endif()
     endif()
 
     if (NOT CBLAS_FOUND_WITH_PKGCONFIG OR CBLAS_GIVEN_BY_USER)
@@ -311,6 +383,11 @@ if (BLAS_FOUND)
       # Try to find the cblas lib in the given paths
       # ----------------------------------------------
 
+      if (CBLAS_STATIC)
+        set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+      endif()
+
       # call cmake macro to find the lib path
       if(CBLAS_LIBDIR)
         set(CBLAS_cblas_LIBRARY "CBLAS_cblas_LIBRARY-NOTFOUND")
@@ -335,6 +412,10 @@ if (BLAS_FOUND)
       endif()
       mark_as_advanced(CBLAS_cblas_LIBRARY)
 
+      if (CBLAS_STATIC)
+        set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+      endif()
+
       # If found, add path to cmake variable
       # ------------------------------------
       if (CBLAS_cblas_LIBRARY)
@@ -356,11 +437,17 @@ if (BLAS_FOUND)
   # check a function to validate the find
   if(CBLAS_LIBRARIES)
 
+    # check if static or dynamic lib
+    morse_check_static_or_dynamic(CBLAS CBLAS_LIBRARIES)
+    if(CBLAS_STATIC)
+      set(STATIC "_STATIC")
+    endif()
+
     set(REQUIRED_INCDIRS)
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_LDFLAGS)
     set(REQUIRED_LIBDIRS)
     set(REQUIRED_LIBS)
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_LDFLAGS)
 
     # CBLAS
     if (CBLAS_INCLUDE_DIRS)
@@ -405,7 +492,7 @@ if (BLAS_FOUND)
         list(APPEND REQUIRED_FLAGS "${_flag}")
       endforeach()
     endif()
-    finds_remove_duplicates()
+    morse_finds_remove_duplicates()
     set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
     set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
     set(CMAKE_REQUIRED_LIBRARIES)
@@ -428,12 +515,14 @@ if (BLAS_FOUND)
         add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
       endif()
 
-      # save link with dependencies
-      set(CBLAS_LIBRARIES_DEP "${REQUIRED_LIBS}")
-      set(CBLAS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-      set(CBLAS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-      set(CBLAS_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
-      set(CBLAS_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+      set(CBLAS_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+      set(CBLAS_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+      if (CBLAS_STATIC OR BLA_STATIC)
+        # save link with dependencies
+        set(CBLAS_LIBRARIES "${REQUIRED_LIBS}")
+        set(CBLAS_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+        set(CBLAS_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+      endif()
     else()
       if(NOT CBLAS_FIND_QUIETLY)
         message(STATUS "Looking for cblas : test of cblas_dscal with cblas and blas libraries fails")
@@ -446,6 +535,26 @@ if (BLAS_FOUND)
     set(CMAKE_REQUIRED_INCLUDES)
     set(CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_LIBRARIES)
+
+    list(GET CBLAS_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
+    if (NOT CBLAS_LIBRARY_DIRS)
+      set(CBLAS_LIBRARY_DIRS "${first_lib_path}")
+    endif()
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+      string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+      set(CBLAS_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of CBLAS library" FORCE)
+    else()
+      set(CBLAS_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of CBLAS library" FORCE)
+    endif()
+    if (NOT CBLAS_INCLUDE_DIRS)
+      if (EXISTS "${CBLAS_PREFIX}/include")
+        set(CBLAS_INCLUDE_DIRS "${CBLAS_PREFIX}/include")
+      endif()
+    endif()
+    mark_as_advanced(CBLAS_DIR)
+    mark_as_advanced(CBLAS_PREFIX)
+
   endif(CBLAS_LIBRARIES)
 
 else(BLAS_FOUND)
@@ -457,25 +566,14 @@ else(BLAS_FOUND)
 
 endif(BLAS_FOUND)
 
-if (CBLAS_LIBRARIES)
-  list(GET CBLAS_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
-  if (NOT CBLAS_LIBRARY_DIRS)
-    set(CBLAS_LIBRARY_DIRS "${first_lib_path}")
-  endif()
-  if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
-    string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-    set(CBLAS_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of CBLAS library" FORCE)
-  else()
-    set(CBLAS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of CBLAS library" FORCE)
-  endif()
-endif()
-mark_as_advanced(CBLAS_DIR)
-mark_as_advanced(CBLAS_DIR_FOUND)
-
 # check that CBLAS has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(CBLAS DEFAULT_MSG
   CBLAS_LIBRARIES
   CBLAS_WORKS)
+
+# Add imported target
+if (CBLAS_FOUND)
+  morse_create_imported_target(CBLAS)
+endif()

@@ -1,10 +1,22 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
+# @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+#
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 #
 ###
 #
@@ -21,16 +33,12 @@
 # This module finds headers and parmetis library.
 # Results are reported in variables:
 #  PARMETIS_FOUND             - True if headers and requested libraries were found
+#  PARMETIS_PREFIX            - installation path of the lib found
 #  PARMETIS_CFLAGS_OTHER      - parmetis compiler flags without headers paths
 #  PARMETIS_LDFLAGS_OTHER     - parmetis linker flags without libraries
 #  PARMETIS_INCLUDE_DIRS      - parmetis include directories
 #  PARMETIS_LIBRARY_DIRS      - parmetis link directories
 #  PARMETIS_LIBRARIES         - parmetis libraries to be linked (absolute path)
-#  PARMETIS_CFLAGS_OTHER_DEP  - parmetis + dependencies compiler flags without headers paths
-#  PARMETIS_LDFLAGS_OTHER_DEP - parmetis + dependencies linker flags without libraries
-#  PARMETIS_INCLUDE_DIRS_DEP  - parmetis + dependencies include directories
-#  PARMETIS_LIBRARY_DIRS_DEP  - parmetis + dependencies link directories
-#  PARMETIS_LIBRARIES_DEP     - parmetis + dependencies libraries
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPARMETIS_DIR=path/to/parmetis):
@@ -39,26 +47,18 @@
 #  PARMETIS_LIBDIR           - Where to find the library files
 # The module can also look for the following environment variables if paths
 # are not given as cmake variable: PARMETIS_DIR, PARMETIS_INCDIR, PARMETIS_LIBDIR
-
-#=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013-2018 Florent Pruvost
 #
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
+# Set METIS_STATIC to 1 to force using static libraries if exist.
 #
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::PARMETIS``
+#   The headers and libraries to use for PARMETIS, if found.
+#
 #=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT PARMETIS_FOUND)
   set(PARMETIS_DIR "" CACHE PATH "Installation directory of PARMETIS library")
@@ -180,6 +180,12 @@ list(REMOVE_DUPLICATES _lib_env)
 
 # Try to find the parmetis lib in the given paths
 # ----------------------------------------------
+
+if (PARMETIS_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 # call cmake macro to find the lib path
 if(PARMETIS_LIBDIR)
   set(PARMETIS_parmetis_LIBRARY "PARMETIS_parmetis_LIBRARY-NOTFOUND")
@@ -204,6 +210,10 @@ else()
 endif()
 mark_as_advanced(PARMETIS_parmetis_LIBRARY)
 
+if (PARMETIS_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+endif()
+
 # If found, add path to cmake variable
 # ------------------------------------
 if (PARMETIS_parmetis_LIBRARY)
@@ -222,11 +232,17 @@ endif ()
 # check a function to validate the find
 if(PARMETIS_LIBRARIES)
 
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(PARMETIS PARMETIS_LIBRARIES)
+  if(PARMETIS_STATIC)
+    set(STATIC "_STATIC")
+  endif()
+
   set(REQUIRED_INCDIRS)
-  set(REQUIRED_FLAGS)
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
 
   # PARMETIS
   if (PARMETIS_INCLUDE_DIRS)
@@ -282,7 +298,7 @@ if(PARMETIS_LIBRARIES)
       list(APPEND REQUIRED_FLAGS "${_flag}")
     endforeach()
   endif()
-  finds_remove_duplicates()
+  morse_finds_remove_duplicates()
   set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -297,12 +313,14 @@ if(PARMETIS_LIBRARIES)
   mark_as_advanced(PARMETIS_WORKS)
 
   if(PARMETIS_WORKS)
-    # save link with dependencies
-    set(PARMETIS_LIBRARIES_DEP "${REQUIRED_LIBS}")
-    set(PARMETIS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-    set(PARMETIS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(PARMETIS_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
-    set(PARMETIS_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+    set(PARMETIS_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+    set(PARMETIS_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+    if (PARMETIS_STATIC OR METIS_STATIC)
+      # save link with dependencies
+      set(PARMETIS_LIBRARIES "${REQUIRED_LIBS}")
+      set(PARMETIS_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+      set(PARMETIS_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+    endif()
   else()
     if(NOT PARMETIS_FIND_QUIETLY)
       message(STATUS "Looking for PARMETIS : test of ParMETIS_V3_NodeND with PARMETIS library fails")
@@ -315,23 +333,22 @@ if(PARMETIS_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif(PARMETIS_LIBRARIES)
 
-if (PARMETIS_LIBRARIES)
   list(GET PARMETIS_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
+  get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   if (NOT PARMETIS_LIBRARY_DIRS)
     set(PARMETIS_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-    set(PARMETIS_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of PARMETIS library" FORCE)
+    set(PARMETIS_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of PARMETIS library" FORCE)
   else()
-    set(PARMETIS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of PARMETIS library" FORCE)
+    set(PARMETIS_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of PARMETIS library" FORCE)
   endif()
-endif()
-mark_as_advanced(PARMETIS_DIR)
-mark_as_advanced(PARMETIS_DIR_FOUND)
+  mark_as_advanced(PARMETIS_DIR)
+  mark_as_advanced(PARMETIS_PREFIX)
+
+endif(PARMETIS_LIBRARIES)
 
 # check that PARMETIS has been found
 # ----------------------------------
@@ -339,6 +356,8 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PARMETIS DEFAULT_MSG
   PARMETIS_LIBRARIES
   PARMETIS_WORKS)
-#
-# TODO: Add possibility to check for specific functions in the library
-#
+
+# Add imported target
+if (PARMETIS_FOUND)
+  morse_create_imported_target(PARMETIS)
+endif()

@@ -1,11 +1,22 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
 # @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 ###
 #
 # - Find LAPACKE include dirs and libraries
@@ -23,22 +34,9 @@
 #  COMPONENTS can be some of the following:
 #   - TMG: to check that LAPACKE provides the tmglib interface
 #
-# This module finds headers and lapacke library.
-# Results are reported in variables:
-#  LAPACKE_FOUND            - True if headers and requested libraries were found
-#  LAPACKE_CFLAGS_OTHER      - lapacke compiler flags without headers paths
-#  LAPACKE_LDFLAGS_OTHER     - lapacke linker flags without libraries
-#  LAPACKE_INCLUDE_DIRS      - lapacke include directories
-#  LAPACKE_LIBRARY_DIRS      - lapacke link directories
-#  LAPACKE_LIBRARIES         - lapacke libraries to be linked (absolute path)
-#  LAPACKE_CFLAGS_OTHER_DEP  - lapacke + dependencies compiler flags without headers paths
-#  LAPACKE_LDFLAGS_OTHER_DEP - lapacke + dependencies linker flags without libraries
-#  LAPACKE_INCLUDE_DIRS_DEP  - lapacke + dependencies include directories
-#  LAPACKE_LIBRARY_DIRS_DEP  - lapacke + dependencies link directories
-#  LAPACKE_LIBRARIES_DEP     - lapacke + dependencies libraries
-#
 #  LAPACKE_FOUND_WITH_PKGCONFIG - True if found with pkg-config
-#  if found with pkg-config the following variables may be set
+#  if found the following variables may be set
+#  LAPACKE_PREFIX            - installation path of the lib found
 #  <PREFIX>  = LAPACKE
 #  <XPREFIX> = <PREFIX>        for common case
 #  <XPREFIX> = <PREFIX>_STATIC for static linking
@@ -50,6 +48,13 @@
 #  <XPREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
 #  <XPREFIX>_CFLAGS         ... all required cflags
 #  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
+#
+# Set LAPACKE_STATIC to 1 to force using static libraries if exist.
+#
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::LAPACKE``
+#   The headers and libraries to use for LAPACKE, if found.
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DLAPACKE_DIR=path/to/lapacke):
@@ -65,24 +70,9 @@
 # look for a stand alone lapacke, please set LAPACKE_STANDALONE to TRUE
 
 #=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013-2018 Florent Pruvost
-#
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
-#
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT LAPACKE_FOUND)
   set(LAPACKE_DIR "" CACHE PATH "Installation directory of LAPACKE library")
@@ -123,9 +113,9 @@ if (LAPACK_FOUND)
   if (NOT LAPACKE_STANDALONE)
     # check if a lapacke function exists in the LAPACK lib
     include(CheckFunctionExists)
-    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER_DEP};${LAPACK_LIBRARIES_DEP}")
-    set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS_DEP}")
-    set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
+    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER};${LAPACK_LIBRARIES}")
+    set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
+    set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
     unset(LAPACKE_WORKS CACHE)
     check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
     mark_as_advanced(LAPACKE_WORKS)
@@ -144,6 +134,77 @@ if (LAPACK_FOUND)
       set(LAPACKE_CFLAGS_OTHER "${LAPACK_CFLAGS_OTHER}")
       set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
       set(LAPACKE_LDFLAGS_OTHER "${LAPACK_LDFLAGS_OTHER}")
+
+      if (NOT LAPACKE_INCLUDE_DIRS)
+        # Looking for include
+        # -------------------
+
+        # Add system include paths to search include
+        # ------------------------------------------
+        unset(_inc_env)
+        set(ENV_LAPACKE_DIR "$ENV{LAPACKE_DIR}")
+        set(ENV_LAPACKE_INCDIR "$ENV{LAPACKE_INCDIR}")
+        if(ENV_LAPACKE_INCDIR)
+          list(APPEND _inc_env "${ENV_LAPACKE_INCDIR}")
+        elseif(ENV_LAPACKE_DIR)
+          list(APPEND _inc_env "${ENV_LAPACKE_DIR}")
+          list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include")
+          list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
+        else()
+          if(WIN32)
+            string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+          else()
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+            list(APPEND _inc_env "${_path_env}")
+            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+            list(APPEND _inc_env "${_path_env}")
+          endif()
+        endif()
+        list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+        list(REMOVE_DUPLICATES _inc_env)
+
+
+        # Try to find the lapacke header in the given paths
+        # -------------------------------------------------
+        # call cmake macro to find the header path
+        if(LAPACKE_INCDIR)
+          set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
+          find_path(LAPACKE_lapacke.h_DIRS
+            NAMES lapacke.h
+            HINTS ${LAPACKE_INCDIR}
+            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+        else()
+          if(LAPACKE_DIR)
+            set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
+            find_path(LAPACKE_lapacke.h_DIRS
+              NAMES lapacke.h
+              HINTS ${LAPACKE_DIR}
+              PATH_SUFFIXES "include" "include/lapacke"
+              NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+          else()
+            set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
+            find_path(LAPACKE_lapacke.h_DIRS
+              NAMES lapacke.h
+              HINTS ${_inc_env})
+          endif()
+        endif()
+        mark_as_advanced(LAPACKE_lapacke.h_DIRS)
+
+        # If found, add path to cmake variable
+        # ------------------------------------
+        if (LAPACKE_lapacke.h_DIRS)
+          set(LAPACKE_INCLUDE_DIRS "${LAPACKE_lapacke.h_DIRS}")
+        else ()
+          set(LAPACKE_INCLUDE_DIRS "LAPACKE_INCLUDE_DIRS-NOTFOUND")
+          if(NOT LAPACKE_FIND_QUIETLY)
+            message(STATUS "Looking for lapacke -- lapacke.h not found")
+          endif()
+        endif()
+      endif()
     endif()
   endif (NOT LAPACKE_STANDALONE)
 
@@ -164,8 +225,6 @@ if (LAPACK_FOUND)
       set(LAPACKE_GIVEN_BY_USER "TRUE")
     endif()
 
-    include(FindPkgConfig)
-    find_package(PkgConfig QUIET)
     if( PKG_CONFIG_EXECUTABLE AND NOT LAPACKE_GIVEN_BY_USER)
 
       if (BLA_STATIC)
@@ -200,9 +259,20 @@ if (LAPACK_FOUND)
 
       if (LAPACKE_FOUND AND LAPACKE_LIBRARIES)
         set(LAPACKE_FOUND_WITH_PKGCONFIG "TRUE")
-        find_pkgconfig_libraries_absolute_path(LAPACKE)
+        morse_find_pkgconfig_libraries_absolute_path(LAPACKE)
       else()
         set(LAPACKE_FOUND_WITH_PKGCONFIG "FALSE")
+      endif()
+
+      if (LAPACKE_STATIC AND LAPACKE_STATIC_LIBRARIES)
+        set (LAPACKE_DEPENDENCIES ${LAPACKE_STATIC_LIBRARIES})
+        list (REMOVE_ITEM LAPACKE_DEPENDENCIES "lapacke")
+        list (APPEND LAPACKE_LIBRARIES ${LAPACKE_DEPENDENCIES})
+        set(LAPACKE_CFLAGS_OTHER ${LAPACKE_STATIC_CFLAGS_OTHER})
+        set(LAPACKE_LDFLAGS_OTHER ${LAPACKE_STATIC_LDFLAGS_OTHER})
+            if (NOT LAPACKE_FIND_QUIETLY)
+          message(STATUS "LAPACKE_STATIC set to 1 by user, LAPACKE_LIBRARIES: ${LAPACKE_LIBRARIES}.")
+        endif()
       endif()
 
     endif()
@@ -311,6 +381,11 @@ if (LAPACK_FOUND)
       # Try to find the lapacke lib in the given paths
       # ----------------------------------------------
 
+      if (LAPACKE_STATIC)
+        set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+      endif()
+
       # call cmake macro to find the lib path
       if(LAPACKE_LIBDIR)
         set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
@@ -335,6 +410,10 @@ if (LAPACK_FOUND)
       endif()
       mark_as_advanced(LAPACKE_lapacke_LIBRARY)
 
+      if (LAPACKE_STATIC)
+        set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+      endif()
+
       # If found, add path to cmake variable
       # ------------------------------------
       if (LAPACKE_lapacke_LIBRARY)
@@ -357,11 +436,17 @@ if (LAPACK_FOUND)
   # check a function to validate the find
   if(LAPACKE_LIBRARIES)
 
+    # check if static or dynamic lib
+    morse_check_static_or_dynamic(LAPACKE LAPACKE_LIBRARIES)
+    if(LAPACKE_STATIC)
+      set(STATIC "_STATIC")
+    endif()
+
     set(REQUIRED_INCDIRS)
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_LDFLAGS)
     set(REQUIRED_LIBDIRS)
     set(REQUIRED_LIBS)
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_LDFLAGS)
 
     # LAPACKE
     if (LAPACKE_INCLUDE_DIRS)
@@ -379,34 +464,34 @@ if (LAPACK_FOUND)
     set(REQUIRED_LIBS "${LAPACKE_LIBRARIES}")
     # TMG
     if (LAPACKE_WITH_TMG)
-      if (TMG_INCLUDE_DIRS_DEP)
-        list(APPEND REQUIRED_INCDIRS "${TMG_INCLUDE_DIRS_DEP}")
+      if (TMG_INCLUDE_DIRS)
+        list(APPEND REQUIRED_INCDIRS "${TMG_INCLUDE_DIRS}")
       endif()
-      if (TMG_CFLAGS_OTHER_DEP)
-        list(APPEND REQUIRED_FLAGS "${TMG_CFLAGS_OTHER_DEP}")
+      if (TMG_CFLAGS_OTHER)
+        list(APPEND REQUIRED_FLAGS "${TMG_CFLAGS_OTHER}")
       endif()
-      if (TMG_LDFLAGS_OTHER_DEP)
-        list(APPEND REQUIRED_LDFLAGS "${TMG_LDFLAGS_OTHER_DEP}")
+      if (TMG_LDFLAGS_OTHER)
+        list(APPEND REQUIRED_LDFLAGS "${TMG_LDFLAGS_OTHER}")
       endif()
-      if (TMG_LIBRARY_DIRS_DEP)
-        list(APPEND REQUIRED_LIBDIRS "${TMG_LIBRARY_DIRS_DEP}")
+      if (TMG_LIBRARY_DIRS)
+        list(APPEND REQUIRED_LIBDIRS "${TMG_LIBRARY_DIRS}")
       endif()
-      list(APPEND REQUIRED_LIBS "${TMG_LIBRARIES_DEP}")
+      list(APPEND REQUIRED_LIBS "${TMG_LIBRARIES}")
     endif()
     # LAPACK
-    if (LAPACK_INCLUDE_DIRS_DEP)
-      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS_DEP}")
+    if (LAPACK_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
     endif()
-    if (LAPACK_CFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER_DEP}")
+    if (LAPACK_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
     endif()
-    if (LAPACK_LDFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER_DEP}")
+    if (LAPACK_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER}")
     endif()
-    if (LAPACK_LIBRARY_DIRS_DEP)
-      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS_DEP}")
+    if (LAPACK_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
     endif()
-    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES_DEP}")
+    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
     # m
     find_library(M_LIBRARY NAMES m HINTS ${_lib_env})
     mark_as_advanced(M_LIBRARY)
@@ -427,7 +512,7 @@ if (LAPACK_FOUND)
         list(APPEND REQUIRED_FLAGS "${_flag}")
       endforeach()
     endif()
-    finds_remove_duplicates()
+    morse_finds_remove_duplicates()
     set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
     set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
     set(CMAKE_REQUIRED_LIBRARIES)
@@ -455,12 +540,14 @@ if (LAPACK_FOUND)
     mark_as_advanced(LAPACKE_WITH_LASCL)
 
     if(LAPACKE_WORKS)
-      # save link with dependencies
-      set(LAPACKE_LIBRARIES_DEP "${REQUIRED_LIBS}")
-      set(LAPACKE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-      set(LAPACKE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-      set(LAPACKE_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
-      set(LAPACKE_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+      set(LAPACKE_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+      set(LAPACKE_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+      if (LAPACKE_STATIC OR CBLAS_STATIC OR BLA_STATIC)
+        # save link with dependencies
+        set(LAPACKE_LIBRARIES "${REQUIRED_LIBS}")
+        set(LAPACKE_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+        set(LAPACKE_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+      endif()
     else()
       if(NOT LAPACKE_FIND_QUIETLY)
         message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
@@ -472,6 +559,26 @@ if (LAPACK_FOUND)
     set(CMAKE_REQUIRED_INCLUDES)
     set(CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_LIBRARIES)
+
+    list(GET LAPACKE_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
+    if (NOT LAPACKE_LIBRARY_DIRS)
+      set(LAPACKE_LIBRARY_DIRS "${first_lib_path}")
+    endif()
+    if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
+      string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
+      set(LAPACKE_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
+    else()
+      set(LAPACKE_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
+    endif()
+    if (NOT LAPACKE_INCLUDE_DIRS)
+      if (EXISTS "${LAPACKE_PREFIX}/include")
+        set(LAPACKE_INCLUDE_DIRS "${LAPACKE_PREFIX}/include")
+      endif()
+    endif()
+    mark_as_advanced(LAPACKE_DIR)
+    mark_as_advanced(LAPACKE_PREFIX)
+
   endif(LAPACKE_LIBRARIES)
 
 else(LAPACK_FOUND)
@@ -483,25 +590,14 @@ else(LAPACK_FOUND)
 
 endif(LAPACK_FOUND)
 
-if (LAPACKE_LIBRARIES)
-  list(GET LAPACKE_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
-  if (NOT LAPACKE_LIBRARY_DIRS)
-    set(LAPACKE_LIBRARY_DIRS "${first_lib_path}")
-  endif()
-  if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
-    string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-    set(LAPACKE_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
-  else()
-    set(LAPACKE_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
-  endif()
-endif()
-mark_as_advanced(LAPACKE_DIR)
-mark_as_advanced(LAPACKE_DIR_FOUND)
-
 # check that LAPACKE has been found
 # ---------------------------------
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LAPACKE DEFAULT_MSG
   LAPACKE_LIBRARIES
   LAPACKE_WORKS)
+
+# Add imported target
+if (LAPACKE_FOUND)
+  morse_create_imported_target(LAPACKE)
+endif()

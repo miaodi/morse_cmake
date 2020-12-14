@@ -1,10 +1,22 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
+# @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+#
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 #
 ###
 #
@@ -21,6 +33,7 @@
 # This module finds headers and scotch library.
 # Results are reported in variables:
 #  SCOTCH_FOUND           - True if headers and requested libraries were found
+#  SCOTCH_PREFIX          - installation path of the lib found
 #  SCOTCH_INCLUDE_DIRS    - scotch include directories
 #  SCOTCH_LIBRARY_DIRS    - Link directories for scotch libraries
 #  SCOTCH_LIBRARIES       - scotch component libraries to be linked
@@ -33,26 +46,18 @@
 #  SCOTCH_LIBDIR          - Where to find the library files
 # The module can also look for the following environment variables if paths
 # are not given as cmake variable: SCOTCH_DIR, SCOTCH_INCDIR, SCOTCH_LIBDIR
-
-#=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013-2018 Florent Pruvost
 #
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
+# Set SCOTCH_STATIC to 1 to force using static libraries if exist.
 #
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::SCOTCH``
+#   The headers and libraries to use for SCOTCH, if found.
+#
 #=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT SCOTCH_FOUND)
   set(SCOTCH_DIR "" CACHE PATH "Installation directory of SCOTCH library")
@@ -183,6 +188,11 @@ list(REMOVE_DUPLICATES _lib_env)
 # Try to find the scotch lib in the given paths
 # ----------------------------------------------
 
+if (SCOTCH_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 set(SCOTCH_libs_to_find "scotch;scotcherrexit")
 if (SCOTCH_LOOK_FOR_ESMUMPS)
   list(INSERT SCOTCH_libs_to_find 0 "esmumps")
@@ -217,6 +227,10 @@ else()
   endif()
 endif()
 
+if (SCOTCH_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+endif()
+
 set(SCOTCH_LIBRARIES "")
 set(SCOTCH_LIBRARY_DIRS "")
 # If found, add path to cmake variable
@@ -243,9 +257,17 @@ list(REMOVE_DUPLICATES SCOTCH_LIBRARY_DIRS)
 # check a function to validate the find
 if(SCOTCH_LIBRARIES)
 
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(SCOTCH SCOTCH_LIBRARIES)
+  if(SCOTCH_STATIC)
+    set(STATIC "_STATIC")
+  endif()
+
   set(REQUIRED_INCDIRS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
 
   # SCOTCH
   if (SCOTCH_INCLUDE_DIRS)
@@ -277,7 +299,7 @@ if(SCOTCH_LIBRARIES)
   if(RT_LIBRARY)
     list(APPEND REQUIRED_LIBS "${RT_LIBRARY}")
   endif()
-  finds_remove_duplicates()
+  morse_finds_remove_duplicates()
   # set required libraries for link
   set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -296,8 +318,14 @@ if(SCOTCH_LIBRARIES)
   mark_as_advanced(HAVE_SCOTCH_CONTEXT_INIT)
 
   if(SCOTCH_WORKS)
-    # save link with dependencies
-    set(SCOTCH_LIBRARIES "${REQUIRED_LIBS}")
+    set(SCOTCH_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+    set(SCOTCH_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+    if (SCOTCH_STATIC)
+      # save link with dependencies
+      set(SCOTCH_LIBRARIES "${REQUIRED_LIBS}")
+      set(SCOTCH_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+      set(SCOTCH_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+    endif()
   else()
     if(NOT SCOTCH_FIND_QUIETLY)
       message(STATUS "Looking for SCOTCH : test of SCOTCH_graphInit with SCOTCH library fails")
@@ -310,23 +338,22 @@ if(SCOTCH_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif(SCOTCH_LIBRARIES)
 
-if (SCOTCH_LIBRARIES)
   list(GET SCOTCH_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
+  get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   if (NOT SCOTCH_LIBRARY_DIRS)
     set(SCOTCH_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-    set(SCOTCH_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
+    set(SCOTCH_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
    else()
-    set(SCOTCH_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
+    set(SCOTCH_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
   endif()
-endif()
-mark_as_advanced(SCOTCH_DIR)
-mark_as_advanced(SCOTCH_DIR_FOUND)
+  mark_as_advanced(SCOTCH_DIR)
+  mark_as_advanced(SCOTCH_PREFIX)
+
+endif(SCOTCH_LIBRARIES)
 
 # Check the size of SCOTCH_Num
 # ---------------------------------
@@ -379,6 +406,8 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SCOTCH DEFAULT_MSG
   SCOTCH_LIBRARIES
   SCOTCH_WORKS)
-#
-# TODO: Add possibility to check for specific functions in the library
-#
+
+# Add imported target
+if (SCOTCH_FOUND)
+  morse_create_imported_target(SCOTCH)
+endif()

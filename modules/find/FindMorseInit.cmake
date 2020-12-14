@@ -4,7 +4,7 @@
 #
 ###
 #
-#  @file FindInit.cmake
+#  @file FindMorseInit.cmake
 #
 #  @project MORSE
 #  MORSE is a software package provided by:
@@ -28,18 +28,22 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Factorize some piece of code
-include(FindCommon)
+include(FindMorseCommon)
 
 # To find headers and libs
 include(FindHeadersAndLibs)
 
 # To transform relative path into absolute for a list of libraries
 include(LibrariesAbsolutePath)
-include(FindPkgconfigLibrariesAbsolutePath)
 
 # Some macros to print status when search for headers and libs
 include(PrintFindStatus)
 
+# To use pkg_search_module macro
+set(FPHSA_NAME_MISMATCHED 1) # Suppress warnings, see https://cmake.org/cmake/help/latest/module/FindPackageHandleStandardArgs.html
+include(FindPkgConfig)
+unset(FPHSA_NAME_MISMATCHED)
+
 ##
-## @end file FindInit.cmake
+## @end file FindMorseInit.cmake
 ##

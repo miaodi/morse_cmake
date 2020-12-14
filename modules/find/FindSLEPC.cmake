@@ -2,6 +2,7 @@
 # @copyright (c) 2018-2020 Inria. All rights reserved.
 #
 # Marc Fuentes
+# Vincent Perrier
 # Florent Pruvost
 #
 # https://gitlab.inria.fr/sed-bso/findPetsc
@@ -50,6 +51,11 @@
 #
 # SLEPC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::SLEPC``
+#   The headers and libraries to use for SLEPC, if found.
+#
 # find_package(SLEPC [QUIET] [REQUIRED])
 #
 # Setting these changes the behavior of the search
@@ -64,8 +70,6 @@ endif()
 
 # Use pkg-config to detect include/library dirs (if pkg-config is available)
 # -------------------------------------------------------------------------------------
-include(FindPkgConfig)
-find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT SLEPC_DIR )
   pkg_search_module(SLEPC SLEPc)
   if (NOT SLEPC_FIND_QUIETLY)
@@ -83,9 +87,17 @@ if( PKG_CONFIG_EXECUTABLE AND NOT SLEPC_DIR )
       pkg_get_variable(SLEPC_INCLUDE_DIRS SLEPc includedir)
     endif()
     set(SLEPC_FOUND_WITH_PKGCONFIG "TRUE")
-    find_pkgconfig_libraries_absolute_path(SLEPC)
+    morse_find_pkgconfig_libraries_absolute_path(SLEPC)
   else()
     set(SLEPC_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
+  if (SLEPC_STATIC AND SLEPC_STATIC_LIBRARIES)
+    set (SLEPC_DEPENDENCIES ${SLEPC_STATIC_LIBRARIES})
+    list (REMOVE_ITEM SLEPC_DEPENDENCIES "slepc")
+    list (APPEND SLEPC_LIBRARIES ${SLEPC_DEPENDENCIES})
+    if (NOT SLEPC_FIND_QUIETLY)
+      message(STATUS "SLEPC_STATIC set to 1 by user, SLEPC_LIBRARIES: ${SLEPC_LIBRARIES}.")
+    endif()
   endif()
 endif()
 
@@ -95,21 +107,42 @@ if (NOT SLEPC_DIR AND DEFINED ENV{SLEPC_DIR})
 endif()
 
 if (SLEPC_DIR)
-    if (EXISTS ${SLEPC_DIR})
-      if (EXISTS ${SLEPC_DIR}/include/slepc.h)
-          if (NOT SLEPC_FIND_QUIETLY)
-            message(STATUS "SLEPC_DIR = ${SLEPC_DIR} contains include/slepc.h")
-          endif()
-        else()
-          if (SLEPC_FIND_REQUIRED)
-            message(FATAL_ERROR "include/slepc.h not found in SLEPC_DIR = ${SLEPC_DIR}")
-          endif()
+  if (EXISTS ${SLEPC_DIR})
+    if (EXISTS ${SLEPC_DIR}/include/slepc.h)
+        if (NOT SLEPC_FIND_QUIETLY)
+          message(STATUS "SLEPC_DIR = ${SLEPC_DIR} contains include/slepc.h")
         endif()
+        set(SLEPC_INCLUDE_DIRS "${SLEPC_DIR}/include")
+    else()
+      if (SLEPC_FIND_REQUIRED)
+        message(FATAL_ERROR "include/slepc.h not found in SLEPC_DIR = ${SLEPC_DIR}")
+      endif()
+    endif()
+    if (SLEPC_STATIC)
+      if(EXISTS ${SLEPC_DIR}/lib/libslepc.a)
+         set(SLEPC_LIBRARIES "${SLEPC_DIR}/lib/libslepc.a")
       else()
         if (SLEPC_FIND_REQUIRED)
-          message(FATAL_ERROR "SLEPC_DIR defined, but ${SLEPC_DIR} does not exist")
+          message(FATAL_ERROR "lib/libslepc.a not found in SLEPC_DIR = ${SLEPC_DIR}")
         endif()
+      endif()
+    else()
+      if (EXISTS ${SLEPC_DIR}/lib/libslepc.so)
+        set(SLEPC_LIBRARIES "${SLEPC_DIR}/lib/libslepc.so")
+      else()
+        if (SLEPC_FIND_REQUIRED)
+          message(FATAL_ERROR "lib/libslepc.so not found in SLEPC_DIR = ${SLEPC_DIR}")
+        endif()
+      endif()
     endif()
+    if (SLEPC_DIR AND SLEPC_LIBRARIES)
+      set(SLEPC_PREFIX ${SLEPC_DIR})
+    endif()
+  else()
+    if (SLEPC_FIND_REQUIRED)
+      message(FATAL_ERROR "SLEPC_DIR defined, but ${SLEPC_DIR} does not exist")
+    endif()
+  endif()
 else()
   if (SLEPC_FIND_REQUIRED)
     message(FATAL_ERROR "\
@@ -127,13 +160,12 @@ give the installation directory (contains ./include/slepc.h, ./lib/, etc):
   endif()
 endif()
 
-
-set(SLEPC_INCLUDE_DIRS "${SLEPC_DIR}/include")
-
-set(SLEPC_LIBRARIES "${SLEPC_DIR}/lib/libslepc.so")
-
-
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (SLEPC
-  "SLEPC could not be found. Be sure to set SLEPC_DIR."
+  "SLEPC could not be found. Be sure to set SLEPC_DIR or use with pkg-config (slepc.pc in PKG_CONFIG_PATH)."
   SLEPC_INCLUDE_DIRS SLEPC_LIBRARIES)
+
+# Add imported target
+if (SLEPC_FOUND)
+  morse_create_imported_target(SLEPC)
+endif()

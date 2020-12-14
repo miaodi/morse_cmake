@@ -1,11 +1,23 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
 # @copyright (c) 2012-2020 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
+# Copyright 2012-2019 Inria
+# Copyright 2012-2013 Emmanuel Agullo
+# Copyright 2012-2013 Mathieu Faverge
+# Copyright 2012      Cedric Castagnede
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 ###
 #
 # - Find FFTW Version 3 include dirs and libraries
@@ -27,17 +39,13 @@
 #
 # This module finds headers and fftw library.
 # Results are reported in variables:
-#  FFTW_FOUND            - True if headers and requested libraries were found
+#  FFTW_FOUND             - True if headers and requested libraries were found
+#  FFTW_PREFIX            - installation path of the lib found
 #  FFTW_CFLAGS_OTHER      - fftw compiler flags without headers paths
 #  FFTW_LDFLAGS_OTHER     - fftw linker flags without libraries
 #  FFTW_INCLUDE_DIRS      - fftw include directories
 #  FFTW_LIBRARY_DIRS      - fftw link directories
 #  FFTW_LIBRARIES         - fftw libraries to be linked (absolute path)
-#  FFTW_CFLAGS_OTHER_DEP  - fftw + dependencies compiler flags without headers paths
-#  FFTW_LDFLAGS_OTHER_DEP - fftw + dependencies linker flags without libraries
-#  FFTW_INCLUDE_DIRS_DEP  - fftw + dependencies include directories
-#  FFTW_LIBRARY_DIRS_DEP  - fftw + dependencies link directories
-#  FFTW_LIBRARIES_DEP     - fftw + dependencies libraries
 #
 #  FFTW_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #  if found with pkg-config the following variables are set
@@ -53,6 +61,11 @@
 #  <XPREFIX>_CFLAGS         ... all required cflags
 #  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::FFTW``
+#   The headers and libraries to use for FFTW, if found.
+#
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DFFTW_DIR=path/to/fftw):
 #  FFTW_DIR             - Where to find the base directory of fftw
@@ -64,24 +77,9 @@
 # environment variable
 
 #=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013-2018 Florent Pruvost
-#
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
-#
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT FFTW_FOUND)
   set(FFTW_DIR "" CACHE PATH "Installation directory of FFTW library given by user")
@@ -241,7 +239,6 @@ endif()
 # Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
 # -------------------------------------------------------------------------------------
 if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
-  include(FindPkgConfig)
   find_package(PkgConfig QUIET)
   if( PKG_CONFIG_EXECUTABLE AND NOT FFTW_GIVEN_BY_USER )
 
@@ -260,7 +257,7 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
           message(STATUS "Looking for FFTW3F - found using PkgConfig")
         endif()
         if (FFTW3F_LIBRARIES)
-          find_pkgconfig_libraries_absolute_path(FFTW3F)
+          morse_find_pkgconfig_libraries_absolute_path(FFTW3F)
           list(APPEND FFTW_LIBRARIES "${FFTW3F_LIBRARIES}")
         endif()
         if(FFTW3F_INCLUDE_DIRS)
@@ -293,7 +290,7 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
           message(STATUS "Looking for FFTW3L - found using PkgConfig")
         endif()
         if (FFTW3L_LIBRARIES)
-          find_pkgconfig_libraries_absolute_path(FFTW3L)
+          morse_find_pkgconfig_libraries_absolute_path(FFTW3L)
           list(APPEND FFTW_LIBRARIES "${FFTW3L_LIBRARIES}")
         endif()
         if(FFTW3L_INCLUDE_DIRS)
@@ -326,7 +323,7 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
           message(STATUS "Looking for FFTW3Q - found using PkgConfig")
         endif()
         if (FFTW3Q_LIBRARIES)
-          find_pkgconfig_libraries_absolute_path(FFTW3Q)
+          morse_find_pkgconfig_libraries_absolute_path(FFTW3Q)
           list(APPEND FFTW_LIBRARIES "${FFTW3Q_LIBRARIES}")
         endif()
         if(FFTW3Q_INCLUDE_DIRS)
@@ -351,7 +348,7 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
     else()
       pkg_search_module(FFTW3 fftw3)
       if (FFTW3_FOUND AND FFTW3_LIBRARIES)
-        find_pkgconfig_libraries_absolute_path(FFTW3)
+        morse_find_pkgconfig_libraries_absolute_path(FFTW3)
       endif()
     endif()
     if (FFTW3_FOUND)
@@ -362,7 +359,7 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
         pkg_get_variable(FFTW3_INCLUDE_DIRS fftw3 includedir)
       endif()
       if (FFTW3_LIBRARIES)
-        find_pkgconfig_libraries_absolute_path(FFTW3)
+        morse_find_pkgconfig_libraries_absolute_path(FFTW3)
         list(APPEND FFTW_LIBRARIES "${FFTW3_LIBRARIES}")
       endif()
       if(FFTW3_INCLUDE_DIRS)
@@ -728,11 +725,11 @@ endif( (NOT PKG_CONFIG_EXECUTABLE) OR
 # check a function to validate the find
 if(FFTW_LIBRARIES)
 
-  set(REQUIRED_FLAGS)
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_INCDIRS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
 
   # FFTW
   if (FFTW_INCLUDE_DIRS)
@@ -784,7 +781,7 @@ if(FFTW_LIBRARIES)
       list(APPEND REQUIRED_FLAGS "${_flag}")
     endforeach()
   endif()
-  finds_remove_duplicates()
+  morse_finds_remove_duplicates()
   set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -805,11 +802,11 @@ if(FFTW_LIBRARIES)
 
   if(FFTW_WORKS)
     # save link with dependencies
-    set(FFTW_LIBRARIES_DEP "${REQUIRED_LIBS}")
-    set(FFTW_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-    set(FFTW_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(FFTW_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
-    set(FFTW_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+    set(FFTW_LIBRARIES "${REQUIRED_LIBS}")
+    set(FFTW_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+    set(FFTW_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+    set(FFTW_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+    set(FFTW_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
   else()
     if(NOT FFTW_FIND_QUIETLY)
       message(STATUS "Looking for FFTW : test of ${FFTW_PREC_TESTFUNC}fftw_execute_ with fftw library fails")
@@ -822,31 +819,22 @@ if(FFTW_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif(FFTW_LIBRARIES)
 
-if (FFTW_LIBRARIES)
   list(GET FFTW_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
+  get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   if (NOT FFTW_LIBRARY_DIRS)
     set(FFTW_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
     string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-    set(FFTW_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of FFTW library" FORCE)
+    set(FFTW_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of FFTW library" FORCE)
   else()
-    set(FFTW_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of FFTW library" FORCE)
+    set(FFTW_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of FFTW library" FORCE)
   endif()
+  mark_as_advanced(FFTW_DIR)
+  mark_as_advanced(FFTW_PREFIX)
 
-  if(NOT TARGET fftw::fftw)
-    add_library(fftw::fftw INTERFACE IMPORTED)
-    set_property(TARGET fftw::fftw APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${FFTW_LIBRARIES_DEP}")
-    set_property(TARGET fftw::fftw APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${FFTW_INCLUDE_DIRS_DEP}")
-    set_property(TARGET fftw::fftw APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${FFTW_C_FLAGS}")
-  endif()
-
-endif()
-mark_as_advanced(FFTW_DIR)
-mark_as_advanced(FFTW_DIR_FOUND)
+endif(FFTW_LIBRARIES)
 
 # check that FFTW has been found
 # -------------------------------
@@ -854,3 +842,16 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(FFTW DEFAULT_MSG
   FFTW_LIBRARIES
   FFTW_WORKS)
+
+# Add imported target
+if (FFTW_FOUND)
+  if(NOT TARGET FFTW::FFTW)
+    add_library(FFTW::FFTW INTERFACE IMPORTED)
+    set_property(TARGET FFTW::FFTW APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${FFTW_INCLUDE_DIRS}")
+    set_property(TARGET FFTW::FFTW APPEND PROPERTY INTERFACE_LINK_DIRECTORIES "${FFTW_LIBRARY_DIRS}")
+    set_property(TARGET FFTW::FFTW APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${FFTW_LIBRARIES}")
+    set_property(TARGET FFTW::FFTW APPEND PROPERTY INTERFACE_COMPILE_OPTIONS "${FFTW_CFLAGS_OTHER}")
+    set_property(TARGET FFTW::FFTW APPEND PROPERTY INTERFACE_LINNK_OPTIONS "${FFTW_LDFLAGS_OTHER}")
+  endif()
+  morse_create_imported_target(FFTW)
+endif()

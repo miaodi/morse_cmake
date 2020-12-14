@@ -1,11 +1,18 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
-# @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+# @copyright (c) 2013-2020 Inria. All rights reserved.
 #
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 ###
 #
 # - Find MUMPS include dirs and libraries
@@ -40,37 +47,23 @@
 #  MUMPS_INCLUDE_DIRS      - mumps include directories
 #  MUMPS_LIBRARY_DIRS      - mumps link directories
 #  MUMPS_LIBRARIES         - mumps libraries to be linked (absolute path)
-#  MUMPS_CFLAGS_OTHER_DEP  - mumps + dependencies compiler flags without headers paths
-#  MUMPS_LDFLAGS_OTHER_DEP - mumps + dependencies linker flags without libraries
-#  MUMPS_INCLUDE_DIRS_DEP  - mumps + dependencies include directories
-#  MUMPS_LIBRARY_DIRS_DEP  - mumps + dependencies link directories
-#  MUMPS_LIBRARIES_DEP     - mumps + dependencies libraries
+#
+# Set MUMPS_STATIC to 1 to force using static libraries if exist.
+#
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::MUMPS``
+#   The headers and libraries to use for MUMPS, if found.
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DMUMPS_DIR=path/to/mumps):
 #  MUMPS_DIR              - Where to find the base directory of mumps
 # The module can also look for the following environment variables if paths
 # are not given as cmake variable: MUMPS_DIR
-
 #=============================================================================
-# Copyright 2012-2019 Inria
-# Copyright 2012-2013 Emmanuel Agullo
-# Copyright 2012-2013 Mathieu Faverge
-# Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
-#
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file MORSE-Copyright.txt for details.
-#
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
-# (To distribute this file outside of Morse, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT MUMPS_FOUND)
   set(MUMPS_DIR "" CACHE PATH "Installation directory of MUMPS library")
@@ -407,6 +400,11 @@ endif()
 # Looking for lib
 # ---------------
 
+if (MUMPS_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+endif()
+
 # create list of libs to find
 set(MUMPS_libs_to_find "mumps_common;pord")
 if (MUMPS_LOOK_FOR_SEQ)
@@ -452,6 +450,10 @@ else()
         HINTS ${_lib_env})
     endforeach()
   endif()
+endif()
+
+if (MUMPS_STATIC)
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
 endif()
 
 # If found, add path to cmake variable
@@ -570,11 +572,17 @@ list(REMOVE_DUPLICATES MUMPS_INCLUDE_DIRS)
 # check a function to validate the find
 if(MUMPS_LIBRARIES)
 
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(MUMPS MUMPS_LIBRARIES)
+  if(MUMPS_STATIC)
+    set(STATIC "_STATIC")
+  endif()
+
   set(REQUIRED_INCDIRS)
-  set(REQUIRED_FLAGS)
-  set(REQUIRED_LDFLAGS)
   set(REQUIRED_LIBDIRS)
   set(REQUIRED_LIBS)
+  set(REQUIRED_FLAGS)
+  set(REQUIRED_LDFLAGS)
 
   # MUMPS
   if (MUMPS_INCLUDE_DIRS)
@@ -592,20 +600,20 @@ if(MUMPS_LIBRARIES)
   set(REQUIRED_LIBS "${MUMPS_LIBRARIES}")
   # SCALAPACK
   if (MUMPS_LOOK_FOR_MPI AND SCALAPACK_FOUND)
-    if (SCALAPACK_INCLUDE_DIRS_DEP)
-      list(APPEND REQUIRED_INCDIRS "${SCALAPACK_INCLUDE_DIRS_DEP}")
+    if (SCALAPACK_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${SCALAPACK_INCLUDE_DIRS}")
     endif()
-    if (SCALAPACK_CFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_FLAGS "${SCALAPACK_CFLAGS_OTHER_DEP}")
+    if (SCALAPACK_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${SCALAPACK_CFLAGS_OTHER}")
     endif()
-    if (SCALAPACK_LDFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_LDFLAGS "${SCALAPACK_LDFLAGS_OTHER_DEP}")
+    if (SCALAPACK_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${SCALAPACK_LDFLAGS_OTHER}")
     endif()
-    if(SCALAPACK_LIBRARY_DIRS_DEP)
-      list(APPEND REQUIRED_LIBDIRS "${SCALAPACK_LIBRARY_DIRS_DEP}")
+    if(SCALAPACK_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${SCALAPACK_LIBRARY_DIRS}")
     endif()
-    if (SCALAPACK_LIBRARIES_DEP)
-      list(APPEND REQUIRED_LIBS "${SCALAPACK_LIBRARIES_DEP}")
+    if (SCALAPACK_LIBRARIES)
+      list(APPEND REQUIRED_LIBS "${SCALAPACK_LIBRARIES}")
     endif()
   endif()
   # MPI
@@ -659,20 +667,20 @@ if(MUMPS_LIBRARIES)
   endif()
   # PARMETIS
   if (MUMPS_LOOK_FOR_PARMETIS AND PARMETIS_FOUND)
-    if (PARMETIS_INCLUDE_DIRS_DEP)
-      list(APPEND REQUIRED_INCDIRS "${PARMETIS_INCLUDE_DIRS_DEP}")
+    if (PARMETIS_INCLUDE_DIRS)
+      list(APPEND REQUIRED_INCDIRS "${PARMETIS_INCLUDE_DIRS}")
     endif()
-    if (PARMETIS_CFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_FLAGS "${PARMETIS_CFLAGS_OTHER_DEP}")
+    if (PARMETIS_CFLAGS_OTHER)
+      list(APPEND REQUIRED_FLAGS "${PARMETIS_CFLAGS_OTHER}")
     endif()
-    if (PARMETIS_LDFLAGS_OTHER_DEP)
-      list(APPEND REQUIRED_LDFLAGS "${PARMETIS_LDFLAGS_OTHER_DEP}")
+    if (PARMETIS_LDFLAGS_OTHER)
+      list(APPEND REQUIRED_LDFLAGS "${PARMETIS_LDFLAGS_OTHER}")
     endif()
-    if(PARMETIS_LIBRARY_DIRS_DEP)
-      list(APPEND REQUIRED_LIBDIRS "${PARMETIS_LIBRARY_DIRS_DEP}")
+    if(PARMETIS_LIBRARY_DIRS)
+      list(APPEND REQUIRED_LIBDIRS "${PARMETIS_LIBRARY_DIRS}")
     endif()
-    if (PARMETIS_LIBRARIES_DEP)
-      list(APPEND REQUIRED_LIBS "${PARMETIS_LIBRARIES_DEP}")
+    if (PARMETIS_LIBRARIES)
+      list(APPEND REQUIRED_LIBS "${PARMETIS_LIBRARIES}")
     endif()
   endif()
   # OpenMP
@@ -718,7 +726,7 @@ if(MUMPS_LIBRARIES)
       list(APPEND REQUIRED_FLAGS "${_flag}")
     endforeach()
   endif()
-  finds_remove_duplicates()
+  morse_finds_remove_duplicates()
   set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
   set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -747,12 +755,14 @@ if(MUMPS_LIBRARIES)
   endif()
 
   if(MUMPS_WORKS)
-    # save link with dependencies
-    set(MUMPS_LIBRARIES_DEP "${REQUIRED_LIBS}")
-    set(MUMPS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-    set(MUMPS_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-    set(MUMPS_CFLAGS_OTHER_DEP "${REQUIRED_FLAGS}")
-    set(MUMPS_LDFLAGS_OTHER_DEP "${REQUIRED_LDFLAGS}")
+    set(MUMPS_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
+    set(MUMPS_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+    if (MUMPS_STATIC OR BLA_STATIC OR SCOTCH_STATIC OR PTSCOTCH_STATIC OR METIS_STATIC OR PARMETIS_STATIC)
+      # save link with dependencies
+      set(MUMPS_LIBRARIES "${REQUIRED_LIBS}")
+      set(MUMPS_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+      set(MUMPS_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+    endif()
   else()
     if(NOT MUMPS_FIND_QUIETLY)
       message(STATUS "Looking for MUMPS : test of [sdcz]mumps() fails")
@@ -769,23 +779,21 @@ if(MUMPS_LIBRARIES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
 
-endif(MUMPS_LIBRARIES)
-
-if (MUMPS_LIBRARIES)
   list(GET MUMPS_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
+  get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   if (NOT MUMPS_LIBRARY_DIRS)
     set(MUMPS_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-    set(MUMPS_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of MUMPS library" FORCE)
+    set(MUMPS_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of MUMPS library" FORCE)
   else()
-    set(MUMPS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of MUMPS library" FORCE)
+    set(MUMPS_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of MUMPS library" FORCE)
   endif()
-endif()
-mark_as_advanced(MUMPS_DIR)
-mark_as_advanced(MUMPS_DIR_FOUND)
+  mark_as_advanced(MUMPS_DIR)
+  mark_as_advanced(MUMPS_PREFIX)
+
+endif(MUMPS_LIBRARIES)
 
 # check that MUMPS has been found
 # -------------------------------
@@ -793,3 +801,8 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MUMPS DEFAULT_MSG
   MUMPS_LIBRARIES
   MUMPS_WORKS)
+
+# Add imported target
+if (MUMPS_FOUND)
+  morse_create_imported_target(MUMPS)
+endif()

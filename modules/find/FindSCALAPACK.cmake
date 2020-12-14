@@ -1,10 +1,18 @@
 ###
 #
-# @copyright (c) 2009-2014 The University of Tennessee and The University
-#                          of Tennessee Research Foundation.
-#                          All rights reserved.
-# @copyright (c) 2012-2019 Inria. All rights reserved.
-# @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+# @copyright (c) 2013-2020 Inria. All rights reserved.
+#
+# Copyright 2013-2020 Florent Pruvost
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file MORSE-Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of Morse, substitute the full
+#  License text for the above reference.)
 #
 ###
 #
@@ -15,16 +23,17 @@
 # This module sets the following variables:
 #  SCALAPACK_FOUND - set to true if a library implementing the SCALAPACK interface
 #    is found
+#  SCALAPACK_PREFIX            - installation path of the lib found
 #  SCALAPACK_CFLAGS_OTHER      - scalapack compiler flags without headers paths
 #  SCALAPACK_LDFLAGS_OTHER     - scalapack linker flags without libraries
 #  SCALAPACK_INCLUDE_DIRS      - scalapack include directories
 #  SCALAPACK_LIBRARY_DIRS      - scalapack link directories
 #  SCALAPACK_LIBRARIES         - scalapack libraries to be linked (absolute path)
-#  SCALAPACK_CFLAGS_OTHER_DEP  - scalapack + dependencies compiler flags without headers paths
-#  SCALAPACK_LDFLAGS_OTHER_DEP - scalapack + dependencies linker flags without libraries
-#  SCALAPACK_INCLUDE_DIRS_DEP  - scalapack + dependencies include directories
-#  SCALAPACK_LIBRARY_DIRS_DEP  - scalapack + dependencies link directories
-#  SCALAPACK_LIBRARIES_DEP     - scalapack + dependencies libraries
+#
+# This module defines the following :prop_tgt:`IMPORTED` target:
+#
+# ``MORSE::SCALAPACK``
+#   The headers and libraries to use for SCALAPACK, if found.
 #
 #  SCALAPACK95_LIBRARIES - uncached list of libraries (using full path name) to
 #    link against to use SCALAPACK95
@@ -44,22 +53,11 @@
 # Note that if BLAS_DIR is set, it will also look for scalapack in it
 ### List of vendors (BLA_VENDOR) valid in this module
 ##  Intel(mkl), ACML, Apple, NAS, Generic
+#=============================================================================
 
-#=============================================================================
-# Copyright 2007-2009 Kitware, Inc.
-#
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file Copyright.txt for details.
-#
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
-# (To distribute this file outside of CMake, substitute the full
-#  License text for the above reference.)
 
 # Common macros to use in finds
-include(FindInit)
+include(FindMorseInit)
 
 if (NOT SCALAPACK_FOUND)
   set(SCALAPACK_DIR "" CACHE PATH "Installation directory of SCALAPACK library")
@@ -293,7 +291,7 @@ else()
 endif()
 
 if(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
-  set(SCALAPACK_LDFLAGS_OTHER ${LAPACK_LDFLAGS_OTHER_DEP})
+  set(SCALAPACK_LDFLAGS_OTHER ${LAPACK_LDFLAGS_OTHER})
   if ($ENV{BLA_VENDOR} MATCHES ".+")
     set(BLA_VENDOR $ENV{BLA_VENDOR})
   else ($ENV{BLA_VENDOR} MATCHES ".+")
@@ -468,25 +466,21 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_scalapack_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 
 if (SCALAPACK_LIBRARIES)
   list(GET SCALAPACK_LIBRARIES 0 first_lib)
-  get_filename_component(first_lib_path "${first_lib}" PATH)
+  get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
   if (NOT SCALAPACK_LIBRARY_DIRS)
     set(SCALAPACK_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
     string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
-    set(SCALAPACK_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of SCALAPACK library" FORCE)
+    set(SCALAPACK_PREFIX "${not_cached_dir}" CACHE PATH "Installation directory of SCALAPACK library" FORCE)
   else()
-    set(SCALAPACK_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of SCALAPACK library" FORCE)
+    set(SCALAPACK_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of SCALAPACK library" FORCE)
   endif()
-  set(SCALAPACK_CFLAGS_OTHER_DEP "${SCALAPACK_CFLAGS_OTHER}" "${LAPACK_CFLAGS_OTHER_DEP}")
-  set(SCALAPACK_LDFLAGS_OTHER_DEP "${SCALAPACK_LDFLAGS_OTHER}" "${LAPACK_LDFLAGS_OTHER_DEP}")
-  set(SCALAPACK_INCLUDE_DIRS_DEP "${SCALAPACK_INCLUDE_DIRS}" "${LAPACK_INCLUDE_DIRS_DEP}")
-  set(SCALAPACK_LIBRARY_DIRS_DEP "${SCALAPACK_LIBRARY_DIRS}" "${LAPACK_LIBRARY_DIRS_DEP}")
-  set(SCALAPACK_LIBRARIES_DEP "${SCALAPACK_LIBRARIES}" "${LAPACK_LIBRARIES_DEP}" "${MPI_Fortran_LIBRARIES}")
-  list(REMOVE_DUPLICATES SCALAPACK_CFLAGS_OTHER_DEP)
-  list(REMOVE_DUPLICATES SCALAPACK_LDFLAGS_OTHER_DEP)
-  list(REMOVE_DUPLICATES SCALAPACK_INCLUDE_DIRS_DEP)
-  list(REMOVE_DUPLICATES SCALAPACK_LIBRARY_DIRS_DEP)
 endif()
 mark_as_advanced(SCALAPACK_DIR)
-mark_as_advanced(SCALAPACK_DIR_FOUND)
+mark_as_advanced(SCALAPACK_PREFIX)
+
+# Add imported target
+if (SCALAPACK_FOUND)
+  morse_create_imported_target(SCALAPACK)
+endif()

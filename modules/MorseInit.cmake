@@ -61,7 +61,7 @@ include(Ressources)
 list(APPEND CMAKE_MODULE_PATH ${MORSE_CMAKE_MODULE_PATH}/find)
 
 # To load some macros used in Finds (could be useful for other projects)
-include(FindInit)
+include(FindMorseInit)
 
 ### Build type
 set( CMAKE_BUILD_TYPE_DROP_LIST "Debug" "Release" "MinSizeRel" "RelWithDebInfo")

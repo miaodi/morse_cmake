@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 project(TEST_MORSE_CMAKE_MODULES_FIND Fortran C CXX)
 
 # location of Morse modules to get some specific macros
@@ -12,25 +12,35 @@ set(PACKAGES "" CACHE STRING "List of packages to find, ex: BLAS;STARPU;PASTIX")
 # specific components to look for with packages
 set(LAPACKE_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with LAPACKE, ex: TMG")
 set(QUARK_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with QUARK, ex: HWLOC")
-set(PASTIX_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with PASTIX, ex: SPM;MPI;SEQ;STARPU;STARPU_CUDA;STARPU_FXT;SCOTCH;PTSCOTCH;METIS")
 set(PETSC_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with PETSc, ex: CXX|C")
 set(FFTW_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with FFTW, ex: MKL;ESSL;THREADS;OMP;SIMPLE;LONG;QUAD")
 set(MUMPS_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with MUMPS, ex: MPI;SEQ;SCOTCH;PTSCOTCH;METIS;PARMETIS;OPENMP")
-set(CHAMELEON_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with CHAMELEON, ex: STARPU;QUARK;CUDA;MPI;FXT")
-set(STARPU_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with STARPU, ex: HWLOC;CUDA;MPI;BLAS;MAGMA;FXT;SIMGRID")
-set(PARSEC_COMPONENTS "" CACHE STRING "List of specific dependencies to look for with PARSEC, ex: HWLOC;CUDA;MPI;AYUDAME")
 
 # to enable ctests
 option(ENABLE_CTEST "Enable Testing: will test all supported packages" OFF)
 
 foreach(_library ${PACKAGES})
 
+  # in case _library is unset inside find_package
+  set (_library_cpy ${_library})
+
   if (${_library}_COMPONENTS)
     find_package(${_library} COMPONENTS ${${_library}_COMPONENTS})
   else()
     find_package(${_library})
   endif()
+  set (_library ${_library_cpy})
+
   if (${_library}_FOUND)
+    if (${_library}_PREFIX)
+      message(STATUS "${_library}_PREFIX ${${_library}_PREFIX}")
+    endif()
+    if (${_library}_VERSION)
+      message(STATUS "${_library}_VERSION ${${_library}_VERSION}")
+    endif()
+    if (${_library}_STATIC)
+      message(STATUS "${_library}_STATIC ${${_library}_STATIC}")
+    endif()
     if (${_library}_LIBRARIES)
       message(STATUS "${_library}_LIBRARIES found: ${${_library}_LIBRARIES}")
     else()
@@ -39,24 +49,15 @@ foreach(_library ${PACKAGES})
     if (${_library}_STATIC_LIBRARIES)
       message(STATUS "${_library}_STATIC_LIBRARIES found: ${${_library}_STATIC_LIBRARIES}")
     endif()
-    if (${_library}_LIBRARIES_DEP)
-      message(STATUS "${_library}_LIBRARIES_DEP found: ${${_library}_LIBRARIES_DEP}")
-    endif()
     if (${_library}_LIBRARY_DIRS)
       message(STATUS "${_library}_LIBRARY_DIRS found: ${${_library}_LIBRARY_DIRS}")
     else()
       message(WARNING "${_library}_LIBRARY_DIRS not found: ${${_library}_LIBRARY_DIRS}")
     endif()
-    if (${_library}_LIBRARY_DIRS_DEP)
-      message(STATUS "${_library}_LIBRARY_DIRS_DEP found: ${${_library}_LIBRARY_DIRS_DEP}")
-    endif()
     if (${_library}_INCLUDE_DIRS)
       message(STATUS "${_library}_INCLUDE_DIRS found: ${${_library}_INCLUDE_DIRS}")
     else()
       message(WARNING "${_library}_INCLUDE_DIRS not found: ${${_library}_INCLUDE_DIRS}")
-    endif()
-    if (${_library}_INCLUDE_DIRS_DEP)
-      message(STATUS "${_library}_INCLUDE_DIRS_DEP found: ${${_library}_INCLUDE_DIRS_DEP}")
     endif()
     if (${_library}_CFLAGS_OTHER)
       message(STATUS "${_library}_CFLAGS_OTHER found: ${${_library}_CFLAGS_OTHER}")
@@ -64,6 +65,31 @@ foreach(_library ${PACKAGES})
     if (${_library}_LDFLAGS_OTHER)
       message(STATUS "${_library}_LDFLAGS_OTHER found: ${${_library}_LDFLAGS_OTHER}")
     endif()
+    if (TARGET MORSE::${_library})
+      get_target_property(_INCLUDES MORSE::${_library} INTERFACE_INCLUDE_DIRECTORIES)
+      get_target_property(_DIRECTORIES MORSE::${_library} INTERFACE_LINK_DIRECTORIES)
+      get_target_property(_LIBRARIES MORSE::${_library} INTERFACE_LINK_LIBRARIES)
+      get_target_property(_CFLAGS MORSE::${_library} INTERFACE_COMPILE_OPTIONS)
+      get_target_property(_LDFLAGS MORSE::${_library} INTERFACE_LINK_OPTIONS)
+      message(STATUS "IMPORTED TARGET MORSE::${_library} INTERFACE_INCLUDE_DIRECTORIES ${_INCLUDES}")
+      message(STATUS "IMPORTED TARGET MORSE::${_library} INTERFACE_LINK_DIRECTORIES ${_DIRECTORIES}")
+      message(STATUS "IMPORTED TARGET MORSE::${_library} INTERFACE_LINK_LIBRARIES ${_LIBRARIES}")
+      message(STATUS "IMPORTED TARGET MORSE::${_library} INTERFACE_COMPILE_OPTIONS ${_CFLAGS}")
+      message(STATUS "IMPORTED TARGET MORSE::${_library} INTERFACE_LINK_OPTIONS ${_LDFLAGS}")
+    endif()
+    # for BLAS and LAPACK or other external/official Find that we check
+    if (TARGET ${_library}::${_library})
+      get_target_property(_INCLUDES ${_library}::${_library} INTERFACE_INCLUDE_DIRECTORIES)
+      get_target_property(_DIRECTORIES ${_library}::${_library} INTERFACE_LINK_DIRECTORIES)
+      get_target_property(_LIBRARIES ${_library}::${_library} INTERFACE_LINK_LIBRARIES)
+      get_target_property(_CFLAGS  ${_library}::${_library} INTERFACE_COMPILE_OPTIONS)
+      get_target_property(_LDFLAGS ${_library}::${_library} INTERFACE_LINK_OPTIONS)
+      message(STATUS "IMPORTED TARGET ${_library}::${_library} INTERFACE_INCLUDE_DIRECTORIES ${_INCLUDES}")
+      message(STATUS "IMPORTED TARGET ${_library}::${_library} INTERFACE_LINK_DIRECTORIES ${_DIRECTORIES}")
+      message(STATUS "IMPORTED TARGET ${_library}::${_library} INTERFACE_LINK_LIBRARIES ${_LIBRARIES}")
+      message(STATUS "IMPORTED TARGET ${_library}::${_library} INTERFACE_COMPILE_OPTIONS ${_CFLAGS}")
+      message(STATUS "IMPORTED TARGET ${_library}::${_library} INTERFACE_LINK_OPTIONS ${_LDFLAGS}")
+      endif()
   else()
     message(FATAL_ERROR "${_library} NOT FOUND !!")
   endif()
@@ -79,21 +105,19 @@ if (ENABLE_CTEST)
   set(CTEST_PACKAGES_LIST
       # AL4SAN # not installed in the common image hpclib/hiepacs, see hpclib/al4san to get it
       BLAS
-      BLASEXT
       CBLAS
-      CHAMELEON
+      # CHAMELEON must give its Config.cmake
       CPPCHECK
       # EZTRACE # not installed yet, we should do it
-      FABULOUS
+      # FABULOUS must give its Config.cmake
       FFTW
       FXT
       GTG
-      HQR
+      # HQR must give its Config.cmake
       HWLOC
       HYPRE
       LAPACK
       LAPACKE
-      LAPACKEXT
       METIS
       MPIEXT
       MUMPS
@@ -101,15 +125,16 @@ if (ENABLE_CTEST)
       PAPI
       PARMETIS
       PARSEC
-      PASTIX
+      # PASTIX must give its Config.cmake
       PETSC
       PTSCOTCH
       QUARK
       SCALAPACK
       SCOTCH
       SIMGRID
-      SPM
+      # SPM must give its Config.cmake
       SLEPC
+      # SCALFMM must give its Config.cmake
       STARPU
       SUITESPARSE
       TMG)

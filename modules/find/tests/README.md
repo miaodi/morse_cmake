@@ -12,6 +12,4 @@ cd build
 cmake .. -DENABLE_CTEST=ON
 # to test some only, e.g.
 cmake .. -DPACKAGES="HWLOC;STARPU;PASTIX"
-# to enable some components in some find, e.g. here we look for QUARK linked with HWLOC and PASTIX with PARSEC and STARPU
-cmake .. -DENABLE_CTEST=ON -DQUARK_COMPONENTS="HWLOC" -DPASTIX_COMPONENTS="PARSEC;STARPU"
 ```

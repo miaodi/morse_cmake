@@ -118,6 +118,7 @@ if (ENABLE_CTEST)
       HYPRE
       LAPACK
       LAPACKE
+      M
       METIS
       MPIEXT
       MUMPS

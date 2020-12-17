@@ -69,16 +69,21 @@
 include(FindMorseInit)
 
 if (NOT STARPU_FIND_QUIETLY)
-  message(STATUS "FindSTARPU needs pkg-config program and PKG_CONFIG_PATH set with libstarpu*.pc file path.")
+  message(STATUS "FindSTARPU needs pkg-config program and PKG_CONFIG_PATH set with starpu-x.y.pc (x.y the version) file path.")
+endif()
+
+if (NOT STARPU_FIND_VERSION)
+  set(STARPU_FIND_VERSION "1.0")
+  message(STATUS "FindSTARPU needs a version to check minimal API requirement. As it is not given we set to 1.0 by default.")
 endif()
 
 # use pkg-config to detect include/library dirs (if pkg-config is available)
 # --------------------------------------------------------------------------
 if (PKG_CONFIG_EXECUTABLE)
   unset(STARPU_FOUND CACHE)
-  pkg_search_module(STARPU libstarpumpi)
+  pkg_search_module(STARPU starpumpi-${STARPU_FIND_VERSION})
   if (NOT STARPU_FOUND)
-    pkg_search_module(STARPU libstarpu)
+    pkg_search_module(STARPU starpu-${STARPU_FIND_VERSION})
   endif()
 
   if (NOT STARPU_FIND_QUIETLY)
@@ -192,9 +197,10 @@ endif(STARPU_FOUND AND STARPU_LIBRARIES)
 # check that STARPU has been found
 # --------------------------------
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(STARPU DEFAULT_MSG
-  STARPU_LIBRARIES
-  STARPU_WORKS)
+find_package_handle_standard_args(STARPU
+  REQUIRED_VARS STARPU_LIBRARIES
+                STARPU_WORKS
+  VERSION_VAR   STARPU_VERSION)
 
  # Add imported targe
 if (STARPU_FOUND)

@@ -138,6 +138,7 @@ if (ENABLE_CTEST)
       # SCALFMM must give its Config.cmake
       STARPU
       SUITESPARSE
+      RT
       TMG)
 
   foreach(_package ${CTEST_PACKAGES_LIST})

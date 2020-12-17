@@ -241,6 +241,23 @@ macro(morse_find_pkgconfig_libraries_absolute_path _prefix)
   #set (${_prefix}_STATIC_LIBRARIES "${${_prefix}_STATIC_LIBRARIES}" CACHE INTERNAL "" FORCE)
 endmacro()
 
+# install necessary morse modules files (mods), in dest, when distribute a cmake
+# lib depending on it
+macro(morse_install_finds mods dest )
+  # install specific dependencies of the caller, given in mods
+  foreach(_mod ${${mods}})
+    install(FILES ${MORSE_CMAKE_MODULE_PATH}/find/Find${_mod}.cmake
+            DESTINATION ${dest})
+  endforeach()
+
+  # install other necessary morse files containing macros
+  set(morse_find_core "FindHeadersAndLibs.cmake;FindMorseCommon.cmake;FindMorseInit.cmake;LibrariesAbsolutePath.cmake;PrintFindStatus.cmake;MORSE-Copyright.txt")
+  foreach(_file ${morse_find_core})
+     install(FILES ${MORSE_CMAKE_MODULE_PATH}/find/${_file}
+           DESTINATION ${dest})
+  endforeach()
+endmacro()
+
 ##
 ## @end file FindMorseCommon
 ##

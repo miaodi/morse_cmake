@@ -43,7 +43,7 @@ mark_as_advanced(RT_LIBRARY)
 # add imported target
 if(RT_FOUND)
   if(NOT TARGET MORSE::RT)
-    add_library(MORSE::RT UNKNOWN IMPORTED)
+    add_library(MORSE::RT INTERFACE IMPORTED)
     set_target_properties(MORSE::RT PROPERTIES
       IMPORTED_LOCATION "${RT_LIBRARIES}"
       INTERFACE_LINK_LIBRARIES "${RT_LIBRARIES}")

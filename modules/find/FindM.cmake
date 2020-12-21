@@ -47,7 +47,7 @@ if(HAVE_MATH)
   set(M_LIBRARIES)
 
   if(NOT TARGET MORSE::M)
-    add_library(MORSE::M UNKNOWN IMPORTED)
+    add_library(MORSE::M INTERFACE IMPORTED)
   endif()
 
 else()

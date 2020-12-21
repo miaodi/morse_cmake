@@ -76,7 +76,6 @@ else()
     if(NOT TARGET MORSE::M)
       add_library(MORSE::M INTERFACE IMPORTED)
       set_target_properties(MORSE::M PROPERTIES
-        IMPORTED_LOCATION "${M_LIBRARIES}"
         INTERFACE_INCLUDE_DIRECTORIES "${M_INCLUDE_DIRS}"
         INTERFACE_LINK_LIBRARIES "${M_LIBRARIES}")
     endif()

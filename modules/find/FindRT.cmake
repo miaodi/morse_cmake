@@ -45,7 +45,6 @@ if(RT_FOUND)
   if(NOT TARGET MORSE::RT)
     add_library(MORSE::RT INTERFACE IMPORTED)
     set_target_properties(MORSE::RT PROPERTIES
-      IMPORTED_LOCATION "${RT_LIBRARIES}"
       INTERFACE_LINK_LIBRARIES "${RT_LIBRARIES}")
   endif()
 endif()

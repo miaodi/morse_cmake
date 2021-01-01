@@ -28,17 +28,17 @@ macro(jdf_rules jdf_rules_OUTPUTLIST jdf_rules_SOURCES)
 
       add_custom_command(
         OUTPUT ${jdf_rules_OSRC}.h ${jdf_rules_OSRC}.c
-        COMMAND ${PARSEC_PARSEC_PTGPP} ${PARSEC_PTGPP_CFLAGS} ${ADDITIONAL_PARSEC_PTGPP_CFLAGS} -E -i ${jdf_rules_SRC}.jdf -o ${jdf_rules_OSRC} -f ${jdf_rules_BSRC}
+        COMMAND ${PARSEC_parsec_ptgpp} ${PARSEC_PTGPP_CFLAGS} ${ADDITIONAL_PARSEC_PTGPP_CFLAGS} -E -i ${jdf_rules_SRC}.jdf -o ${jdf_rules_OSRC} -f ${jdf_rules_BSRC}
         MAIN_DEPENDENCY ${CMAKE_CURRENT_BINARY_DIR}/${jdf_rules_SRC}.jdf
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${jdf_rules_SRC}.jdf ${PARSEC_PARSEC_PTGPP})
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${jdf_rules_SRC}.jdf ${PARSEC_parsec_ptgpp})
 
     else( jdf_rules_IsInBinaryDir )
 
       add_custom_command(
         OUTPUT ${jdf_rules_OSRC}.h ${jdf_rules_OSRC}.c
-        COMMAND ${PARSEC_PARSEC_PTGPP} ${PARSEC_PTGPP_CFLAGS} ${ADDITIONAL_PARSEC_PTGPP_CFLAGS} -E -i ${jdf_rules_SRC}.jdf -o ${jdf_rules_OSRC} -f ${jdf_rules_BSRC}
+        COMMAND ${PARSEC_parsec_ptgpp} ${PARSEC_PTGPP_CFLAGS} ${ADDITIONAL_PARSEC_PTGPP_CFLAGS} -E -i ${jdf_rules_SRC}.jdf -o ${jdf_rules_OSRC} -f ${jdf_rules_BSRC}
         MAIN_DEPENDENCY ${jdf_rules_SRC}.jdf
-        DEPENDS ${jdf_rules_SRC}.jdf ${PARSEC_PARSEC_PTGPP})
+        DEPENDS ${jdf_rules_SRC}.jdf ${PARSEC_parsec_ptgpp})
 
     endif( jdf_rules_IsInBinaryDir )
 

@@ -524,11 +524,11 @@ if (BLAS_FOUND)
 
       set(CBLAS_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
       set(CBLAS_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
+      set(CBLAS_CFLAGS_OTHER "${REQUIRED_FLAGS}")
+      set(CBLAS_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
       if (CBLAS_STATIC OR BLA_STATIC)
         # save link with dependencies
         set(CBLAS_LIBRARIES "${REQUIRED_LIBS}")
-        set(CBLAS_CFLAGS_OTHER "${REQUIRED_FLAGS}")
-        set(CBLAS_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
       endif()
     else()
       if(NOT CBLAS_FIND_QUIETLY)

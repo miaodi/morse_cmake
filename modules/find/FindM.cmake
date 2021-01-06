@@ -53,11 +53,8 @@ if(HAVE_MATH)
 else()
 
   # look for header math.h to get the path to headers
-  find_path(M_INCLUDE_DIRS
-    NAMES math.h
-    PATHS /usr/include /usr/local/include /usr/local/bic/include
-    NO_DEFAULT_PATH
-  )
+  find_path(M_INCLUDE_DIRS NAMES math.h)
+
   # look for libm
   find_library(M_LIBRARIES m)
 
@@ -68,7 +65,7 @@ else()
 
   # check and set M_FOUND
   include(FindPackageHandleStandardArgs)
-  find_package_handle_standard_args(M DEFAULT_MSG M_LIBRARIES M_INCLUDE_DIRS)
+  find_package_handle_standard_args(M DEFAULT_MSG M_LIBRARIES M_INCLUDE_DIRS LIBM_MATH_WORKS)
   mark_as_advanced(M_INCLUDE_DIRS M_LIBRARIES LIBM_MATH_WORKS)
 
   # add imported target

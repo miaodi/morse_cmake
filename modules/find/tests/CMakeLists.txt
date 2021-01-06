@@ -106,14 +106,12 @@ if (ENABLE_CTEST)
       # AL4SAN # not installed in the common image hpclib/hiepacs, see hpclib/al4san to get it
       BLAS
       CBLAS
-      # CHAMELEON must give its Config.cmake
       CPPCHECK
       # EZTRACE # not installed yet, we should do it
       # FABULOUS must give its Config.cmake
       FFTW
       FXT
       GTG
-      # HQR must give its Config.cmake
       HWLOC
       HYPRE
       LAPACK
@@ -133,7 +131,6 @@ if (ENABLE_CTEST)
       SCALAPACK
       SCOTCH
       SIMGRID
-      # SPM must give its Config.cmake
       SLEPC
       # SCALFMM must give its Config.cmake
       STARPU

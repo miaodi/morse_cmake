@@ -135,7 +135,7 @@ if (LAPACK_FOUND)
       set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
       set(LAPACKE_LDFLAGS_OTHER "${LAPACK_LDFLAGS_OTHER}")
 
-      if (LAPACKE_LIBRARIES MATCHES "intel")
+      if (LAPACKE_LIBRARIES MATCHES "intel" AND DEFINED ENV{MKLROOT})
         set(LAPACKE_PREFIX "$ENV{MKLROOT}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
         set(LAPACKE_INCLUDE_DIRS "${LAPACKE_PREFIX}/include")
         set(LAPACKE_LIBRARY_DIRS "${LAPACKE_PREFIX}/lib/intel64")
@@ -156,6 +156,7 @@ if (LAPACK_FOUND)
           list(APPEND _inc_env "${ENV_LAPACKE_DIR}")
           list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include")
           list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
+          list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/mkl")
         else()
           if(WIN32)
             string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
@@ -176,38 +177,45 @@ if (LAPACK_FOUND)
 
         # Try to find the lapacke header in the given paths
         # -------------------------------------------------
+
+        if (LAPACKE_LIBRARIES MATCHES "intel")
+          set(LAPACKE_hdrs_to_find "mkl.h")
+        else()
+          set(LAPACKE_hdrs_to_find "lapacke.h")
+        endif()
+
         # call cmake macro to find the header path
         if(LAPACKE_INCDIR)
-          set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-          find_path(LAPACKE_lapacke.h_DIRS
-            NAMES lapacke.h
+          set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
+          find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
+            NAMES ${LAPACKE_hdrs_to_find}
             HINTS ${LAPACKE_INCDIR}
             NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
           if(LAPACKE_DIR)
-            set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-            find_path(LAPACKE_lapacke.h_DIRS
-              NAMES lapacke.h
+            set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
+            find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
+              NAMES ${LAPACKE_hdrs_to_find}
               HINTS ${LAPACKE_DIR}
-              PATH_SUFFIXES "include" "include/lapacke"
+              PATH_SUFFIXES "include" "include/lapacke" "include/mkl"
               NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
           else()
-            set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-            find_path(LAPACKE_lapacke.h_DIRS
-              NAMES lapacke.h
+            set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
+            find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
+              NAMES ${LAPACKE_hdrs_to_find}
               HINTS ${_inc_env})
           endif()
         endif()
-        mark_as_advanced(LAPACKE_lapacke.h_DIRS)
+        mark_as_advanced(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)
 
         # If found, add path to cmake variable
         # ------------------------------------
-        if (LAPACKE_lapacke.h_DIRS)
-          set(LAPACKE_INCLUDE_DIRS "${LAPACKE_lapacke.h_DIRS}")
+        if (LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)
+          set(LAPACKE_INCLUDE_DIRS "${LAPACKE_${LAPACKE_hdrs_to_find}_DIRS}")
         else ()
           set(LAPACKE_INCLUDE_DIRS "LAPACKE_INCLUDE_DIRS-NOTFOUND")
           if(NOT LAPACKE_FIND_QUIETLY)
-            message(STATUS "Looking for lapacke -- lapacke.h not found")
+            message(STATUS "Looking for lapacke -- ${LAPACKE_hdrs_to_find} not found")
           endif()
         endif()
       endif()
@@ -302,6 +310,7 @@ if (LAPACK_FOUND)
         list(APPEND _inc_env "${ENV_LAPACKE_DIR}")
         list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include")
         list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
+        list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/mkl")
       else()
         if(WIN32)
           string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
@@ -322,38 +331,45 @@ if (LAPACK_FOUND)
 
       # Try to find the lapacke header in the given paths
       # -------------------------------------------------
+
+      if (LAPACKE_LIBRARIES MATCHES "intel")
+        set(LAPACKE_hdrs_to_find "mkl.h")
+      else()
+        set(LAPACKE_hdrs_to_find "lapacke.h")
+      endif()
+
       # call cmake macro to find the header path
       if(LAPACKE_INCDIR)
-        set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-        find_path(LAPACKE_lapacke.h_DIRS
-          NAMES lapacke.h
+        set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
+        find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
+          NAMES ${LAPACKE_hdrs_to_find}
           HINTS ${LAPACKE_INCDIR}
           NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
       else()
         if(LAPACKE_DIR)
-          set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-          find_path(LAPACKE_lapacke.h_DIRS
-            NAMES lapacke.h
+          set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
+          find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
+            NAMES ${LAPACKE_hdrs_to_find}
             HINTS ${LAPACKE_DIR}
-            PATH_SUFFIXES "include" "include/lapacke"
+            PATH_SUFFIXES "include" "include/lapacke" "include/mkl"
             NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
         else()
-          set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-          find_path(LAPACKE_lapacke.h_DIRS
-            NAMES lapacke.h
+          set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
+          find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
+            NAMES ${LAPACKE_hdrs_to_find}
             HINTS ${_inc_env})
         endif()
       endif()
-      mark_as_advanced(LAPACKE_lapacke.h_DIRS)
+      mark_as_advanced(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)
 
       # If found, add path to cmake variable
       # ------------------------------------
-      if (LAPACKE_lapacke.h_DIRS)
-        set(LAPACKE_INCLUDE_DIRS "${LAPACKE_lapacke.h_DIRS}")
+      if (LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)
+        set(LAPACKE_INCLUDE_DIRS "${LAPACKE_${LAPACKE_hdrs_to_find}_DIRS}")
       else ()
         set(LAPACKE_INCLUDE_DIRS "LAPACKE_INCLUDE_DIRS-NOTFOUND")
         if(NOT LAPACKE_FIND_QUIETLY)
-          message(STATUS "Looking for lapacke -- lapacke.h not found")
+          message(STATUS "Looking for lapacke -- ${LAPACKE_hdrs_to_find} not found")
         endif()
       endif()
 

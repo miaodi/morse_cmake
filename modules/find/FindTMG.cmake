@@ -36,6 +36,7 @@
 #  TMG_LIBRARIES         - tmglib libraries to be linked (absolute path)
 #
 # Set TMG_STATIC to 1 to force using static libraries if exist.
+# Set TMG_MT to 1 to force using multi-threaded blas/lapack libraries if exist (Intel MKL).
 #
 # This module defines the following :prop_tgt:`IMPORTED` target:
 #
@@ -73,18 +74,30 @@ endif (NOT _LANGUAGES_ MATCHES Fortran)
 
 # TMG depends on LAPACK anyway, try to find it
 if(TMG_FIND_REQUIRED)
-  find_package(LAPACK REQUIRED)
+  find_package(LAPACKEXT QUIET REQUIRED)
 else()
-  find_package(LAPACK)
+  find_package(LAPACKEXT QUIET)
 endif()
 
 # TMG depends on LAPACK
 if (LAPACK_FOUND)
 
   # check if a tmg function exists in the LAPACK lib
-  set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER};${LAPACK_LIBRARIES}")
-  set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
-  set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
+  if (LAPACK_LIBRARIES)
+    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LIBRARIES}")
+  endif()
+  if (LAPACK_LDFLAGS_OTHER)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER}")
+  endif()
+  if (LAPACK_LINKER_FLAGS)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${LAPACK_LINKER_FLAGS}")
+  endif()
+  if (LAPACK_CFLAGS_OTHER)
+    set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
+  endif()
+  if (LAPACK_INCLUDE_DIRS)
+    set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
+  endif()
   include(CheckFunctionExists)
   include(CheckFortranFunctionExists)
   unset(TMG_WORKS CACHE)
@@ -333,6 +346,18 @@ else()
       "Please look for LAPACK first.")
   endif()
 
+endif()
+
+if(TMG_MT)
+  if (TMG_LIBRARIES MATCHES "intel" AND LAPACK_MT_LIBRARIES)
+    set(TMG_LIBRARIES "${LAPACK_MT_LIBRARIES}")
+  else()
+    set(TMG_LIBRARIES "LAPACKE_LIBRARIES-NOTFOUND")
+  endif()
+else()
+  if (TMG_LIBRARIES MATCHES "intel" AND LAPACK_SEQ_LIBRARIES)
+    set(TMG_LIBRARIES "${LAPACK_SEQ_LIBRARIES}")
+  endif()
 endif()
 
 # check that TMG has been found

@@ -29,7 +29,7 @@
 #  LAPACKE depends on the following libraries:
 #   - LAPACK
 #
-#  COMPONENTS are optional libraries CHAMELEON could be linked with,
+#  COMPONENTS are optional libraries LAPACKE could be linked with,
 #  Use it to drive detection of a specific compilation chain
 #  COMPONENTS can be some of the following:
 #   - TMG: to check that LAPACKE provides the tmglib interface
@@ -50,6 +50,7 @@
 #  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # Set LAPACKE_STATIC to 1 to force using static libraries if exist.
+# Set LAPACKE_MT to 1 to force using multi-threaded lapack libraries if exist (Intel MKL).
 #
 # This module defines the following :prop_tgt:`IMPORTED` target:
 #
@@ -81,7 +82,7 @@ if (NOT LAPACKE_FOUND)
   endif()
 endif()
 
-# to check that LAPACKE provides the tmglib interface
+# to check LAPACKE components
 set(LAPACKE_WITH_TMG OFF)
 if( LAPACKE_FIND_COMPONENTS )
   foreach( component ${LAPACKE_FIND_COMPONENTS} )
@@ -102,20 +103,32 @@ endif()
 
 # LAPACKE depends on LAPACK, try to find it
 if(LAPACKE_FIND_REQUIRED)
-  find_package(LAPACK REQUIRED)
+  find_package(LAPACKEXT QUIET REQUIRED)
 else()
-  find_package(LAPACK)
+  find_package(LAPACKEXT QUIET)
 endif()
 
 # LAPACKE depends on LAPACK
-if (LAPACK_FOUND)
+if (LAPACKEXT_FOUND)
 
   if (NOT LAPACKE_STANDALONE)
     # check if a lapacke function exists in the LAPACK lib
     include(CheckFunctionExists)
-    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER};${LAPACK_LIBRARIES}")
-    set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
-    set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
+    if (LAPACK_LIBRARIES)
+      set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LIBRARIES}")
+    endif()
+    if (LAPACK_LDFLAGS_OTHER)
+      list(APPEND CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER}")
+    endif()
+    if (LAPACK_LINKER_FLAGS)
+      list(APPEND CMAKE_REQUIRED_LIBRARIES "${LAPACK_LINKER_FLAGS}")
+    endif()
+    if (LAPACK_CFLAGS_OTHER)
+      set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
+    endif()
+    if (LAPACK_INCLUDE_DIRS)
+      set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
+    endif()
     unset(LAPACKE_WORKS CACHE)
     check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
     mark_as_advanced(LAPACKE_WORKS)
@@ -129,11 +142,24 @@ if (LAPACK_FOUND)
         message(STATUS "Looking for lapacke: test with lapack succeeds")
       endif()
       # test succeeds: LAPACKE is in LAPACK
-      set(LAPACKE_LIBRARIES "${LAPACK_LIBRARIES}")
-      set(LAPACKE_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
-      set(LAPACKE_CFLAGS_OTHER "${LAPACK_CFLAGS_OTHER}")
-      set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
-      set(LAPACKE_LDFLAGS_OTHER "${LAPACK_LDFLAGS_OTHER}")
+      if (LAPACK_LIBRARIES)
+        set(LAPACKE_LIBRARIES "${LAPACK_LIBRARIES}")
+      endif()
+      if (LAPACK_LINKER_FLAGS)
+        list(APPEND LAPACKE_LIBRARIES "${LAPACK_LINKER_FLAGS}")
+      endif()
+      if (LAPACK_INCLUDE_DIRS)
+        set(LAPACKE_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
+      endif()
+      if (LAPACK_LIBRARY_DIRS)
+        set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
+      endif()
+      if (LAPACK_CFLAGS_OTHER)
+        set(LAPACKE_CFLAGS_OTHER "${LAPACK_CFLAGS_OTHER}")
+      endif()
+      if (LAPACK_LDFLAGS_OTHER)
+        set(LAPACKE_LDFLAGS_OTHER "${LAPACK_LDFLAGS_OTHER}")
+      endif()
 
       if (LAPACKE_LIBRARIES MATCHES "intel" AND DEFINED ENV{MKLROOT})
         set(LAPACKE_PREFIX "$ENV{MKLROOT}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
@@ -617,14 +643,26 @@ if (LAPACK_FOUND)
 
   endif(LAPACKE_LIBRARIES)
 
-else(LAPACK_FOUND)
+else(LAPACKEXT_FOUND)
 
   if (NOT LAPACKE_FIND_QUIETLY)
     message(STATUS "LAPACKE requires LAPACK but LAPACK has not been found."
       "Please look for LAPACK first.")
   endif()
 
-endif(LAPACK_FOUND)
+endif(LAPACKEXT_FOUND)
+
+if(LAPACKE_MT)
+  if (LAPACKE_LIBRARIES MATCHES "intel" AND LAPACK_MT_LIBRARIES)
+    set(LAPACKE_LIBRARIES "${LAPACK_MT_LIBRARIES}")
+  else()
+    set(LAPACKE_LIBRARIES "LAPACKE_LIBRARIES-NOTFOUND")
+  endif()
+else()
+  if (LAPACKE_LIBRARIES MATCHES "intel" AND LAPACK_SEQ_LIBRARIES)
+    set(LAPACKE_LIBRARIES "${LAPACK_SEQ_LIBRARIES}")
+  endif()
+endif()
 
 # check that LAPACKE has been found
 # ---------------------------------

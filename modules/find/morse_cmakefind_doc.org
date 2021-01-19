@@ -160,7 +160,7 @@ CMake by providing the cmake config file installed in
   at the head of the module file. The usage, the optional parameters
   that can be used and the output variables are explained here.
 * Choose a specific BLAS/LAPACK
-   See ~cmake --help-module FindBLAS~ or ~cmake --help-module FindLAPACK~
+  See ~cmake --help-module FindBLAS~ or ~cmake --help-module FindLAPACK~
   to get all available BLA_VENDOR.
 * Hint for Intel MKL
   To look for the Intel MKL BLAS, LAPACK (or CBLAS, LAPACKE), one can
@@ -175,6 +175,16 @@ CMake by providing the cmake config file installed in
   # play with MKL_NUM_THREADS env. var. to set number of threads used internally
   #+END_EXAMPLE
   or set BLA_VENDOR directly in your CMake files.
+* Additional BLAS/LAPACK sequential/multi-threaded targets
+  The Intel MKL distribution gives the ability to choose between
+  sequential and multi-threaded libraries. We provide a FindBLASEXT
+  and FindLAPACKEXT which define additionnal targets BLAS::BLAS_SEQ
+  and BLAS::BLAS_MT (idem for LAPACK) to be able to use the two sets
+  of libraries in the same project.
+* To choose between BLAS/LAPACK sequential or multi-threaded for CBLAS, LAPACKE and TMG
+  CBLAS, LAPACKE, TMG which depend on BLAS and LAPACK will provide the
+  sequential libraries by default. To get multi-threaded ones, use the
+  CMake variable CBLAS_MT=1, (idem LAPACKE_MT, TMG_MT).
 * To prefer static libraries if both static and dynamic are available
   Set "PACKAGE"_STATIC=1 at cmake configure. For BLAS/LAPACK/SCALAPACK
   use *BLA_STATIC=1*.

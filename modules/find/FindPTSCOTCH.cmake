@@ -412,7 +412,8 @@ endif(PTSCOTCH_LIBRARIES)
 
 # Check the size of SCOTCH_Num
 # ---------------------------------
-set(CMAKE_REQUIRED_INCLUDES ${PTSCOTCH_INCLUDE_DIRS_DEP})
+set(CMAKE_REQUIRED_INCLUDES ${PTSCOTCH_INCLUDE_DIRS})
+
 include(CheckCSourceRuns)
 #stdio.h and stdint.h should be included by scotch.h directly
 #mpi.h not included into ptscotch.h => MPI_comm undefined
@@ -421,7 +422,7 @@ set(PTSCOTCH_C_TEST_SCOTCH_Num_4 "
 #include <stdint.h>
 #include <mpi.h>
 #include <ptscotch.h>
-int main(int argc, char **argv) {
+int main() {
   if (sizeof(SCOTCH_Num) == 4)
     return 0;
   else
@@ -434,7 +435,7 @@ set(PTSCOTCH_C_TEST_SCOTCH_Num_8 "
 #include <stdint.h>
 #include <mpi.h>
 #include <ptscotch.h>
-int main(int argc, char **argv) {
+int main() {
   if (sizeof(SCOTCH_Num) == 8)
     return 0;
   else

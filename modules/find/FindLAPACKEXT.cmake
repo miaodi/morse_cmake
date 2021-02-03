@@ -49,7 +49,7 @@ endif()
 
 if (LAPACK_FOUND)
 
-  if(LAPACK_LIBRARIES MATCHES "intel")
+  if(LAPACK_LIBRARIES MATCHES "libmkl")
 
     if(NOT LAPACKEXT_FIND_QUIETLY)
       message(STATUS "FindLAPACKEXT: LAPACK_LIBRARIES matches mkl")
@@ -110,7 +110,7 @@ if (LAPACK_FOUND)
       endif()
     endif()
 
-  else(LAPACK_LIBRARIES MATCHES "intel")
+  else(LAPACK_LIBRARIES MATCHES "libmkl")
 
     set(LAPACK_SEQ_FOUND ${LAPACK_FOUND})
     if(NOT TARGET LAPACK::LAPACK_SEQ)
@@ -133,11 +133,11 @@ if (LAPACK_FOUND)
       )
     endif()
 
-  endif(LAPACK_LIBRARIES MATCHES "intel")
+  endif(LAPACK_LIBRARIES MATCHES "libmkl")
 
 else(LAPACK_FOUND)
   if(NOT LAPACKEXT_FIND_QUIETLY)
-    message(STATUS "FindLAPACKEXT: LAPACK not found or LAPACK_LIBRARIES does not match intel")
+    message(STATUS "FindLAPACKEXT: LAPACK not found or LAPACK_LIBRARIES does not match mkl")
   endif()
 endif(LAPACK_FOUND)
 

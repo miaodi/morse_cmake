@@ -49,10 +49,10 @@ endif()
 
 if (BLAS_FOUND)
 
-  if(BLAS_LIBRARIES MATCHES "intel")
+  if(BLAS_LIBRARIES MATCHES "libmkl")
 
     if(NOT BLASEXT_FIND_QUIETLY)
-      message(STATUS "FindBLASEXT: BLAS_LIBRARIES matches intel")
+      message(STATUS "FindBLASEXT: BLAS_LIBRARIES matches mkl")
     endif()
     set(BLA_VENDOR "Intel10_64lp_seq")
     unset(BLAS_FOUND)
@@ -110,7 +110,7 @@ if (BLAS_FOUND)
       endif()
     endif()
 
-  else(BLAS_LIBRARIES MATCHES "intel")
+  else(BLAS_LIBRARIES MATCHES "libmkl")
 
     set(BLAS_SEQ_FOUND ${BLAS_FOUND})
     if(NOT TARGET BLAS::BLAS_SEQ)
@@ -133,11 +133,11 @@ if (BLAS_FOUND)
       )
     endif()
 
-  endif(BLAS_LIBRARIES MATCHES "intel")
+  endif(BLAS_LIBRARIES MATCHES "libmkl")
 
 else(BLAS_FOUND)
   if(NOT BLASEXT_FIND_QUIETLY)
-    message(STATUS "FindBLASEXT: BLAS not found or BLAS_LIBRARIES does not match intel")
+    message(STATUS "FindBLASEXT: BLAS not found or BLAS_LIBRARIES does not match mkl")
   endif()
 endif(BLAS_FOUND)
 

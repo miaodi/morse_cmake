@@ -229,7 +229,8 @@ if (LAPACKEXT_FOUND)
             set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
             find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
               NAMES ${LAPACKE_hdrs_to_find}
-              HINTS ${_inc_env})
+              HINTS ${_inc_env}
+              PATH_SUFFIXES "lapacke" "mkl")
           endif()
         endif()
         mark_as_advanced(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)

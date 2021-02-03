@@ -219,14 +219,14 @@ if (BLASEXT_FOUND)
             find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
               NAMES ${CBLAS_hdrs_to_find}
               HINTS ${CBLAS_DIR}
-              PATH_SUFFIXES "include" "include/cblas"
+              PATH_SUFFIXES "include" "include/cblas" "include/mkl"
               NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
           else()
             set(CBLAS_${CBLAS_hdrs_to_find}_DIRS "CBLAS_${CBLAS_hdrs_to_find}_DIRS-NOTFOUND")
             find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
               NAMES ${CBLAS_hdrs_to_find}
               HINTS ${_inc_env}
-              PATH_SUFFIXES "cblas")
+              PATH_SUFFIXES "cblas" "mkl")
           endif()
         endif()
         mark_as_advanced(CBLAS_${CBLAS_hdrs_to_find}_DIRS)

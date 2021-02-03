@@ -156,7 +156,7 @@ if (BLASEXT_FOUND)
         set(CBLAS_LDFLAGS_OTHER "${BLAS_LDFLAGS_OTHER}")
       endif()
 
-      if (CBLAS_LIBRARIES MATCHES "intel" AND DEFINED ENV{MKLROOT})
+      if (CBLAS_LIBRARIES MATCHES "libmkl" AND DEFINED ENV{MKLROOT})
         set(CBLAS_PREFIX "$ENV{MKLROOT}" CACHE PATH "Installation directory of CBLAS library" FORCE)
         set(CBLAS_INCLUDE_DIRS "${CBLAS_PREFIX}/include")
         set(CBLAS_LIBRARY_DIRS "${CBLAS_PREFIX}/lib/intel64")
@@ -200,7 +200,7 @@ if (BLASEXT_FOUND)
         # Try to find the cblas header in the given paths
         # -------------------------------------------------
 
-        if (CBLAS_LIBRARIES MATCHES "intel")
+        if (CBLAS_LIBRARIES MATCHES "libmkl")
           set(CBLAS_hdrs_to_find "mkl.h")
         else()
           set(CBLAS_hdrs_to_find "cblas.h")
@@ -356,7 +356,7 @@ if (BLASEXT_FOUND)
       # Try to find the cblas header in the given paths
       # -------------------------------------------------
 
-      if (CBLAS_LIBRARIES MATCHES "intel")
+      if (CBLAS_LIBRARIES MATCHES "libmkl")
         set(CBLAS_hdrs_to_find "mkl.h")
       else()
         set(CBLAS_hdrs_to_find "cblas.h")
@@ -614,13 +614,13 @@ else(BLAS_FOUND)
 endif(BLASEXT_FOUND)
 
 if(CBLAS_MT)
-  if (CBLAS_LIBRARIES MATCHES "intel" AND BLAS_MT_LIBRARIES)
+  if (CBLAS_LIBRARIES MATCHES "libmkl" AND BLAS_MT_LIBRARIES)
     set(CBLAS_LIBRARIES "${BLAS_MT_LIBRARIES}")
   else()
     set(CBLAS_LIBRARIES "CBLAS_LIBRARIES-NOTFOUND")
   endif()
 else()
-  if (CBLAS_LIBRARIES MATCHES "intel" AND BLAS_SEQ_LIBRARIES)
+  if (CBLAS_LIBRARIES MATCHES "libmkl" AND BLAS_SEQ_LIBRARIES)
     set(CBLAS_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
   endif()
 endif()

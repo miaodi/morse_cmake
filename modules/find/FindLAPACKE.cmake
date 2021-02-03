@@ -161,7 +161,7 @@ if (LAPACKEXT_FOUND)
         set(LAPACKE_LDFLAGS_OTHER "${LAPACK_LDFLAGS_OTHER}")
       endif()
 
-      if (LAPACKE_LIBRARIES MATCHES "intel" AND DEFINED ENV{MKLROOT})
+      if (LAPACKE_LIBRARIES MATCHES "libmkl" AND DEFINED ENV{MKLROOT})
         set(LAPACKE_PREFIX "$ENV{MKLROOT}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
         set(LAPACKE_INCLUDE_DIRS "${LAPACKE_PREFIX}/include")
         set(LAPACKE_LIBRARY_DIRS "${LAPACKE_PREFIX}/lib/intel64")
@@ -204,7 +204,7 @@ if (LAPACKEXT_FOUND)
         # Try to find the lapacke header in the given paths
         # -------------------------------------------------
 
-        if (LAPACKE_LIBRARIES MATCHES "intel")
+        if (LAPACKE_LIBRARIES MATCHES "libmkl")
           set(LAPACKE_hdrs_to_find "mkl.h")
         else()
           set(LAPACKE_hdrs_to_find "lapacke.h")
@@ -358,7 +358,7 @@ if (LAPACKEXT_FOUND)
       # Try to find the lapacke header in the given paths
       # -------------------------------------------------
 
-      if (LAPACKE_LIBRARIES MATCHES "intel")
+      if (LAPACKE_LIBRARIES MATCHES "libmkl")
         set(LAPACKE_hdrs_to_find "mkl.h")
       else()
         set(LAPACKE_hdrs_to_find "lapacke.h")
@@ -653,13 +653,13 @@ else(LAPACKEXT_FOUND)
 endif(LAPACKEXT_FOUND)
 
 if(LAPACKE_MT)
-  if (LAPACKE_LIBRARIES MATCHES "intel" AND LAPACK_MT_LIBRARIES)
+  if (LAPACKE_LIBRARIES MATCHES "libmkl" AND LAPACK_MT_LIBRARIES)
     set(LAPACKE_LIBRARIES "${LAPACK_MT_LIBRARIES}")
   else()
     set(LAPACKE_LIBRARIES "LAPACKE_LIBRARIES-NOTFOUND")
   endif()
 else()
-  if (LAPACKE_LIBRARIES MATCHES "intel" AND LAPACK_SEQ_LIBRARIES)
+  if (LAPACKE_LIBRARIES MATCHES "libmkl" AND LAPACK_SEQ_LIBRARIES)
     set(LAPACKE_LIBRARIES "${LAPACK_SEQ_LIBRARIES}")
   endif()
 endif()

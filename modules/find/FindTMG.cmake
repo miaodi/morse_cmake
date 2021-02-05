@@ -56,13 +56,9 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT TMG_FOUND)
-  set(TMG_DIR "" CACHE PATH "Installation directory of TMG library")
-  if (NOT TMG_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely TMG_DIR, has been set to specify the install directory of TMG")
-  endif()
-endif()
-
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(TMG)
 
 # used to test a TMG function after
 get_property(_LANGUAGES_ GLOBAL PROPERTY ENABLED_LANGUAGES)
@@ -132,86 +128,24 @@ if (LAPACK_FOUND)
     endif()
     # test fails: try to find TMG lib exterior to LAPACK
 
+    # No include, let's set the the include_dir
+    set(TMG_INCLUDE_DIRS "")
+
     # Looking for lib tmg
     # -------------------
-
-    # Add system library paths to search lib
-    # --------------------------------------
-    unset(_lib_env)
-    set(ENV_TMG_DIR "$ENV{TMG_DIR}")
-    set(ENV_TMG_LIBDIR "$ENV{TMG_LIBDIR}")
-    if(ENV_TMG_LIBDIR)
-      list(APPEND _lib_env "${ENV_TMG_LIBDIR}")
-    elseif(ENV_TMG_DIR)
-      list(APPEND _lib_env "${ENV_TMG_DIR}")
-      list(APPEND _lib_env "${ENV_TMG_DIR}/lib")
-    else()
-      list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-      if(WIN32)
-        string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-      elseif(APPLE)
-        string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-      else()
-        string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-      endif()
-      list(APPEND _lib_env "${_lib_env2}")
-      list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-    endif()
-    list(REMOVE_DUPLICATES _lib_env)
-
-    # Try to find the tmg lib in the given paths
-    # ----------------------------------------------
-
-    if (TMG_STATIC)
-      set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-      set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    endif()
-
-    # call cmake macro to find the lib path
-    if(TMG_LIBDIR)
-      set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
-      find_library(TMG_tmg_LIBRARY
-        NAMES tmglib tmg
-        HINTS ${TMG_LIBDIR}
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    else()
-      if(TMG_DIR)
-        set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
-        find_library(TMG_tmg_LIBRARY
-          NAMES tmglib tmg
-          HINTS ${TMG_DIR}
-          PATH_SUFFIXES lib lib32 lib64
-          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-      else()
-        set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
-        find_library(TMG_tmg_LIBRARY
-          NAMES tmglib tmg
-          HINTS ${_lib_env} )
-      endif()
-    endif()
-    mark_as_advanced(TMG_tmg_LIBRARY)
-
-    if (TMG_STATIC)
-      set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-    endif()
+    morse_find_library(TMG
+      LIBRARIES tmglib tmg
+      SUFFIXES  lib lib32 lib64
+      OPTIONAL )
 
     # If found, add path to cmake variable
     # ------------------------------------
-    if (TMG_tmg_LIBRARY)
-      get_filename_component(tmg_lib_path ${TMG_tmg_LIBRARY} PATH)
-      # set cmake variables (respects naming convention)
-      set(TMG_LIBRARIES    "${TMG_tmg_LIBRARY}")
-      set(TMG_LIBRARY_DIRS "${tmg_lib_path}")
-    else ()
+    if ((NOT TMG_tmglib_LIBRARY) AND (NOT TMG_tmg_LIBRARY))
       set(TMG_LIBRARIES    "TMG_LIBRARIES-NOTFOUND")
       set(TMG_LIBRARY_DIRS "TMG_LIBRARY_DIRS-NOTFOUND")
       if(NOT TMG_FIND_QUIETLY)
         message(STATUS "Looking for tmg -- lib tmg not found")
       endif()
-    endif ()
-
-    if (TMG_LIBRARY_DIRS)
-      list(REMOVE_DUPLICATES TMG_LIBRARY_DIRS)
     endif ()
 
   endif(TMG_WORKS)

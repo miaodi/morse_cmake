@@ -61,12 +61,9 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT PAMPA_FOUND)
-  set(PAMPA_DIR "" CACHE PATH "Installation directory of PAMPA library")
-  if (NOT PAMPA_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely PAMPA_DIR, has been set to specify the install directory of PAMPA")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(PAMPA)
 
 # PAMPA depends on MPI, try to find it
 if (PAMPA_FIND_REQUIRED)
@@ -85,178 +82,18 @@ endif()
 # Looking for include
 # -------------------
 
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
-set(ENV_PAMPA_DIR "$ENV{PAMPA_DIR}")
-set(ENV_PAMPA_INCDIR "$ENV{PAMPA_INCDIR}")
-if(ENV_PAMPA_INCDIR)
-  list(APPEND _inc_env "${ENV_PAMPA_INCDIR}")
-elseif(ENV_PAMPA_DIR)
-  list(APPEND _inc_env "${ENV_PAMPA_DIR}")
-  list(APPEND _inc_env "${ENV_PAMPA_DIR}/include")
-  list(APPEND _inc_env "${ENV_PAMPA_DIR}/include/ptscotch")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-
-# Try to find the ptscotch header in the given paths
-# -------------------------------------------------
-
-set(PAMPA_hdrs_to_find "pampa.h")
-
-# call cmake macro to find the header path
-if(PAMPA_INCDIR)
-  foreach(pampa_hdr ${PAMPA_hdrs_to_find})
-    set(PAMPA_${pampa_hdr}_DIRS "PAMPA_${pampa_hdr}_DIRS-NOTFOUND")
-    find_path(PAMPA_${pampa_hdr}_DIRS
-      NAMES ${pampa_hdr}
-      HINTS ${PAMPA_INCDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    mark_as_advanced(PAMPA_${pampa_hdr}_DIRS)
-  endforeach()
-else()
-  if(PAMPA_DIR)
-    foreach(pampa_hdr ${PAMPA_hdrs_to_find})
-      set(PAMPA_${pampa_hdr}_DIRS "PAMPA_${pampa_hdr}_DIRS-NOTFOUND")
-      find_path(PAMPA_${pampa_hdr}_DIRS
-        NAMES ${pampa_hdr}
-        HINTS ${PAMPA_DIR}
-        PATH_SUFFIXES "include" "include/pampa"
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-      mark_as_advanced(PAMPA_${pampa_hdr}_DIRS)
-    endforeach()
-  else()
-    foreach(pampa_hdr ${PAMPA_hdrs_to_find})
-      set(PAMPA_${pampa_hdr}_DIRS "PAMPA_${pampa_hdr}_DIRS-NOTFOUND")
-      find_path(PAMPA_${pampa_hdr}_DIRS
-        NAMES ${pampa_hdr}
-        HINTS ${_inc_env}
-        PATH_SUFFIXES "pampa")
-      mark_as_advanced(PAMPA_${pampa_hdr}_DIRS)
-    endforeach()
-  endif()
-endif()
-
-# If found, add path to cmake variable
-# ------------------------------------
-foreach(pampa_hdr ${PAMPA_hdrs_to_find})
-  if (PAMPA_${pampa_hdr}_DIRS)
-    list(APPEND PAMPA_INCLUDE_DIRS "${PAMPA_${pampa_hdr}_DIRS}")
-  else ()
-    set(PAMPA_INCLUDE_DIRS "PAMPA_INCLUDE_DIRS-NOTFOUND")
-    if (NOT PAMPA_FIND_QUIETLY)
-      message(STATUS "Looking for pampa -- ${pampa_hdr} not found")
-    endif()
-  endif()
-endforeach()
+# Try to find the pampa headers in the given paths
+# ------------------------------------------------
+morse_find_path(PAMPA
+  HEADERS "pampa.h"
+  SUFFIXES include include/pampa)
 
 # Looking for lib
 # ---------------
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-set(ENV_PAMPA_LIBDIR "$ENV{PAMPA_LIBDIR}")
-if(ENV_PAMPA_LIBDIR)
-  list(APPEND _lib_env "${ENV_PAMPA_LIBDIR}")
-elseif(ENV_PAMPA_DIR)
-  list(APPEND _lib_env "${ENV_PAMPA_DIR}")
-  list(APPEND _lib_env "${ENV_PAMPA_DIR}/lib")
-else()
-  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-  elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-  else()
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-  endif()
-  list(APPEND _lib_env "${_lib_env2}")
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
-
-# Try to find the ptscotch lib in the given paths
-# ----------------------------------------------
-
-if (PAMPA_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
-
 set(PAMPA_libs_to_find "pampa;pampaerr")
-
-# call cmake macro to find the lib path
-if(PAMPA_LIBDIR)
-  foreach(pampa_lib ${PAMPA_libs_to_find})
-    set(PAMPA_${pampa_lib}_LIBRARY "PAMPA_${pampa_lib}_LIBRARY-NOTFOUND")
-    find_library(PAMPA_${pampa_lib}_LIBRARY
-      NAMES ${pampa_lib}
-      HINTS ${PAMPA_LIBDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  endforeach()
-else()
-  if(PAMPA_DIR)
-    foreach(pampa_lib ${PAMPA_libs_to_find})
-      set(PAMPA_${pampa_lib}_LIBRARY "PAMPA_${pampa_lib}_LIBRARY-NOTFOUND")
-      find_library(PAMPA_${pampa_lib}_LIBRARY
-        NAMES ${pampa_lib}
-        HINTS ${PAMPA_DIR}
-        PATH_SUFFIXES lib lib32 lib64
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    endforeach()
-  else()
-    foreach(pampa_lib ${PAMPA_libs_to_find})
-      set(PAMPA_${pampa_lib}_LIBRARY "PAMPA_${pampa_lib}_LIBRARY-NOTFOUND")
-      find_library(PAMPA_${pampa_lib}_LIBRARY
-        NAMES ${pampa_lib}
-        HINTS ${_lib_env})
-    endforeach()
-  endif()
-endif()
-
-if (PAMPA_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-endif()
-
-set(PAMPA_LIBRARIES "")
-set(PAMPA_LIBRARY_DIRS "")
-# If found, add path to cmake variable
-# ------------------------------------
-foreach(pampa_lib ${PAMPA_libs_to_find})
-
-  if (PAMPA_${pampa_lib}_LIBRARY)
-    get_filename_component(${pampa_lib}_lib_path "${PAMPA_${pampa_lib}_LIBRARY}" PATH)
-    # set cmake variables
-    list(APPEND PAMPA_LIBRARIES "${PAMPA_${pampa_lib}_LIBRARY}")
-    list(APPEND PAMPA_LIBRARY_DIRS "${${pampa_lib}_lib_path}")
-  else ()
-    list(APPEND PAMPA_LIBRARIES "${PAMPA_${pampa_lib}_LIBRARY}")
-    if (NOT PAMPA_FIND_QUIETLY)
-      message(STATUS "Looking for ptscotch -- lib ${pampa_lib} not found")
-    endif()
-  endif ()
-
-  mark_as_advanced(PAMPA_${pampa_lib}_LIBRARY)
-
-endforeach()
-list(REMOVE_DUPLICATES PAMPA_LIBRARY_DIRS)
+morse_find_library(PAMPA
+  LIBRARIES ${PAMPA_libs_to_find}
+  SUFFIXES lib lib32 lib64)
 
 # check a function to validate the find
 if(PAMPA_LIBRARIES)

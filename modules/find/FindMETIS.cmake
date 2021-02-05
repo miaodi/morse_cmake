@@ -55,160 +55,21 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT METIS_FOUND)
-  set(METIS_DIR "" CACHE PATH "Installation directory of METIS library")
-  if (NOT METIS_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely METIS_DIR, has been set to specify the install directory of METIS")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(METIS)
 
 # Looking for include
 # -------------------
-
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
-set(ENV_METIS_DIR "$ENV{METIS_DIR}")
-set(ENV_METIS_INCDIR "$ENV{METIS_INCDIR}")
-if(ENV_METIS_INCDIR)
-  list(APPEND _inc_env "${ENV_METIS_INCDIR}")
-elseif(ENV_METIS_DIR)
-  list(APPEND _inc_env "${ENV_METIS_DIR}")
-  list(APPEND _inc_env "${ENV_METIS_DIR}/include")
-  list(APPEND _inc_env "${ENV_METIS_DIR}/include/metis")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-
-# Try to find the metis header in the given paths
-# -------------------------------------------------
-# call cmake macro to find the header path
-if(METIS_INCDIR)
-  set(METIS_metis.h_DIRS "METIS_metis.h_DIRS-NOTFOUND")
-  find_path(METIS_metis.h_DIRS
-    NAMES metis.h
-    HINTS ${METIS_INCDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(METIS_DIR)
-    set(METIS_metis.h_DIRS "METIS_metis.h_DIRS-NOTFOUND")
-    find_path(METIS_metis.h_DIRS
-      NAMES metis.h
-      HINTS ${METIS_DIR}
-      PATH_SUFFIXES "include" "include/metis"
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(METIS_metis.h_DIRS "METIS_metis.h_DIRS-NOTFOUND")
-    find_path(METIS_metis.h_DIRS
-      NAMES metis.h
-      HINTS ${_inc_env})
-  endif()
-endif()
-mark_as_advanced(METIS_metis.h_DIRS)
-
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (METIS_metis.h_DIRS)
-  set(METIS_INCLUDE_DIRS "${METIS_metis.h_DIRS}")
-else ()
-  set(METIS_INCLUDE_DIRS "METIS_INCLUDE_DIRS-NOTFOUND")
-  if(NOT METIS_FIND_QUIETLY)
-    message(STATUS "Looking for metis -- metis.h not found")
-  endif()
-endif()
-
+morse_find_path(METIS
+  HEADERS  metis.h
+  SUFFIXES include include/metis)
 
 # Looking for lib
 # ---------------
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-set(ENV_METIS_LIBDIR "$ENV{METIS_LIBDIR}")
-if(ENV_METIS_LIBDIR)
-  list(APPEND _lib_env "${ENV_METIS_LIBDIR}")
-elseif(ENV_METIS_DIR)
-  list(APPEND _lib_env "${ENV_METIS_DIR}")
-  list(APPEND _lib_env "${ENV_METIS_DIR}/lib")
-else()
-  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-  elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-  else()
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-  endif()
-  list(APPEND _lib_env "${_lib_env2}")
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
-# Try to find the metis lib in the given paths
-# ----------------------------------------------
-
-if (METIS_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
-
-# call cmake macro to find the lib path
-if(METIS_LIBDIR)
-  set(METIS_metis_LIBRARY "METIS_metis_LIBRARY-NOTFOUND")
-  find_library(METIS_metis_LIBRARY
-    NAMES metis
-    HINTS ${METIS_LIBDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(METIS_DIR)
-    set(METIS_metis_LIBRARY "METIS_metis_LIBRARY-NOTFOUND")
-    find_library(METIS_metis_LIBRARY
-      NAMES metis
-      HINTS ${METIS_DIR}
-      PATH_SUFFIXES lib lib32 lib64
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(METIS_metis_LIBRARY "METIS_metis_LIBRARY-NOTFOUND")
-    find_library(METIS_metis_LIBRARY
-      NAMES metis
-      HINTS ${_lib_env})
-  endif()
-endif()
-mark_as_advanced(METIS_metis_LIBRARY)
-
-if (METIS_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-endif()
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (METIS_metis_LIBRARY)
-  get_filename_component(metis_lib_path "${METIS_metis_LIBRARY}" PATH)
-  # set cmake variables
-  set(METIS_LIBRARIES    "${METIS_metis_LIBRARY}")
-  set(METIS_LIBRARY_DIRS "${metis_lib_path}")
-else ()
-  set(METIS_LIBRARIES    "METIS_LIBRARIES-NOTFOUND")
-  set(METIS_LIBRARY_DIRS "METIS_LIBRARY_DIRS-NOTFOUND")
-  if(NOT METIS_FIND_QUIETLY)
-    message(STATUS "Looking for metis -- lib metis not found")
-  endif()
-endif ()
+morse_find_library(METIS
+  LIBRARIES metis
+  SUFFIXES lib lib32 lib64)
 
 # check a function to validate the find
 if(METIS_LIBRARIES)

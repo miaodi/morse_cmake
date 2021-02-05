@@ -64,12 +64,9 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT QUARK_FOUND)
-  set(QUARK_DIR "" CACHE PATH "Installation directory of QUARK library")
-  if (NOT QUARK_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely QUARK_DIR, has been set to specify the install directory of QUARK")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(QUARK)
 
 # QUARK may depend on HWLOC
 # try to find it specified as COMPONENTS during the call
@@ -104,151 +101,15 @@ endif()
 
 # Looking for include
 # -------------------
-
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
-set(ENV_QUARK_DIR "$ENV{QUARK_DIR}")
-set(ENV_QUARK_INCDIR "$ENV{QUARK_INCDIR}")
-if(ENV_QUARK_INCDIR)
-  list(APPEND _inc_env "${ENV_QUARK_INCDIR}")
-elseif(ENV_QUARK_DIR)
-  list(APPEND _inc_env "${ENV_QUARK_DIR}")
-  list(APPEND _inc_env "${ENV_QUARK_DIR}/include")
-  list(APPEND _inc_env "${ENV_QUARK_DIR}/include/quark")
-  list(APPEND _inc_env "${ENV_QUARK_DIR}/include/plasma")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-
-# Try to find the quark header in the given paths
-# -------------------------------------------------
-# call cmake macro to find the header path
-if(QUARK_INCDIR)
-  set(QUARK_quark.h_DIRS "QUARK_quark.h_DIRS-NOTFOUND")
-  find_path(QUARK_quark.h_DIRS
-    NAMES quark.h
-    HINTS ${QUARK_INCDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(QUARK_DIR)
-    set(QUARK_quark.h_DIRS "QUARK_quark.h_DIRS-NOTFOUND")
-    find_path(QUARK_quark.h_DIRS
-      NAMES quark.h
-      HINTS ${QUARK_DIR}
-      PATH_SUFFIXES "include" "include/quark" "include/plasma"
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(QUARK_quark.h_DIRS "QUARK_quark.h_DIRS-NOTFOUND")
-    find_path(QUARK_quark.h_DIRS
-      NAMES quark.h
-      HINTS ${_inc_env})
-  endif()
-endif()
-mark_as_advanced(QUARK_quark.h_DIRS)
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (QUARK_quark.h_DIRS)
-  set(QUARK_INCLUDE_DIRS "${QUARK_quark.h_DIRS}")
-else ()
-  set(QUARK_INCLUDE_DIRS "QUARK_INCLUDE_DIRS-NOTFOUND")
-  if(NOT QUARK_FIND_QUIETLY)
-    message(STATUS "Looking for quark -- quark.h not found")
-  endif()
-endif()
-
+morse_find_path(QUARK
+  HEADERS  quark.h
+  SUFFIXES include include/quark include/plasma)
 
 # Looking for lib
 # ---------------
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-set(ENV_QUARK_LIBDIR "$ENV{QUARK_LIBDIR}")
-if(ENV_QUARK_LIBDIR)
-  list(APPEND _lib_env "${ENV_QUARK_LIBDIR}")
-elseif(ENV_QUARK_DIR)
-  list(APPEND _lib_env "${ENV_QUARK_DIR}")
-  list(APPEND _lib_env "${ENV_QUARK_DIR}/lib")
-else()
-  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-  elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-  else()
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-  endif()
-  list(APPEND _lib_env "${_lib_env2}")
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
-# Try to find the quark lib in the given paths
-# ----------------------------------------------
-
-if (QUARK_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
-
-# call cmake macro to find the lib path
-if(QUARK_LIBDIR)
-  set(QUARK_quark_LIBRARY "QUARK_quark_LIBRARY-NOTFOUND")
-  find_library(QUARK_quark_LIBRARY
-    NAMES quark
-    HINTS ${QUARK_LIBDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(QUARK_DIR)
-    set(QUARK_quark_LIBRARY "QUARK_quark_LIBRARY-NOTFOUND")
-    find_library(QUARK_quark_LIBRARY
-      NAMES quark
-      HINTS ${QUARK_DIR}
-      PATH_SUFFIXES lib lib32 lib64
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(QUARK_quark_LIBRARY "QUARK_quark_LIBRARY-NOTFOUND")
-    find_library(QUARK_quark_LIBRARY
-      NAMES quark
-      HINTS ${_lib_env})
-  endif()
-endif()
-mark_as_advanced(QUARK_quark_LIBRARY)
-
-if (QUARK_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-endif()
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (QUARK_quark_LIBRARY)
-  get_filename_component(quark_lib_path "${QUARK_quark_LIBRARY}" PATH)
-  # set cmake variables
-  set(QUARK_LIBRARIES    "${QUARK_quark_LIBRARY}")
-  set(QUARK_LIBRARY_DIRS "${quark_lib_path}")
-else ()
-  set(QUARK_LIBRARIES    "QUARK_LIBRARIES-NOTFOUND")
-  set(QUARK_LIBRARY_DIRS "QUARK_LIBRARY_DIRS-NOTFOUND")
-  if(NOT QUARK_FIND_QUIETLY)
-    message(STATUS "Looking for quark -- lib quark not found")
-  endif()
-endif ()
+morse_find_library(QUARK
+  LIBRARIES quark
+  SUFFIXES lib lib32 lib64)
 
 # check a function to validate the find
 if(QUARK_LIBRARIES)

@@ -58,12 +58,9 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT SUITESPARSE_FOUND)
-  set(SUITESPARSE_DIR "" CACHE PATH "Installation directory of SUITESPARSE library")
-  if (NOT SUITESPARSE_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely SUITESPARSE_DIR, has been set to specify the install directory of SUITESPARSE")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(SUITESPARSE)
 
 if (NOT SUITESPARSE_FIND_QUIETLY)
   message(STATUS "Looking for SUITESPARSE")
@@ -75,7 +72,6 @@ endif()
 
 # Required dependencies
 # ---------------------
-
 if (NOT SUITESPARSE_FIND_QUIETLY)
   message(STATUS "Looking for SUITESPARSE - Try to detect metis")
 endif()
@@ -99,209 +95,66 @@ endif()
 # Looking for SUITESPARSE
 # -----------------
 
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
-set(ENV_SUITESPARSE_DIR "$ENV{SUITESPARSE_DIR}")
-set(ENV_SUITESPARSE_INCDIR "$ENV{SUITESPARSE_INCDIR}")
-if(ENV_SUITESPARSE_INCDIR)
-  list(APPEND _inc_env "${ENV_SUITESPARSE_INCDIR}")
-elseif(ENV_SUITESPARSE_DIR)
-  list(APPEND _inc_env "${ENV_SUITESPARSE_DIR}")
-  list(APPEND _inc_env "${ENV_SUITESPARSE_DIR}/include")
-  list(APPEND _inc_env "${ENV_SUITESPARSE_DIR}/include/suitesparse")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-set(ENV_SUITESPARSE_LIBDIR "$ENV{SUITESPARSE_LIBDIR}")
-if(ENV_SUITESPARSE_LIBDIR)
-  list(APPEND _lib_env "${ENV_SUITESPARSE_LIBDIR}")
-elseif(ENV_SUITESPARSE_DIR)
-  list(APPEND _lib_env "${ENV_SUITESPARSE_DIR}")
-  list(APPEND _lib_env "${ENV_SUITESPARSE_DIR}/lib")
-else()
-  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-  elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-  else()
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-  endif()
-  list(APPEND _lib_env "${_lib_env2}")
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
 # Looking for include
 # -------------------
+set(SUITESPARSE_hdrs_to_find
+  amd.h
+  btf.h
+  ccolamd.h
+  colamd.h
+  cs.h
+  klu.h
+  ldl.h
+  #RBio.h
+  spqr.hpp
+  SuiteSparse_config.h
+  umfpack.h)
 
-# Try to find the suitesparse header in the given path
-# ----------------------------------------------
+morse_find_path(SUITESPARSE
+  HEADERS  ${SUITESPARSE_hdrs_to_find}
+  SUFFIXES include include/suitesparse
+  OPTIONAL )
 
-# create list of headers to find
-list(APPEND SUITESPARSE_hdrs_to_find
-  "amd.h"
-  "btf.h"
-  "ccolamd.h"
-  "colamd.h"
-  "cs.h"
-  "klu.h"
-  "ldl.h"
-  #"RBio.h"
-  "spqr.hpp"
-  "SuiteSparse_config.h"
-  "umfpack.h")
-
-# call cmake macro to find the header path
-if(SUITESPARSE_INCDIR)
-  foreach(suitesparse_hdr ${SUITESPARSE_hdrs_to_find})
-    set(SUITESPARSE_${suitesparse_hdr}_DIRS "SUITESPARSE_${suitesparse_hdr}_INCLUDE_DIRS-NOTFOUND")
-    find_path(SUITESPARSE_${suitesparse_hdr}_DIRS
-      NAMES ${suitesparse_hdr}
-      HINTS ${SUITESPARSE_INCDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    mark_as_advanced(SUITESPARSE_${suitesparse_hdr}_DIRS)
-  endforeach()
-else()
-  if(SUITESPARSE_DIR)
-    set(SUITESPARSE_${suitesparse_hdr}_DIRS "SUITESPARSE_${suitesparse_hdr}_INCLUDE_DIRS-NOTFOUND")
-    foreach(suitesparse_hdr ${SUITESPARSE_hdrs_to_find})
-      find_path(SUITESPARSE_${suitesparse_hdr}_DIRS
-        NAMES ${suitesparse_hdr}
-        HINTS ${SUITESPARSE_DIR}
-        PATH_SUFFIXES "include"
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-      mark_as_advanced(SUITESPARSE_${suitesparse_hdr}_DIRS)
-    endforeach()
-  else()
-    foreach(suitesparse_hdr ${SUITESPARSE_hdrs_to_find})
-      set(SUITESPARSE_${suitesparse_hdr}_DIRS "SUITESPARSE_${suitesparse_hdr}_INCLUDE_DIRS-NOTFOUND")
-      find_path(SUITESPARSE_${suitesparse_hdr}_DIRS
-        NAMES ${suitesparse_hdr}
-        HINTS ${_inc_env} ${_inc_env}/suitesparse)
-      mark_as_advanced(SUITESPARSE_${suitesparse_hdr}_DIRS)
-    endforeach()
+# Make sure we found at least SuiteSparse_config.h
+# ------------------------------------------------
+if (NOT SUITESPARSE_SuiteSparse_config.h_DIRS)
+  set(SUITESPARSE_INCLUDE_DIRS "SUITESPARSE_INCLUDE_DIRS-NOTFOUND")
+  if (NOT SUITESPARSE_FIND_QUIETLY)
+    message(STATUS "Looking for suitesparse -- SuiteSparse_config.h not found")
   endif()
 endif()
-
-# If found, add path to cmake variable
-# ------------------------------------
-# detect which precisions are available
-foreach(suitesparse_hdr ${SUITESPARSE_hdrs_to_find})
-  if (SUITESPARSE_${suitesparse_hdr}_DIRS)
-    list(APPEND SUITESPARSE_INCLUDE_DIRS "${SUITESPARSE_${suitesparse_hdr}_DIRS}")
-  else ()
-    # SuiteSparse_config.h is the minimum to find, consider others as optional?
-    if (NOT SUITESPARSE_${SuiteSparse_config.h}_DIRS )
-      set(SUITESPARSE_INCLUDE_DIRS "SUITESPARSE_INCLUDE_DIRS-NOTFOUND")
-    endif()
-    if (NOT SUITESPARSE_FIND_QUIETLY)
-      message(STATUS "Looking for suitesparse -- ${suitesparse_hdr} not found")
-    endif()
-  endif()
-endforeach()
-
 
 # Looking for lib
 # ---------------
-
-if (SUITESPARSE_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
-
-# create list of libs to find
 set(SUITESPARSE_libs_to_find
-  "cholmod"
-  "cxsparse"
-  "klu"
-  "ldl"
-  "spqr"
-  "umfpack"
-  "amd"
-  "btf"
-  "camd"
-  "ccolamd"
-  "colamd"
-  #"rbio"
-  "suitesparseconfig"
+  cholmod
+  cxsparse
+  klu
+  ldl
+  spqr
+  umfpack
+  amd
+  btf
+  camd
+  ccolamd
+  colamd
+  #rbio
+  suitesparseconfig
   )
 
-# call cmake macro to find the lib path
-if(SUITESPARSE_LIBDIR)
-  foreach(suitesparse_lib ${SUITESPARSE_libs_to_find})
-    set(SUITESPARSE_${suitesparse_lib}_LIBRARY "SUITESPARSE_${suitesparse_lib}_LIBRARY-NOTFOUND")
-    find_library(SUITESPARSE_${suitesparse_lib}_LIBRARY
-      NAMES ${suitesparse_lib}
-      HINTS ${SUITESPARSE_LIBDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    mark_as_advanced(SUITESPARSE_${suitesparse_lib}_LIBRARY)
-  endforeach()
-else()
-  if(SUITESPARSE_DIR)
-    foreach(suitesparse_lib ${SUITESPARSE_libs_to_find})
-      set(SUITESPARSE_${suitesparse_lib}_LIBRARY "SUITESPARSE_${suitesparse_lib}_LIBRARY-NOTFOUND")
-      find_library(SUITESPARSE_${suitesparse_lib}_LIBRARY
-        NAMES ${suitesparse_lib}
-        HINTS ${SUITESPARSE_DIR}
-        PATH_SUFFIXES lib lib32 lib64
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-      mark_as_advanced(SUITESPARSE_${suitesparse_lib}_LIBRARY)
-    endforeach()
-  else()
-    foreach(suitesparse_lib ${SUITESPARSE_libs_to_find})
-      set(SUITESPARSE_${suitesparse_lib}_LIBRARY "SUITESPARSE_${suitesparse_lib}_LIBRARY-NOTFOUND")
-      find_library(SUITESPARSE_${suitesparse_lib}_LIBRARY
-        NAMES ${suitesparse_lib}
-        HINTS ${_lib_env})
-      mark_as_advanced(SUITESPARSE_${suitesparse_lib}_LIBRARY)
-    endforeach()
+morse_find_library(SUITESPARSE
+  LIBRARIES ${SUITESPARSE_libs_to_find}
+  SUFFIXES lib lib32 lib64
+  OPTIONAL)
+
+# Make sure we found at least suitesparseconfig
+# ---------------------------------------------
+if (NOT SUITESPARSE_suitesparseconfig_LIBRARY)
+  set(SUITESPARSE_LIBRARIES "SUITESPARSE_LIBRARIES-NOTFOUND")
+  if(NOT SUITESPARSE_FIND_QUIETLY)
+    message(STATUS "Looking for suitesparse -- libsuitesparseconfig.a/so not found")
   endif()
 endif()
-
-if (SUITESPARSE_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-endif()
-
-# If found, add path to cmake variable
-# ------------------------------------
-set(SUITESPARSE_LIBRARIES "")
-set(SUITESPARSE_LIBRARY_DIRS "")
-foreach(suitesparse_lib ${SUITESPARSE_libs_to_find})
-  if (SUITESPARSE_${suitesparse_lib}_LIBRARY)
-    list(APPEND SUITESPARSE_LIBRARIES "${SUITESPARSE_${suitesparse_lib}_LIBRARY}")
-    get_filename_component(${suitesparse_lib}_lib_path ${SUITESPARSE_${suitesparse_lib}_LIBRARY} PATH)
-    list(APPEND SUITESPARSE_LIBRARY_DIRS "${${suitesparse_lib}_lib_path}")
-  else ()
-    # libsuitesparseconfig is the minimum to find, consider others as optional?
-    if (NOT SUITESPARSE_suitesparseconfig_LIBRARY)
-      list(APPEND SUITESPARSE_LIBRARIES "${SUITESPARSE_LIBRARIES-NOTFOUND}")
-    endif()
-    if(NOT SUITESPARSE_FIND_QUIETLY)
-      message(STATUS "Looking for suitesparse -- lib${suitesparse_lib}.a/so not found")
-    endif()
-  endif()
-endforeach()
-list(REMOVE_DUPLICATES SUITESPARSE_LIBRARY_DIRS)
-list(REMOVE_DUPLICATES SUITESPARSE_INCLUDE_DIRS)
 
 # check a function to validate the find
 if(SUITESPARSE_LIBRARIES)

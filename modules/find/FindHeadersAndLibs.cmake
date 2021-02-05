@@ -36,28 +36,6 @@ function(FindHeader _libname _header_to_find)
   string(TOUPPER ${_libname} LIBNAME)
   string(TOLOWER ${_libname} libname)
 
-  # Looking for include
-  # -------------------
-
-  # Add system include paths to search include
-  # ------------------------------------------
-  unset(_inc_env)
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-  list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-  list(REMOVE_DUPLICATES _inc_env)
-
-
   # Try to find the _header_to_find in the given paths
   # --------------------------------------------------
   # call cmake macro to find the header path

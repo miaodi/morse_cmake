@@ -60,12 +60,9 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT PARMETIS_FOUND)
-  set(PARMETIS_DIR "" CACHE PATH "Installation directory of PARMETIS library")
-  if (NOT PARMETIS_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely PARMETIS_DIR, has been set to specify the install directory of PARMETIS")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(PARMETIS)
 
 # PARMETIS depends on METIS, try to find it
 if(PARMETIS_FIND_REQUIRED)
@@ -83,151 +80,15 @@ endif()
 
 # Looking for include
 # -------------------
-
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
-set(ENV_PARMETIS_DIR "$ENV{PARMETIS_DIR}")
-set(ENV_PARMETIS_INCDIR "$ENV{PARMETIS_INCDIR}")
-if(ENV_PARMETIS_INCDIR)
-  list(APPEND _inc_env "${ENV_PARMETIS_INCDIR}")
-elseif(ENV_PARMETIS_DIR)
-  list(APPEND _inc_env "${ENV_PARMETIS_DIR}")
-  list(APPEND _inc_env "${ENV_PARMETIS_DIR}/include")
-  list(APPEND _inc_env "${ENV_PARMETIS_DIR}/include/parmetis")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-
-# Try to find the parmetis header in the given paths
-# -------------------------------------------------
-# call cmake macro to find the header path
-if(PARMETIS_INCDIR)
-  set(PARMETIS_parmetis.h_DIRS "PARMETIS_parmetis.h_DIRS-NOTFOUND")
-  find_path(PARMETIS_parmetis.h_DIRS
-    NAMES parmetis.h
-    HINTS ${PARMETIS_INCDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(PARMETIS_DIR)
-    set(PARMETIS_parmetis.h_DIRS "PARMETIS_parmetis.h_DIRS-NOTFOUND")
-    find_path(PARMETIS_parmetis.h_DIRS
-      NAMES parmetis.h
-      HINTS ${PARMETIS_DIR}
-      PATH_SUFFIXES "include" "include/parmetis"
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(PARMETIS_parmetis.h_DIRS "PARMETIS_parmetis.h_DIRS-NOTFOUND")
-    find_path(PARMETIS_parmetis.h_DIRS
-      NAMES parmetis.h
-      HINTS ${_inc_env})
-  endif()
-endif()
-mark_as_advanced(PARMETIS_parmetis.h_DIRS)
-
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (PARMETIS_parmetis.h_DIRS AND NOT PARMETIS_FIND_QUIETLY)
-  set(PARMETIS_INCLUDE_DIRS "${PARMETIS_parmetis.h_DIRS}")
-else ()
-  set(PARMETIS_INCLUDE_DIRS "PARMETIS_INCLUDE_DIRS-NOTFOUND")
-  if(NOT PARMETIS_FIND_QUIETLY)
-    message(STATUS "Looking for parmetis -- parmetis.h not found")
-  endif()
-endif()
-
+morse_find_path(PARMETIS
+  HEADERS parmetis.h
+  SUFFIXES include include/parmetis)
 
 # Looking for lib
 # ---------------
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-set(ENV_PARMETIS_LIBDIR "$ENV{PARMETIS_LIBDIR}")
-if(ENV_PARMETIS_LIBDIR)
-  list(APPEND _lib_env "${ENV_PARMETIS_LIBDIR}")
-elseif(ENV_PARMETIS_DIR)
-  list(APPEND _lib_env "${ENV_PARMETIS_DIR}")
-  list(APPEND _lib_env "${ENV_PARMETIS_DIR}/lib")
-else()
-  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-  elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-  else()
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-  endif()
-  list(APPEND _lib_env "${_lib_env2}")
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
-# Try to find the parmetis lib in the given paths
-# ----------------------------------------------
-
-if (PARMETIS_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
-
-# call cmake macro to find the lib path
-if(PARMETIS_LIBDIR)
-  set(PARMETIS_parmetis_LIBRARY "PARMETIS_parmetis_LIBRARY-NOTFOUND")
-  find_library(PARMETIS_parmetis_LIBRARY
-    NAMES parmetis
-    HINTS ${PARMETIS_LIBDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(PARMETIS_DIR)
-    set(PARMETIS_parmetis_LIBRARY "PARMETIS_parmetis_LIBRARY-NOTFOUND")
-    find_library(PARMETIS_parmetis_LIBRARY
-      NAMES parmetis
-      HINTS ${PARMETIS_DIR}
-      PATH_SUFFIXES lib lib32 lib64
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(PARMETIS_parmetis_LIBRARY "PARMETIS_parmetis_LIBRARY-NOTFOUND")
-    find_library(PARMETIS_parmetis_LIBRARY
-      NAMES parmetis
-      HINTS ${_lib_env})
-  endif()
-endif()
-mark_as_advanced(PARMETIS_parmetis_LIBRARY)
-
-if (PARMETIS_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-endif()
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (PARMETIS_parmetis_LIBRARY)
-  get_filename_component(parmetis_lib_path "${PARMETIS_parmetis_LIBRARY}" PATH)
-  # set cmake variables
-  set(PARMETIS_LIBRARIES    "${PARMETIS_parmetis_LIBRARY}")
-  set(PARMETIS_LIBRARY_DIRS "${parmetis_lib_path}")
-else ()
-  set(PARMETIS_LIBRARIES    "PARMETIS_LIBRARIES-NOTFOUND")
-  set(PARMETIS_LIBRARY_DIRS "PARMETIS_LIBRARY_DIRS-NOTFOUND")
-  if (NOT PARMETIS_FIND_QUIETLY)
-    message(STATUS "Looking for parmetis -- lib parmetis not found")
-  endif()
-endif ()
+morse_find_library(PARMETIS
+  LIBRARIES parmetis
+  SUFFIXES lib lib32 lib64)
 
 # check a function to validate the find
 if(PARMETIS_LIBRARIES)

@@ -81,13 +81,6 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT FFTW_FOUND)
-  set(FFTW_DIR "" CACHE PATH "Installation directory of FFTW library given by user")
-  if (NOT FFTW_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely FFTW_DIR, has been set to specify the install directory of FFTW")
-  endif()
-endif()
-
 # Set the version to find
 set(FFTW_LOOK_FOR_MKL OFF)
 set(FFTW_LOOK_FOR_ESSL OFF)
@@ -226,11 +219,12 @@ if( THREADS_FOUND AND NOT THREADS_PREFER_PTHREAD_FLAG)
   libraries_absolute_path(CMAKE_THREAD_LIBS_INIT "")
 endif ()
 
-set(ENV_FFTW_DIR "$ENV{FFTW_DIR}")
-set(ENV_FFTW_INCDIR "$ENV{FFTW_INCDIR}")
-set(ENV_FFTW_LIBDIR "$ENV{FFTW_LIBDIR}")
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(FFTW)
+
 set(FFTW_GIVEN_BY_USER "FALSE")
-if ( FFTW_DIR OR ( FFTW_INCDIR AND FFTW_LIBDIR) OR ENV_FFTW_DIR OR (ENV_FFTW_INCDIR AND ENV_FFTW_LIBDIR) )
+if ( FFTW_DIR OR ( FFTW_INCDIR AND FFTW_LIBDIR ) )
   set(FFTW_GIVEN_BY_USER "TRUE")
 endif()
 
@@ -403,40 +397,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
 
   # Add system include paths to search include
   # ------------------------------------------
-  unset(_inc_env)
-  set(ENV_MKLROOT "$ENV{MKLROOT}")
-  set(ENV_FFTW_DIR "$ENV{FFTW_DIR}")
-  set(ENV_FFTW_INCDIR "$ENV{FFTW_INCDIR}")
-  if(ENV_FFTW_INCDIR)
-    list(APPEND _inc_env "${ENV_FFTW_INCDIR}")
-  elseif(ENV_FFTW_DIR)
-    list(APPEND _inc_env "${ENV_FFTW_DIR}")
-    list(APPEND _inc_env "${ENV_FFTW_DIR}/include")
-    list(APPEND _inc_env "${ENV_FFTW_DIR}/include/fftw")
-  else()
-    if (ENV_MKLROOT)
-      list(APPEND _inc_env "${ENV_MKLROOT}/include/fftw")
-    endif()
-    # system variables
-    if(WIN32)
-      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-      list(APPEND _inc_env "${_path_env}")
-    else()
-      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-      list(APPEND _inc_env "${_path_env}")
-      string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-      list(APPEND _inc_env "${_path_env}")
-      string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-      list(APPEND _inc_env "${_path_env}")
-      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-      list(APPEND _inc_env "${_path_env}")
-    endif()
+  set(PATH_TO_LOOK_FOR)
+  if (DEFINED $ENV{MKLROOT})
+    list(APPEND PATH_TO_LOOK_FOR "$ENV{MKLROOT}/include/fftw")
   endif()
-  list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-  list(REMOVE_DUPLICATES _inc_env)
-
-  # set paths where to look for
-  set(PATH_TO_LOOK_FOR "${_inc_env}")
 
   if (FFTW_LOOK_FOR_ESSL)
     set(FFTW3_HEADER_TO_FIND "fftw3_essl.h")
@@ -444,90 +408,27 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     set(FFTW3_HEADER_TO_FIND "fftw3.h")
   endif()
 
-  # Try to find the fftw header in the given paths
-  # -------------------------------------------------
-  # call cmake macro to find the header path
-  if(FFTW_INCDIR)
-    set(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS "FFTW_${FFTW3_HEADER_TO_FIND}_DIRS-NOTFOUND")
-    find_path(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS
-      NAMES ${FFTW3_HEADER_TO_FIND}
-      HINTS ${FFTW_INCDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    if(FFTW_DIR)
-      set(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS "FFTW_${FFTW3_HEADER_TO_FIND}_DIRS-NOTFOUND")
-      find_path(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS
-        NAMES ${FFTW3_HEADER_TO_FIND}
-        HINTS ${FFTW_DIR}
-        PATH_SUFFIXES "include" "include/fftw"
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    else()
-      set(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS "FFTW_${FFTW3_HEADER_TO_FIND}_DIRS-NOTFOUND")
-      find_path(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS
-        NAMES ${FFTW3_HEADER_TO_FIND}
-        HINTS ${PATH_TO_LOOK_FOR}
-        PATH_SUFFIXES "fftw")
-    endif()
-  endif()
-  mark_as_advanced(FFTW_${FFTW3_HEADER_TO_FIND}_DIRS)
-
-  # Add path to cmake variable
-  # ------------------------------------
-  if (FFTW_${FFTW3_HEADER_TO_FIND}_DIRS)
-    set(FFTW_INCLUDE_DIRS "${FFTW_${FFTW3_HEADER_TO_FIND}_DIRS}")
-  else ()
-    set(FFTW_INCLUDE_DIRS "FFTW_INCLUDE_DIRS-NOTFOUND")
-    if(NOT FFTW_FIND_QUIETLY)
-      message(STATUS "Looking for FFTW -- ${FFTW3_HEADER_TO_FIND} not found")
-    endif()
-  endif ()
-
+  morse_find_path(FFTW
+    HEADERS  ${FFTW3_HEADER_TO_FIND}
+    SUFFIXES "include" "include/fftw"
+    HINTS    ${PATH_TO_LOOK_FOR})
 
   # Looking for lib
   # ---------------
 
   # Add system library paths to search lib
   # --------------------------------------
-  unset(_lib_env)
-  set(ENV_FFTW_LIBDIR "$ENV{FFTW_LIBDIR}")
-  if(ENV_FFTW_LIBDIR)
-    list(APPEND _lib_env "${ENV_FFTW_LIBDIR}")
-  elseif(ENV_FFTW_DIR)
-    list(APPEND _lib_env "${ENV_FFTW_DIR}")
-    list(APPEND _lib_env "${ENV_FFTW_DIR}/lib")
-    if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-      list(APPEND _lib_env "${ENV_FFTW_DIR}/lib64")
-      list(APPEND _lib_env "${ENV_FFTW_DIR}/lib/intel64")
-    else()
-      list(APPEND _lib_env "${ENV_FFTW_DIR}/lib32")
-      list(APPEND _lib_env "${ENV_FFTW_DIR}/lib/ia32")
-    endif()
-  else()
-    if (ENV_MKLROOT)
-      list(APPEND _lib_env "${ENV_MKLROOT}/lib")
-      if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-        list(APPEND _lib_env "${ENV_MKLROOT}/lib64")
-        list(APPEND _lib_env "${ENV_MKLROOT}/lib/intel64")
-      else()
-        list(APPEND _lib_env "${ENV_MKLROOT}/lib32")
-        list(APPEND _lib_env "${ENV_MKLROOT}/lib/ia32")
-      endif()
-    endif()
-    list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-    if(WIN32)
-      string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-    elseif(APPLE)
-      string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-    else()
-      string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-    endif()
-    list(APPEND _lib_env "${_lib_env2}")
-    list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+  set(PATH_TO_LOOK_FOR)
+  if (DEFINED $ENV{MKLROOT})
+    list(APPEND PATH_TO_LOOK_FOR "$ENV{MKLROOT}/lib")
   endif()
-  list(REMOVE_DUPLICATES _lib_env)
 
-  # set paths where to look for
-  set(PATH_TO_LOOK_FOR "${_lib_env}")
+  set( _lib_suffixes lib )
+  if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+    list(APPEND _lib_suffixes "lib64" "lib/intel64" )
+  else()
+    list(APPEND _lib_suffixes "lib32" "lib/ia32" )
+  endif()
 
   if(FFTW_LOOK_FOR_FFTW_SIMPLE)
     set(FFTW_PREC "f")
@@ -547,7 +448,6 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
   set(FFTW_LIBRARY_DIRS "")
 
   if(NOT FFTW_LOOK_FOR_MKL)
-
     if (FFTW_LOOK_FOR_THREADS)
       set(FFTW_libs_to_find "fftw3${FFTW_PREC}_threads;fftw3${FFTW_PREC};fftw3")
     elseif (FFTW_LOOK_FOR_OMP)
@@ -567,61 +467,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
 
     # Try to find the fftw lib in the given paths
     # ----------------------------------------------
-
-    # call cmake macro to find the lib path
-    if(FFTW_LIBDIR)
-      foreach(fftw_lib ${FFTW_libs_to_find})
-        set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
-        find_library(FFTW_${fftw_lib}_LIBRARY
-          NAMES ${fftw_lib}
-          HINTS ${FFTW_LIBDIR}
-          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-      endforeach()
-    else()
-      if(FFTW_DIR)
-        foreach(fftw_lib ${FFTW_libs_to_find})
-          set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
-          find_library(FFTW_${fftw_lib}_LIBRARY
-            NAMES ${fftw_lib}
-            HINTS ${FFTW_DIR}
-            PATH_SUFFIXES lib lib32 lib64
-            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-        endforeach()
-      else()
-        foreach(fftw_lib ${FFTW_libs_to_find})
-          set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
-          find_library(FFTW_${fftw_lib}_LIBRARY
-            NAMES ${fftw_lib}
-            HINTS ${PATH_TO_LOOK_FOR})
-        endforeach()
-      endif()
-    endif()
-
-    # If found, add path to cmake variable
-    # ------------------------------------
-    foreach(fftw_lib ${FFTW_libs_to_find})
-
-      if (FFTW_${fftw_lib}_LIBRARY)
-        get_filename_component(${fftw_lib}_lib_path "${FFTW_${fftw_lib}_LIBRARY}" PATH)
-        # set cmake variables
-        list(APPEND FFTW_LIBRARIES "${FFTW_${fftw_lib}_LIBRARY}")
-        list(APPEND FFTW_LIBRARY_DIRS "${${fftw_lib}_lib_path}")
-      else ()
-        list(APPEND FFTW_LIBRARIES "${FFTW_${fftw_lib}_LIBRARY}")
-        if (NOT FFTW_FIND_QUIETLY)
-          message(STATUS "Looking for FFTW -- lib ${fftw_lib} not found")
-        endif()
-      endif ()
-      mark_as_advanced(FFTW_${fftw_lib}_LIBRARY)
-
-    endforeach()
-
-    # check if one lib is NOTFOUND
-    foreach(lib ${FFTW_LIBRARIES})
-      if (NOT lib)
-        set(FFTW_LIBRARIES "FFTW_LIBRARIES-NOTFOUND")
-      endif()
-    endforeach()
+    morse_find_library(FFTW
+      LIBRARIES ${FFTW_libs_to_find}
+      SUFFIXES  ${_lib_suffixes}
+      HINTS     ${PATH_TO_LOOK_FOR})
 
   endif(NOT FFTW_LOOK_FOR_MKL)
 

@@ -53,18 +53,12 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT HYPRE_FOUND)
-  set(HYPRE_DIR "" CACHE PATH "Installation directory of HYPRE library")
-  if (NOT HYPRE_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely HYPRE_DIR, has been set to specify the install directory of HYPRE")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(HYPRE)
 
-set(ENV_HYPRE_DIR "$ENV{HYPRE_DIR}")
-set(ENV_HYPRE_INCDIR "$ENV{HYPRE_INCDIR}")
-set(ENV_HYPRE_LIBDIR "$ENV{HYPRE_LIBDIR}")
 set(HYPRE_GIVEN_BY_USER "FALSE")
-if ( HYPRE_DIR OR ( HYPRE_INCDIR AND HYPRE_LIBDIR) OR ENV_HYPRE_DIR OR (ENV_HYPRE_INCDIR AND ENV_HYPRE_LIBDIR) )
+if ( HYPRE_DIR OR ( HYPRE_INCDIR AND HYPRE_LIBDIR ) )
   set(HYPRE_GIVEN_BY_USER "TRUE")
 endif()
 
@@ -77,161 +71,15 @@ endif()
 
 # Looking for include
 # -------------------
-
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
-if(ENV_HYPRE_INCDIR)
-  list(APPEND _inc_env "${ENV_HYPRE_INCDIR}")
-elseif(ENV_HYPRE_DIR)
-  list(APPEND _inc_env "${ENV_HYPRE_DIR}")
-  list(APPEND _inc_env "${ENV_HYPRE_DIR}/include")
-  list(APPEND _inc_env "${ENV_HYPRE_DIR}/include/hypre")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-# set paths where to look for
-set(PATH_TO_LOOK_FOR "${_inc_env}")
-
-# Try to find the hypre header in the given paths
-# -------------------------------------------------
-# call cmake macro to find the header path
-if(HYPRE_INCDIR)
-  set(HYPRE_HYPRE.h_DIRS "HYPRE_HYPRE.h_DIRS-NOTFOUND")
-  find_path(HYPRE_HYPRE.h_DIRS
-    NAMES HYPRE.h
-    HINTS ${HYPRE_INCDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(HYPRE_DIR)
-    set(HYPRE_HYPRE.h_DIRS "HYPRE_HYPRE.h_DIRS-NOTFOUND")
-    find_path(HYPRE_HYPRE.h_DIRS
-      NAMES HYPRE.h
-      HINTS ${HYPRE_DIR}
-      PATH_SUFFIXES "include" "include/hypre"
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(HYPRE_HYPRE.h_DIRS "HYPRE_HYPRE.h_DIRS-NOTFOUND")
-    find_path(HYPRE_HYPRE.h_DIRS
-      NAMES HYPRE.h
-      HINTS ${PATH_TO_LOOK_FOR}
-      PATH_SUFFIXES "hypre")
-  endif()
-endif()
-mark_as_advanced(HYPRE_HYPRE.h_DIRS)
-
-# Add path to cmake variable
-# ------------------------------------
-if (HYPRE_HYPRE.h_DIRS)
-  set(HYPRE_INCLUDE_DIRS "${HYPRE_HYPRE.h_DIRS}")
-else ()
-  set(HYPRE_INCLUDE_DIRS "HYPRE_INCLUDE_DIRS-NOTFOUND")
-  if(NOT HYPRE_FIND_QUIETLY)
-    message(STATUS "Looking for hypre -- HYPRE.h not found")
-  endif()
-endif ()
-
-if (HYPRE_INCLUDE_DIRS)
-  list(REMOVE_DUPLICATES HYPRE_INCLUDE_DIRS)
-endif ()
-
+morse_find_path(HYPRE
+  HEADERS HYPRE.h
+  SUFFIXES include include/hypre)
 
 # Looking for lib
 # ---------------
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-if(ENV_HYPRE_LIBDIR)
-  list(APPEND _lib_env "${ENV_HYPRE_LIBDIR}")
-elseif(ENV_HYPRE_DIR)
-  list(APPEND _lib_env "${ENV_HYPRE_DIR}")
-  list(APPEND _lib_env "${ENV_HYPRE_DIR}/lib")
-else()
-  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-  elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-  else()
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-  endif()
-  list(APPEND _lib_env "${_lib_env2}")
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
-# set paths where to look for
-set(PATH_TO_LOOK_FOR "${_lib_env}")
-
-# Try to find the hypre lib in the given paths
-# ----------------------------------------------
-
-if (HYPRE_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
-
-# call cmake macro to find the lib path
-if(HYPRE_LIBDIR)
-  set(HYPRE_HYPRE_LIBRARY "HYPRE_HYPRE_LIBRARY-NOTFOUND")
-  find_library(HYPRE_HYPRE_LIBRARY
-    NAMES HYPRE
-    HINTS ${HYPRE_LIBDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(HYPRE_DIR)
-    set(HYPRE_HYPRE_LIBRARY "HYPRE_HYPRE_LIBRARY-NOTFOUND")
-    find_library(HYPRE_HYPRE_LIBRARY
-      NAMES HYPRE
-      HINTS ${HYPRE_DIR}
-      PATH_SUFFIXES lib lib32 lib64
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(HYPRE_HYPRE_LIBRARY "HYPRE_HYPRE_LIBRARY-NOTFOUND")
-    find_library(HYPRE_HYPRE_LIBRARY
-      NAMES HYPRE
-      HINTS ${PATH_TO_LOOK_FOR})
-  endif()
-endif()
-mark_as_advanced(HYPRE_HYPRE_LIBRARY)
-
-if (HYPRE_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-endif()
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (HYPRE_HYPRE_LIBRARY)
-  get_filename_component(hypre_lib_path ${HYPRE_HYPRE_LIBRARY} PATH)
-  # set cmake variables (respects naming convention)
-  set(HYPRE_LIBRARIES    "${HYPRE_HYPRE_LIBRARY}")
-  set(HYPRE_LIBRARY_DIRS "${hypre_lib_path}")
-else ()
-  set(HYPRE_LIBRARIES    "HYPRE_LIBRARIES-NOTFOUND")
-  set(HYPRE_LIBRARY_DIRS "HYPRE_LIBRARY_DIRS-NOTFOUND")
-  if(NOT HYPRE_FIND_QUIETLY)
-    message(STATUS "Looking for hypre -- lib HYPRE not found")
-  endif()
-endif ()
-
-if (HYPRE_LIBRARY_DIRS)
-  list(REMOVE_DUPLICATES HYPRE_LIBRARY_DIRS)
-endif ()
+morse_find_library( HYPRE
+  LIBRARIES HYPRE
+  SUFFIXES lib lib32 lib64)
 
 # check a function to validate the find
 if(HYPRE_LIBRARIES)

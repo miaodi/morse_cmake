@@ -65,12 +65,9 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT MUMPS_FOUND)
-  set(MUMPS_DIR "" CACHE PATH "Installation directory of MUMPS library")
-  if (NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely MUMPS_DIR, has been set to specify the install directory of MUMPS")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(MUMPS)
 
 # Set the version to find
 set(MUMPS_LOOK_FOR_MPI ON)
@@ -263,147 +260,35 @@ endif()
 # Looking for MUMPS
 # -----------------
 
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
-set(ENV_MUMPS_DIR "$ENV{MUMPS_DIR}")
-set(ENV_MUMPS_INCDIR "$ENV{MUMPS_INCDIR}")
-if(ENV_MUMPS_INCDIR)
-  list(APPEND _inc_env "${ENV_MUMPS_INCDIR}")
-elseif(ENV_MUMPS_DIR)
-  list(APPEND _inc_env "${ENV_MUMPS_DIR}")
-  list(APPEND _inc_env "${ENV_MUMPS_DIR}/include")
-  list(APPEND _inc_env "${ENV_MUMPS_DIR}/include/mumps")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-set(ENV_MUMPS_LIBDIR "$ENV{MUMPS_LIBDIR}")
-if(ENV_MUMPS_LIBDIR)
-  list(APPEND _lib_env "${ENV_MUMPS_LIBDIR}")
-elseif(ENV_MUMPS_DIR)
-  list(APPEND _lib_env "${ENV_MUMPS_DIR}")
-  list(APPEND _lib_env "${ENV_MUMPS_DIR}/lib")
-else()
-  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-  elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-  else()
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-  endif()
-  list(APPEND _lib_env "${_lib_env2}")
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
 # Looking for include
 # -------------------
-
-# Try to find the mumps header in the given path
-# ----------------------------------------------
-
-# create list of headers to find
-list(APPEND MUMPS_hdrs_to_find "smumps_c.h;dmumps_c.h;cmumps_c.h;zmumps_c.h")
-
-# call cmake macro to find the header path
-if(MUMPS_INCDIR)
-  foreach(mumps_hdr ${MUMPS_hdrs_to_find})
-    set(MUMPS_${mumps_hdr}_DIRS "MUMPS_${mumps_hdr}_INCLUDE_DIRS-NOTFOUND")
-    find_path(MUMPS_${mumps_hdr}_DIRS
-      NAMES ${mumps_hdr}
-      HINTS ${MUMPS_INCDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  endforeach()
-else()
-  if(MUMPS_DIR)
-    set(MUMPS_${mumps_hdr}_DIRS "MUMPS_${mumps_hdr}_INCLUDE_DIRS-NOTFOUND")
-    foreach(mumps_hdr ${MUMPS_hdrs_to_find})
-      find_path(MUMPS_${mumps_hdr}_DIRS
-        NAMES ${mumps_hdr}
-        HINTS ${MUMPS_DIR}
-        PATH_SUFFIXES "include"
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    endforeach()
-  else()
-    foreach(mumps_hdr ${MUMPS_hdrs_to_find})
-      set(MUMPS_${mumps_hdr}_DIRS "MUMPS_${mumps_hdr}_INCLUDE_DIRS-NOTFOUND")
-      find_path(MUMPS_${mumps_hdr}_DIRS
-        NAMES ${mumps_hdr}
-        HINTS ${_inc_env})
-    endforeach()
-  endif()
-endif()
+morse_find_path( MUMPS
+  HEADERS "smumps_c.h;dmumps_c.h;cmumps_c.h;zmumps_c.h"
+  SUFFIXES "include"
+  OPTIONAL )
 
 # If found, add path to cmake variable
 # ------------------------------------
 # detect which precisions are available
+set(MUMPS_PREC_S OFF)
+set(MUMPS_PREC_D OFF)
+set(MUMPS_PREC_C OFF)
+set(MUMPS_PREC_Z OFF)
 if (MUMPS_smumps_c.h_DIRS)
-  mark_as_advanced(MUMPS_smumps_c.h_DIRS)
   set(MUMPS_PREC_S ON)
-  set(MUMPS_INCLUDE_DIRS "${MUMPS_smumps_c.h_DIRS}")
-else ()
-  set(MUMPS_PREC_S OFF)
-  if(NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "Looking for mumps -- smumps_c.h not found")
-  endif()
 endif()
 if (MUMPS_dmumps_c.h_DIRS)
-  mark_as_advanced(MUMPS_dmumps_c.h_DIRS)
   set(MUMPS_PREC_D ON)
-  set(MUMPS_INCLUDE_DIRS "${MUMPS_dmumps_c.h_DIRS}")
-else ()
-  set(MUMPS_PREC_D OFF)
-  if(NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "Looking for mumps -- dmumps_c.h not found")
-  endif()
 endif()
 if (MUMPS_cmumps_c.h_DIRS)
-  mark_as_advanced(MUMPS_cmumps_c.h_DIRS)
   set(MUMPS_PREC_C ON)
-  set(MUMPS_INCLUDE_DIRS "${MUMPS_cmumps_c.h_DIRS}")
-else ()
-  set(MUMPS_PREC_C OFF)
-  if(NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "Looking for mumps -- cmumps_c.h not found")
-  endif()
 endif()
 if (MUMPS_zmumps_c.h_DIRS)
-  mark_as_advanced(MUMPS_zmumps_c.h_DIRS)
   set(MUMPS_PREC_Z ON)
-  set(MUMPS_INCLUDE_DIRS "${MUMPS_zmumps_c.h_DIRS}")
-else ()
-  set(MUMPS_PREC_Z OFF)
-  if(NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "Looking for mumps -- zmumps_c.h not found")
-  endif()
 endif()
-
 
 # Looking for lib
 # ---------------
-
-if (MUMPS_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
 
 # create list of libs to find
 set(MUMPS_libs_to_find "mumps_common;pord")
@@ -423,91 +308,30 @@ if(MUMPS_PREC_Z)
   list(APPEND MUMPS_libs_to_find "zmumps")
 endif()
 
-# call cmake macro to find the lib path
-if(MUMPS_LIBDIR)
-  foreach(mumps_lib ${MUMPS_libs_to_find})
-    set(MUMPS_${mumps_lib}_LIBRARY "MUMPS_${mumps_lib}_LIBRARY-NOTFOUND")
-    find_library(MUMPS_${mumps_lib}_LIBRARY
-      NAMES ${mumps_lib}
-      HINTS ${MUMPS_LIBDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  endforeach()
-else()
-  if(MUMPS_DIR)
-    foreach(mumps_lib ${MUMPS_libs_to_find})
-      set(MUMPS_${mumps_lib}_LIBRARY "MUMPS_${mumps_lib}_LIBRARY-NOTFOUND")
-      find_library(MUMPS_${mumps_lib}_LIBRARY
-        NAMES ${mumps_lib}
-        HINTS ${MUMPS_DIR}
-        PATH_SUFFIXES lib lib32 lib64
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    endforeach()
-  else()
-    foreach(mumps_lib ${MUMPS_libs_to_find})
-      set(MUMPS_${mumps_lib}_LIBRARY "MUMPS_${mumps_lib}_LIBRARY-NOTFOUND")
-      find_library(MUMPS_${mumps_lib}_LIBRARY
-        NAMES ${mumps_lib}
-        HINTS ${_lib_env})
-    endforeach()
-  endif()
-endif()
+# Look for libraries as optional and then check each one of them independently
+# ----------------------------------------------------------------------------
+morse_find_library(MUMPS
+  LIBRARIES ${MUMPS_libs_to_find}
+  SUFFIXES lib lib32 lib64
+  OPTIONAL)
 
-if (MUMPS_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-endif()
-
-# If found, add path to cmake variable
-# ------------------------------------
-set(MUMPS_LIBRARIES "")
-set(MUMPS_LIBRARY_DIRS "")
-# detect which precisions are available
-if (MUMPS_smumps_LIBRARY)
-  mark_as_advanced(MUMPS_smumps_LIBRARY)
-  list(APPEND MUMPS_LIBRARIES "${MUMPS_smumps_LIBRARY}")
-  get_filename_component(smumps_lib_path ${MUMPS_smumps_LIBRARY} PATH)
-  list(APPEND MUMPS_LIBRARY_DIRS "${smumps_lib_path}")
-else ()
+# Update precision discovery
+# --------------------------
+if (NOT MUMPS_smumps_LIBRARY)
   set(MUMPS_PREC_S OFF)
-  if(NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "Looking for mumps -- libsmumps.a not found")
-  endif()
 endif()
-if (MUMPS_dmumps_LIBRARY)
-  mark_as_advanced(MUMPS_dmumps_LIBRARY)
-  list(APPEND MUMPS_LIBRARIES "${MUMPS_dmumps_LIBRARY}")
-  get_filename_component(dmumps_lib_path ${MUMPS_dmumps_LIBRARY} PATH)
-  list(APPEND MUMPS_LIBRARY_DIRS "${dmumps_lib_path}")
-else ()
+if (NOT MUMPS_dmumps_LIBRARY)
   set(MUMPS_PREC_D OFF)
-  if(NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "Looking for mumps -- libdmumps.a not found")
-  endif()
 endif()
-if (MUMPS_cmumps_LIBRARY)
-  mark_as_advanced(MUMPS_cmumps_LIBRARY)
-  list(APPEND MUMPS_LIBRARIES "${MUMPS_cmumps_LIBRARY}")
-  get_filename_component(cmumps_lib_path ${MUMPS_cmumps_LIBRARY} PATH)
-  list(APPEND MUMPS_LIBRARY_DIRS "${cmumps_lib_path}")
-else ()
+if (NOT MUMPS_cmumps_LIBRARY)
   set(MUMPS_PREC_C OFF)
-  if(NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "Looking for mumps -- libcmumps.a not found")
-  endif()
 endif()
-if (MUMPS_zmumps_LIBRARY)
-  mark_as_advanced(MUMPS_zmumps_LIBRARY)
-  list(APPEND MUMPS_LIBRARIES "${MUMPS_zmumps_LIBRARY}")
-  get_filename_component(zmumps_lib_path ${MUMPS_zmumps_LIBRARY} PATH)
-  list(APPEND MUMPS_LIBRARY_DIRS "${zmumps_lib_path}")
-else ()
+if (NOT MUMPS_zmumps_LIBRARY)
   set(MUMPS_PREC_Z OFF)
-  if(NOT MUMPS_FIND_QUIETLY)
-    message(STATUS "Looking for mumps -- libzmumps.a not found")
-  endif()
 endif()
 
 # check that one precision arithmetic at least has been discovered
-if (NOT MUMPS_PREC_S AND NOT MUMPS_PREC_D AND NOT MUMPS_PREC_C AND NOT MUMPS_PREC_S)
+if ((NOT MUMPS_PREC_S) AND (NOT MUMPS_PREC_D) AND (NOT MUMPS_PREC_C) AND (NOT MUMPS_PREC_S))
   if (MUMPS_FIND_REQUIRED)
     message(FATAL_ERROR "Looking for mumps -- "
       "no lib[sdcz]mumps.a have been found in ${MUMPS_DIR}/lib when required")
@@ -517,13 +341,9 @@ if (NOT MUMPS_PREC_S AND NOT MUMPS_PREC_D AND NOT MUMPS_PREC_C AND NOT MUMPS_PRE
     endif()
   endif()
 endif()
+
 # other MUMPS libraries
-if (MUMPS_mumps_common_LIBRARY)
-  mark_as_advanced(MUMPS_mumps_common_LIBRARY)
-  list(APPEND MUMPS_LIBRARIES "${MUMPS_mumps_common_LIBRARY}")
-  get_filename_component(mumps_common_lib_path ${MUMPS_mumps_common_LIBRARY} PATH)
-  list(APPEND MUMPS_LIBRARY_DIRS "${mumps_common_lib_path}")
-else ()
+if (NOT MUMPS_mumps_common_LIBRARY)
   if (MUMPS_FIND_REQUIRED)
     message(FATAL_ERROR "Looking for mumps -- "
       "libmumps_common.a not found in ${MUMPS_DIR}/lib when required")
@@ -534,11 +354,8 @@ else ()
   endif()
 endif()
 if (MUMPS_mpiseq_LIBRARY)
-  mark_as_advanced(MUMPS_mpiseq_LIBRARY)
   if (MUMPS_LOOK_FOR_SEQ)
-    list(APPEND MUMPS_LIBRARIES "${MUMPS_mpiseq_LIBRARY}")
     get_filename_component(mpiseq_lib_path ${MUMPS_mpiseq_LIBRARY} PATH)
-    list(APPEND MUMPS_LIBRARY_DIRS "${mpiseq_lib_path}")
     list(APPEND MUMPS_INCLUDE_DIRS "${mpiseq_lib_path}")
   endif()
 else ()
@@ -551,12 +368,7 @@ else ()
     endif()
   endif()
 endif()
-if (MUMPS_pord_LIBRARY)
-  mark_as_advanced(MUMPS_pord_LIBRARY)
-  list(APPEND MUMPS_LIBRARIES "${MUMPS_pord_LIBRARY}")
-  get_filename_component(pord_lib_path ${MUMPS_pord_LIBRARY} PATH)
-  list(APPEND MUMPS_LIBRARY_DIRS "${pord_lib_path}")
-else ()
+if (NOT MUMPS_pord_LIBRARY)
   if (MUMPS_FIND_REQUIRED)
     message(FATAL_ERROR "Looking for mumps -- "
       "libpord.a not found in ${MUMPS_DIR}/lib when required")
@@ -566,7 +378,6 @@ else ()
     endif()
   endif()
 endif()
-list(REMOVE_DUPLICATES MUMPS_LIBRARY_DIRS)
 list(REMOVE_DUPLICATES MUMPS_INCLUDE_DIRS)
 
 # check a function to validate the find
@@ -691,9 +502,7 @@ if(MUMPS_LIBRARIES)
   if (CMAKE_C_COMPILER_ID MATCHES "GNU")
     find_library(
       FORTRAN_gfortran_LIBRARY
-      NAMES gfortran
-      HINTS ${_lib_env}
-      )
+      NAMES gfortran)
     mark_as_advanced(FORTRAN_gfortran_LIBRARY)
     if (FORTRAN_gfortran_LIBRARY)
       list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
@@ -701,9 +510,7 @@ if(MUMPS_LIBRARIES)
   elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
     find_library(
       FORTRAN_ifcore_LIBRARY
-      NAMES ifcore
-      HINTS ${_lib_env}
-      )
+      NAMES ifcore)
     mark_as_advanced(FORTRAN_ifcore_LIBRARY)
     if (FORTRAN_ifcore_LIBRARY)
       list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")

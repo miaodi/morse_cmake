@@ -21,21 +21,17 @@
 # The module can also look for the following environment variables if paths
 # are not given as cmake variable: CPPCHECK_DIR, CPPCHECK_BINDIR
 
-if (NOT CPPCHECK_FOUND)
-  set(CPPCHECK_DIR "" CACHE PATH "Installation directory of CPPCHECK library")
-  mark_as_advanced(CPPCHECK_DIR)
-  if (NOT CPPCHECK_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely CPPCHECK_DIR, has been set to specify the install directory of CPPCHECK")
-  endif()
-endif()
+# Common macros to use in finds
+include(FindMorseInit)
 
-set(ENV_CPPCHECK_DIR "$ENV{CPPCHECK_DIR}")
-set(ENV_CPPCHECK_BINDIR "$ENV{CPPCHECK_BINDIR}")
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(CPPCHECK)
+
 set(CPPCHECK_GIVEN_BY_USER "FALSE")
-if ( CPPCHECK_DIR OR CPPCHECK_BINDIR OR ENV_CPPCHECK_DIR OR ENV_CPPCHECK_BINDIR )
+if ( CPPCHECK_DIR OR CPPCHECK_BINDIR )
   set(CPPCHECK_GIVEN_BY_USER "TRUE")
 endif()
-
 
 if (NOT CPPCHECK_FIND_QUIETLY)
   message(STATUS "Looking for CPPCHECK")
@@ -51,15 +47,10 @@ if(CPPCHECK_BINDIR)
   list(APPEND where_to_look "${CPPCHECK_BINDIR}")
 elseif(CPPCHECK_DIR)
   list(APPEND where_to_look "${CPPCHECK_DIR}")
-elseif(ENV_CPPCHECK_BINDIR)
-  list(APPEND where_to_look "${ENV_CPPCHECK_BINDIR}")
-elseif(ENV_CPPCHECK_DIR)
-  list(APPEND where_to_look "${ENV_CPPCHECK_DIR}/bin")
 else()
   string(REPLACE ":" ";" _path_env "$ENV{PATH}")
   list(APPEND where_to_look "${_path_env}")
 endif()
-list(APPEND where_to_look "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
 list(REMOVE_DUPLICATES where_to_look)
 
 find_program(CPPCHECK_EXECUTABLE

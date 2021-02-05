@@ -75,12 +75,9 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT LAPACKE_FOUND)
-  set(LAPACKE_DIR "" CACHE PATH "Installation directory of LAPACKE library")
-  if (NOT LAPACKE_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely LAPACKE_DIR, has been set to specify the install directory of LAPACKE")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(LAPACKE)
 
 # to check LAPACKE components
 set(LAPACKE_WITH_TMG OFF)
@@ -171,80 +168,18 @@ if (LAPACKEXT_FOUND)
         # Looking for include
         # -------------------
 
-        # Add system include paths to search include
-        # ------------------------------------------
-        unset(_inc_env)
-        set(ENV_LAPACKE_DIR "$ENV{LAPACKE_DIR}")
-        set(ENV_LAPACKE_INCDIR "$ENV{LAPACKE_INCDIR}")
-        if(ENV_LAPACKE_INCDIR)
-          list(APPEND _inc_env "${ENV_LAPACKE_INCDIR}")
-        elseif(ENV_LAPACKE_DIR)
-          list(APPEND _inc_env "${ENV_LAPACKE_DIR}")
-          list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include")
-          list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
-          list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/mkl")
-        else()
-          if(WIN32)
-            string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-          else()
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
-          endif()
-        endif()
-        list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-        list(REMOVE_DUPLICATES _inc_env)
-
-
         # Try to find the lapacke header in the given paths
         # -------------------------------------------------
-
         if (LAPACKE_LIBRARIES MATCHES "libmkl")
           set(LAPACKE_hdrs_to_find "mkl.h")
         else()
           set(LAPACKE_hdrs_to_find "lapacke.h")
         endif()
 
-        # call cmake macro to find the header path
-        if(LAPACKE_INCDIR)
-          set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
-          find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
-            NAMES ${LAPACKE_hdrs_to_find}
-            HINTS ${LAPACKE_INCDIR}
-            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-        else()
-          if(LAPACKE_DIR)
-            set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
-            find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
-              NAMES ${LAPACKE_hdrs_to_find}
-              HINTS ${LAPACKE_DIR}
-              PATH_SUFFIXES "include" "include/lapacke" "include/mkl"
-              NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-          else()
-            set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
-            find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
-              NAMES ${LAPACKE_hdrs_to_find}
-              HINTS ${_inc_env}
-              PATH_SUFFIXES "lapacke" "mkl")
-          endif()
-        endif()
-        mark_as_advanced(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)
+        morse_find_path(LAPACKE
+          HEADERS ${LAPACKE_hdrs_to_find}
+          SUFFIXES "include" "include/lapacke" "include/mkl" )
 
-        # If found, add path to cmake variable
-        # ------------------------------------
-        if (LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)
-          set(LAPACKE_INCLUDE_DIRS "${LAPACKE_${LAPACKE_hdrs_to_find}_DIRS}")
-        else ()
-          set(LAPACKE_INCLUDE_DIRS "LAPACKE_INCLUDE_DIRS-NOTFOUND")
-          if(NOT LAPACKE_FIND_QUIETLY)
-            message(STATUS "Looking for lapacke -- ${LAPACKE_hdrs_to_find} not found")
-          endif()
-        endif()
       endif()
     endif()
   endif (NOT LAPACKE_STANDALONE)
@@ -257,16 +192,13 @@ if (LAPACKEXT_FOUND)
     endif()
 
     # try with pkg-config
-    set(ENV_LAPACKE_DIR "$ENV{LAPACKE_DIR}")
-    set(ENV_MKL_DIR "$ENV{MKLROOT}")
-    set(ENV_LAPACKE_INCDIR "$ENV{LAPACKE_INCDIR}")
-    set(ENV_LAPACKE_LIBDIR "$ENV{LAPACKE_LIBDIR}")
+    set(ENV_MKLROOT "$ENV{MKLROOT}")
     set(LAPACKE_GIVEN_BY_USER "FALSE")
-    if ( LAPACKE_DIR OR ( LAPACKE_INCDIR AND LAPACKE_LIBDIR) OR ENV_LAPACKE_DIR OR ENV_MKL_DIR OR (ENV_LAPACKE_INCDIR AND ENV_LAPACKE_LIBDIR) )
+    if ( LAPACKE_DIR OR ( LAPACKE_INCDIR AND LAPACKE_LIBDIR ) OR (ENV_MKLROOT) )
       set(LAPACKE_GIVEN_BY_USER "TRUE")
     endif()
 
-    if( PKG_CONFIG_EXECUTABLE AND NOT LAPACKE_GIVEN_BY_USER)
+    if( PKG_CONFIG_EXECUTABLE AND (NOT (LAPACKE_GIVEN_BY_USER)))
 
       if (BLA_STATIC)
         set(MKL_STR_BLA_STATIC "static")
@@ -311,7 +243,7 @@ if (LAPACKEXT_FOUND)
         list (APPEND LAPACKE_LIBRARIES ${LAPACKE_DEPENDENCIES})
         set(LAPACKE_CFLAGS_OTHER ${LAPACKE_STATIC_CFLAGS_OTHER})
         set(LAPACKE_LDFLAGS_OTHER ${LAPACKE_STATIC_LDFLAGS_OTHER})
-            if (NOT LAPACKE_FIND_QUIETLY)
+        if (NOT LAPACKE_FIND_QUIETLY)
           message(STATUS "LAPACKE_STATIC set to 1 by user, LAPACKE_LIBRARIES: ${LAPACKE_LIBRARIES}.")
         endif()
       endif()
@@ -326,157 +258,23 @@ if (LAPACKEXT_FOUND)
       # Looking for include
       # -------------------
 
-      # Add system include paths to search include
-      # ------------------------------------------
-      unset(_inc_env)
-      set(ENV_LAPACKE_DIR "$ENV{LAPACKE_DIR}")
-      set(ENV_LAPACKE_INCDIR "$ENV{LAPACKE_INCDIR}")
-      if(ENV_LAPACKE_INCDIR)
-        list(APPEND _inc_env "${ENV_LAPACKE_INCDIR}")
-      elseif(ENV_LAPACKE_DIR)
-        list(APPEND _inc_env "${ENV_LAPACKE_DIR}")
-        list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include")
-        list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
-        list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/mkl")
-      else()
-        if(WIN32)
-          string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-        else()
-          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-          list(APPEND _inc_env "${_path_env}")
-          string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-          list(APPEND _inc_env "${_path_env}")
-          string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-          list(APPEND _inc_env "${_path_env}")
-          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-          list(APPEND _inc_env "${_path_env}")
-        endif()
-      endif()
-      list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-      list(REMOVE_DUPLICATES _inc_env)
-
-
       # Try to find the lapacke header in the given paths
       # -------------------------------------------------
-
       if (LAPACKE_LIBRARIES MATCHES "libmkl")
         set(LAPACKE_hdrs_to_find "mkl.h")
       else()
         set(LAPACKE_hdrs_to_find "lapacke.h")
       endif()
 
-      # call cmake macro to find the header path
-      if(LAPACKE_INCDIR)
-        set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
-        find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
-          NAMES ${LAPACKE_hdrs_to_find}
-          HINTS ${LAPACKE_INCDIR}
-          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-      else()
-        if(LAPACKE_DIR)
-          set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
-          find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
-            NAMES ${LAPACKE_hdrs_to_find}
-            HINTS ${LAPACKE_DIR}
-            PATH_SUFFIXES "include" "include/lapacke" "include/mkl"
-            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-        else()
-          set(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS "LAPACKE_${LAPACKE_hdrs_to_find}_DIRS-NOTFOUND")
-          find_path(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS
-            NAMES ${LAPACKE_hdrs_to_find}
-            HINTS ${_inc_env})
-        endif()
-      endif()
-      mark_as_advanced(LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)
-
-      # If found, add path to cmake variable
-      # ------------------------------------
-      if (LAPACKE_${LAPACKE_hdrs_to_find}_DIRS)
-        set(LAPACKE_INCLUDE_DIRS "${LAPACKE_${LAPACKE_hdrs_to_find}_DIRS}")
-      else ()
-        set(LAPACKE_INCLUDE_DIRS "LAPACKE_INCLUDE_DIRS-NOTFOUND")
-        if(NOT LAPACKE_FIND_QUIETLY)
-          message(STATUS "Looking for lapacke -- ${LAPACKE_hdrs_to_find} not found")
-        endif()
-      endif()
-
+      morse_find_path(LAPACKE
+        HEADERS ${LAPACKE_hdrs_to_find}
+        SUFFIXES "include" "include/lapacke" "include/mkl" )
 
       # Looking for lib
       # ---------------
-
-      # Add system library paths to search lib
-      # --------------------------------------
-      unset(_lib_env)
-      set(ENV_LAPACKE_LIBDIR "$ENV{LAPACKE_LIBDIR}")
-      if(ENV_LAPACKE_LIBDIR)
-        list(APPEND _lib_env "${ENV_LAPACKE_LIBDIR}")
-      elseif(ENV_LAPACKE_DIR)
-        list(APPEND _lib_env "${ENV_LAPACKE_DIR}")
-        list(APPEND _lib_env "${ENV_LAPACKE_DIR}/lib")
-      else()
-        list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-        if(WIN32)
-          string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-        elseif(APPLE)
-          string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-        else()
-          string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-        endif()
-        list(APPEND _lib_env "${_lib_env2}")
-        list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-      endif()
-      list(REMOVE_DUPLICATES _lib_env)
-
-      # Try to find the lapacke lib in the given paths
-      # ----------------------------------------------
-
-      if (LAPACKE_STATIC)
-        set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-        set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-      endif()
-
-      # call cmake macro to find the lib path
-      if(LAPACKE_LIBDIR)
-        set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
-        find_library(LAPACKE_lapacke_LIBRARY
-          NAMES lapacke
-          HINTS ${LAPACKE_LIBDIR}
-          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-      else()
-        if(LAPACKE_DIR)
-          set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
-          find_library(LAPACKE_lapacke_LIBRARY
-            NAMES lapacke
-            HINTS ${LAPACKE_DIR}
-            PATH_SUFFIXES lib lib32 lib64
-            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-        else()
-          set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
-          find_library(LAPACKE_lapacke_LIBRARY
-            NAMES lapacke
-            HINTS ${_lib_env})
-        endif()
-      endif()
-      mark_as_advanced(LAPACKE_lapacke_LIBRARY)
-
-      if (LAPACKE_STATIC)
-        set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-      endif()
-
-      # If found, add path to cmake variable
-      # ------------------------------------
-      if (LAPACKE_lapacke_LIBRARY)
-        get_filename_component(lapacke_lib_path "${LAPACKE_lapacke_LIBRARY}" PATH)
-        # set cmake variables
-        set(LAPACKE_LIBRARIES    "${LAPACKE_lapacke_LIBRARY}")
-        set(LAPACKE_LIBRARY_DIRS "${lapacke_lib_path}")
-      else ()
-        set(LAPACKE_LIBRARIES    "LAPACKE_LIBRARIES-NOTFOUND")
-        set(LAPACKE_LIBRARY_DIRS "LAPACKE_LIBRARY_DIRS-NOTFOUND")
-        if (NOT LAPACKE_FIND_QUIETLY)
-          message(STATUS "Looking for lapacke -- lib lapacke not found")
-        endif()
-      endif ()
+      morse_find_library(LAPACKE
+        LIBRARIES lapacke
+        SUFFIXES  lib lib32 lib64)
 
     endif (NOT LAPACKE_FOUND_WITH_PKGCONFIG OR LAPACKE_GIVEN_BY_USER)
 

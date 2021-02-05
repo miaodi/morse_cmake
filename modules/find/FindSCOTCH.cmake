@@ -59,12 +59,9 @@
 # Common macros to use in finds
 include(FindMorseInit)
 
-if (NOT SCOTCH_FOUND)
-  set(SCOTCH_DIR "" CACHE PATH "Installation directory of SCOTCH library")
-  if (NOT SCOTCH_FIND_QUIETLY)
-    message(STATUS "A cache variable, namely SCOTCH_DIR, has been set to specify the install directory of SCOTCH")
-  endif()
-endif()
+# Set variables from environment if needed
+# ----------------------------------------
+morse_find_package_get_envdir(SCOTCH)
 
 # Set the version to find
 set(SCOTCH_LOOK_FOR_ESMUMPS OFF)
@@ -90,169 +87,21 @@ endif ()
 
 # Looking for include
 # -------------------
-
-# Add system include paths to search include
-# ------------------------------------------
-unset(_inc_env)
-set(ENV_SCOTCH_DIR "$ENV{SCOTCH_DIR}")
-set(ENV_SCOTCH_INCDIR "$ENV{SCOTCH_INCDIR}")
-if(ENV_SCOTCH_INCDIR)
-  list(APPEND _inc_env "${ENV_SCOTCH_INCDIR}")
-elseif(ENV_SCOTCH_DIR)
-  list(APPEND _inc_env "${ENV_SCOTCH_DIR}")
-  list(APPEND _inc_env "${ENV_SCOTCH_DIR}/include")
-  list(APPEND _inc_env "${ENV_SCOTCH_DIR}/include/scotch")
-else()
-  if(WIN32)
-    string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-  else()
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-    list(APPEND _inc_env "${_path_env}")
-    string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-    list(APPEND _inc_env "${_path_env}")
-  endif()
-endif()
-list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-list(REMOVE_DUPLICATES _inc_env)
-
-
-# Try to find the scotch header in the given paths
-# -------------------------------------------------
-# call cmake macro to find the header path
-if(SCOTCH_INCDIR)
-  set(SCOTCH_scotch.h_DIRS "SCOTCH_scotch.h_DIRS-NOTFOUND")
-  find_path(SCOTCH_scotch.h_DIRS
-    NAMES scotch.h
-    HINTS ${SCOTCH_INCDIR}
-    NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-else()
-  if(SCOTCH_DIR)
-    set(SCOTCH_scotch.h_DIRS "SCOTCH_scotch.h_DIRS-NOTFOUND")
-    find_path(SCOTCH_scotch.h_DIRS
-      NAMES scotch.h
-      HINTS ${SCOTCH_DIR}
-      PATH_SUFFIXES "include" "include/scotch"
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    set(SCOTCH_scotch.h_DIRS "SCOTCH_scotch.h_DIRS-NOTFOUND")
-    find_path(SCOTCH_scotch.h_DIRS
-      NAMES scotch.h
-      HINTS ${_inc_env}
-      PATH_SUFFIXES "scotch")
-  endif()
-endif()
-mark_as_advanced(SCOTCH_scotch.h_DIRS)
-
-# If found, add path to cmake variable
-# ------------------------------------
-if (SCOTCH_scotch.h_DIRS)
-  set(SCOTCH_INCLUDE_DIRS "${SCOTCH_scotch.h_DIRS}")
-else ()
-  set(SCOTCH_INCLUDE_DIRS "SCOTCH_INCLUDE_DIRS-NOTFOUND")
-  if (NOT SCOTCH_FIND_QUIETLY)
-    message(STATUS "Looking for scotch -- scotch.h not found")
-  endif()
-endif()
-list(REMOVE_DUPLICATES SCOTCH_INCLUDE_DIRS)
+set(SCOTCH_hdrs_to_find "scotch.h")
+morse_find_path(SCOTCH
+  HEADERS  ${SCOTCH_hdrs_to_find}
+  SUFFIXES include include/scotch)
 
 # Looking for lib
 # ---------------
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-set(ENV_SCOTCH_LIBDIR "$ENV{SCOTCH_LIBDIR}")
-if(ENV_SCOTCH_LIBDIR)
-  list(APPEND _lib_env "${ENV_SCOTCH_LIBDIR}")
-elseif(ENV_SCOTCH_DIR)
-  list(APPEND _lib_env "${ENV_SCOTCH_DIR}")
-  list(APPEND _lib_env "${ENV_SCOTCH_DIR}/lib")
-else()
-  list(APPEND _lib_env "$ENV{LIBRARY_PATH}")
-  if(WIN32)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LIB}")
-  elseif(APPLE)
-    string(REPLACE ":" ";" _lib_env2 "$ENV{DYLD_LIBRARY_PATH}")
-  else()
-    string(REPLACE ":" ";" _lib_env2 "$ENV{LD_LIBRARY_PATH}")
-  endif()
-  list(APPEND _lib_env "${_lib_env2}")
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
-# Try to find the scotch lib in the given paths
-# ----------------------------------------------
-
-if (SCOTCH_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-endif()
-
 set(SCOTCH_libs_to_find "scotch;scotcherrexit")
 if (SCOTCH_LOOK_FOR_ESMUMPS)
   list(INSERT SCOTCH_libs_to_find 0 "esmumps")
 endif()
 
-# call cmake macro to find the lib path
-if(SCOTCH_LIBDIR)
-  foreach(scotch_lib ${SCOTCH_libs_to_find})
-    set(SCOTCH_${scotch_lib}_LIBRARY "SCOTCH_${scotch_lib}_LIBRARY-NOTFOUND")
-    find_library(SCOTCH_${scotch_lib}_LIBRARY
-      NAMES ${scotch_lib}
-      HINTS ${SCOTCH_LIBDIR}
-      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  endforeach()
-else()
-  if(SCOTCH_DIR)
-    foreach(scotch_lib ${SCOTCH_libs_to_find})
-      set(SCOTCH_${scotch_lib}_LIBRARY "SCOTCH_${scotch_lib}_LIBRARY-NOTFOUND")
-      find_library(SCOTCH_${scotch_lib}_LIBRARY
-        NAMES ${scotch_lib}
-        HINTS ${SCOTCH_DIR}
-        PATH_SUFFIXES lib lib32 lib64
-        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    endforeach()
-  else()
-    foreach(scotch_lib ${SCOTCH_libs_to_find})
-      set(SCOTCH_${scotch_lib}_LIBRARY "SCOTCH_${scotch_lib}_LIBRARY-NOTFOUND")
-      find_library(SCOTCH_${scotch_lib}_LIBRARY
-        NAMES ${scotch_lib}
-        HINTS ${_lib_env})
-    endforeach()
-  endif()
-endif()
-
-if (SCOTCH_STATIC)
-  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
-endif()
-
-set(SCOTCH_LIBRARIES "")
-set(SCOTCH_LIBRARY_DIRS "")
-# If found, add path to cmake variable
-# ------------------------------------
-foreach(scotch_lib ${SCOTCH_libs_to_find})
-
-  if (SCOTCH_${scotch_lib}_LIBRARY)
-    get_filename_component(${scotch_lib}_lib_path "${SCOTCH_${scotch_lib}_LIBRARY}" PATH)
-    # set cmake variables
-    list(APPEND SCOTCH_LIBRARIES "${SCOTCH_${scotch_lib}_LIBRARY}")
-    list(APPEND SCOTCH_LIBRARY_DIRS "${${scotch_lib}_lib_path}")
-  else ()
-    list(APPEND SCOTCH_LIBRARIES "${SCOTCH_${scotch_lib}_LIBRARY}")
-    if (NOT SCOTCH_FIND_QUIETLY)
-      message(STATUS "Looking for scotch -- lib ${scotch_lib} not found")
-    endif()
-  endif ()
-
-  mark_as_advanced(SCOTCH_${scotch_lib}_LIBRARY)
-
-endforeach()
-list(REMOVE_DUPLICATES SCOTCH_LIBRARY_DIRS)
+morse_find_library(SCOTCH
+  LIBRARIES ${SCOTCH_libs_to_find}
+  SUFFIXES  lib lib32 lib64)
 
 # check a function to validate the find
 if(SCOTCH_LIBRARIES)

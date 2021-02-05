@@ -26,18 +26,6 @@ cmake_minimum_required(VERSION 3.3)
 # hints_paths (input): additional paths to add when looking for libraries
 macro(LIBRARIES_ABSOLUTE_PATH lib_list hints_paths)
 
-  # collect environment paths to dig
-  # Should not need to do that
-  set(_lib_env ENV LIBRARY_PATH)
-  if (WIN32)
-    list(APPEND _lib_env ENV LIB)
-  elseif (APPLE)
-    list(APPEND _lib_env ENV DYLD_LIBRARY_PATH)
-  else ()
-    list(APPEND _lib_env ENV LD_LIBRARY_PATH)
-  endif ()
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-
   # copy the lib list
   set (${lib_list}_COPY "${${lib_list}}")
 
@@ -63,7 +51,7 @@ macro(LIBRARIES_ABSOLUTE_PATH lib_list hints_paths)
       # try to find the lib
       find_library(_library_path
         NAMES ${_library}
-        HINTS ${hints_paths} ${_lib_env}
+        HINTS ${hints_paths}
         )
       if (_library_path)
           list(APPEND ${lib_list} ${_library_path})

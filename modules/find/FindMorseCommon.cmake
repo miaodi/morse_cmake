@@ -184,16 +184,6 @@ endmacro()
 # e.g. for pkg_search_module(BLAS blas) _prefix would be BLAS
 macro(morse_find_pkgconfig_libraries_absolute_path _prefix)
 
-  set(_lib_env ENV LIBRARY_PATH)
-  if (WIN32)
-    list(APPEND _lib_env ENV LIB)
-  elseif (APPLE)
-    list(APPEND _lib_env ENV DYLD_LIBRARY_PATH)
-  else ()
-    list(APPEND _lib_env ENV LD_LIBRARY_PATH)
-  endif ()
-  list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-
   set(${_prefix}_LIBRARIES_COPY "${${_prefix}_LIBRARIES}")
   set(${_prefix}_LIBRARIES "")
   foreach(_library ${${_prefix}_LIBRARIES_COPY})
@@ -226,7 +216,7 @@ macro(morse_find_pkgconfig_libraries_absolute_path _prefix)
 
     find_library( _library_path
       NAMES ${_library}
-      HINTS ${${_prefix}_LIBDIR} ${${_prefix}_LIBRARY_DIRS} ${_lib_env}
+      HINTS ${${_prefix}_LIBDIR} ${${_prefix}_LIBRARY_DIRS}
       )
 
     if (_library_path)

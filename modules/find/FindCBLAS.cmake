@@ -90,6 +90,97 @@ if (NOT CBLAS_FOUND)
   endif()
 endif()
 
+# Check if a cblas function exists in the lib, and check if the
+# advanced complex gemm functions are available
+# -------------------------------------------------------------
+#
+# _prefix helps to check on BLAS or CBLAS variables
+#
+macro(check_cblas_library _prefix)
+  set(CMAKE_REQUIRED_LIBRARIES)
+  if (${_prefix}_LIBRARIES)
+    set(CMAKE_REQUIRED_LIBRARIES "${${_prefix}_LIBRARIES}")
+  endif()
+  if (${_prefix}_LDFLAGS_OTHER)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${${_prefix}_LDFLAGS_OTHER}")
+  endif()
+  if (${_prefix}_LINKER_FLAGS)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${${_prefix}_LINKER_FLAGS}")
+  endif()
+  if (${_prefix}_CFLAGS_OTHER)
+    set(CMAKE_REQUIRED_FLAGS "${${_prefix}_CFLAGS_OTHER}")
+  endif()
+  if (${_prefix}_INCLUDE_DIRS)
+    set(CMAKE_REQUIRED_INCLUDES "${C${_prefix}_INCLUDE_DIRS}")
+  endif()
+  unset(CBLAS_WORKS CACHE)
+  check_function_exists(cblas_dscal   CBLAS_WORKS)
+  check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
+  check_function_exists(cblas_cgemm3m CBLAS_CGEMM3M_FOUND)
+  mark_as_advanced(CBLAS_WORKS)
+  set(CMAKE_REQUIRED_LIBRARIES)
+endmacro()
+
+# Look  for the cblas header files
+# ---------------------------------
+macro(check_cblas_include)
+  if ( CBLAS_INCLUDE_DIRS )
+    return()
+  endif()
+
+  # Add system include paths to search include
+  # ------------------------------------------
+  if(NOT CBLAS_DIR AND DEFINED ENV{CBLAS_DIR})
+    set(CBLAS_DIR "$ENV{CBLAS_DIR}")
+  endif()
+
+  if(NOT CBLAS_INCDIR AND DEFINED ENV{CBLAS_INCDIR})
+    set(CBLAS_INCDIR "$ENV{CBLAS_INCDIR}")
+  endif()
+
+  # Try to find the cblas header in the given paths
+  # -------------------------------------------------
+  if (CBLAS_LIBRARIES MATCHES "libmkl")
+    set(CBLAS_hdrs_to_find "mkl.h")
+  else()
+    set(CBLAS_hdrs_to_find "cblas.h")
+  endif()
+
+  # call cmake macro to find the header path
+  # ----------------------------------------
+  set(CBLAS_${CBLAS_hdrs_to_find}_DIRS "CBLAS_${CBLAS_hdrs_to_find}_DIRS-NOTFOUND")
+  if(CBLAS_INCDIR)
+    find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
+      NAMES ${CBLAS_hdrs_to_find}
+      HINTS ${CBLAS_INCDIR}
+      NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+  else()
+    if(CBLAS_DIR)
+      find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
+        NAMES ${CBLAS_hdrs_to_find}
+        HINTS ${CBLAS_DIR}
+        PATH_SUFFIXES "include" "include/cblas"
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+    else()
+      find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
+        NAMES ${CBLAS_hdrs_to_find}
+        PATH_SUFFIXES "cblas")
+    endif()
+  endif()
+  mark_as_advanced(CBLAS_${CBLAS_hdrs_to_find}_DIRS)
+
+  # If found, add path to cmake variable
+  # ------------------------------------
+  if (CBLAS_${CBLAS_hdrs_to_find}_DIRS)
+    set(CBLAS_INCLUDE_DIRS "${CBLAS_${CBLAS_hdrs_to_find}_DIRS}")
+  else ()
+    set(CBLAS_INCLUDE_DIRS "CBLAS_INCLUDE_DIRS-NOTFOUND")
+    if(NOT CBLAS_FIND_QUIETLY)
+      message(STATUS "Looking for cblas -- ${CBLAS_hdrs_to_find} not found")
+    endif()
+  endif()
+endmacro()
+
 # CBLAS depends on BLAS anyway, try to find it
 if(CBLAS_FIND_REQUIRED)
   find_package(BLASEXT QUIET REQUIRED)
@@ -101,37 +192,17 @@ endif()
 if (BLASEXT_FOUND)
 
   if (NOT CBLAS_STANDALONE)
-    # check if a cblas function exists in the BLAS lib
-    # this can be the case with libs such as MKL, ACML
-    include(CheckFunctionExists)
-    if (BLAS_LIBRARIES)
-      set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LIBRARIES}")
-    endif()
-    if (BLAS_LDFLAGS_OTHER)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${BLAS_LDFLAGS_OTHER}")
-    endif()
-    if (BLAS_LINKER_FLAGS)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${BLAS_LINKER_FLAGS}")
-    endif()
-    if (BLAS_CFLAGS_OTHER)
-      set(CMAKE_REQUIRED_FLAGS "${BLAS_CFLAGS_OTHER}")
-    endif()
-    if (BLAS_INCLUDE_DIRS)
-      set(CMAKE_REQUIRED_INCLUDES "${BLAS_INCLUDE_DIRS}")
-    endif()
-    unset(CBLAS_WORKS CACHE)
-    check_function_exists(cblas_dscal CBLAS_WORKS)
-    check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
-    mark_as_advanced(CBLAS_WORKS)
-    set(CMAKE_REQUIRED_LIBRARIES)
+    # Check if the blas library includes cblas
+    check_cblas_library(BLAS)
 
+    # Blas lib includes cblas
     if(CBLAS_WORKS)
 
-      # Check for faster complex GEMM routine
-      # (only C/Z, no S/D version)
-      if ( CBLAS_ZGEMM3M_FOUND )
-        add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
-      endif()
+      # # Check for faster complex GEMM routine
+      # # (only C/Z, no S/D version)
+      # if ( CBLAS_ZGEMM3M_FOUND )
+      #   add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
+      # endif()
 
       if(NOT CBLAS_FIND_QUIETLY)
         message(STATUS "Looking for cblas: test with blas succeeds")
@@ -156,92 +227,14 @@ if (BLASEXT_FOUND)
         set(CBLAS_LDFLAGS_OTHER "${BLAS_LDFLAGS_OTHER}")
       endif()
 
+      # Set the mkl library dirs for compatibility with former version
+      # --------------------------------------------------------------
       if (CBLAS_LIBRARIES MATCHES "libmkl" AND DEFINED ENV{MKLROOT})
         set(CBLAS_PREFIX "$ENV{MKLROOT}" CACHE PATH "Installation directory of CBLAS library" FORCE)
-        set(CBLAS_INCLUDE_DIRS "${CBLAS_PREFIX}/include")
         set(CBLAS_LIBRARY_DIRS "${CBLAS_PREFIX}/lib/intel64")
       endif()
 
-      if (NOT CBLAS_INCLUDE_DIRS)
-
-        # Looking for include
-        # -------------------
-
-        # Add system include paths to search include
-        # ------------------------------------------
-        unset(_inc_env)
-        set(ENV_CBLAS_DIR "$ENV{CBLAS_DIR}")
-        set(ENV_CBLAS_INCDIR "$ENV{CBLAS_INCDIR}")
-        if(ENV_CBLAS_INCDIR)
-          list(APPEND _inc_env "${ENV_CBLAS_INCDIR}")
-        elseif(ENV_CBLAS_DIR)
-          list(APPEND _inc_env "${ENV_CBLAS_DIR}")
-          list(APPEND _inc_env "${ENV_CBLAS_DIR}/include")
-          list(APPEND _inc_env "${ENV_CBLAS_DIR}/include/cblas")
-        else()
-          if(WIN32)
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-            list(APPEND _inc_env "${_path_env}")
-          else()
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
-          endif()
-        endif()
-        list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-        list(REMOVE_DUPLICATES _inc_env)
-
-
-        # Try to find the cblas header in the given paths
-        # -------------------------------------------------
-
-        if (CBLAS_LIBRARIES MATCHES "libmkl")
-          set(CBLAS_hdrs_to_find "mkl.h")
-        else()
-          set(CBLAS_hdrs_to_find "cblas.h")
-        endif()
-
-        # call cmake macro to find the header path
-        if(CBLAS_INCDIR)
-          set(CBLAS_${CBLAS_hdrs_to_find}_DIRS "CBLAS_${CBLAS_hdrs_to_find}_DIRS-NOTFOUND")
-          find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
-            NAMES ${CBLAS_hdrs_to_find}
-            HINTS ${CBLAS_INCDIR}
-            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-        else()
-          if(CBLAS_DIR)
-            set(CBLAS_${CBLAS_hdrs_to_find}_DIRS "CBLAS_${CBLAS_hdrs_to_find}_DIRS-NOTFOUND")
-            find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
-              NAMES ${CBLAS_hdrs_to_find}
-              HINTS ${CBLAS_DIR}
-              PATH_SUFFIXES "include" "include/cblas" "include/mkl"
-              NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-          else()
-            set(CBLAS_${CBLAS_hdrs_to_find}_DIRS "CBLAS_${CBLAS_hdrs_to_find}_DIRS-NOTFOUND")
-            find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
-              NAMES ${CBLAS_hdrs_to_find}
-              HINTS ${_inc_env}
-              PATH_SUFFIXES "cblas" "mkl")
-          endif()
-        endif()
-        mark_as_advanced(CBLAS_${CBLAS_hdrs_to_find}_DIRS)
-
-        # If found, add path to cmake variable
-        # ------------------------------------
-        if (CBLAS_${CBLAS_hdrs_to_find}_DIRS)
-          set(CBLAS_INCLUDE_DIRS "${CBLAS_${CBLAS_hdrs_to_find}_DIRS}")
-        else ()
-          set(CBLAS_INCLUDE_DIRS "CBLAS_INCLUDE_DIRS-NOTFOUND")
-          if(NOT CBLAS_FIND_QUIETLY)
-            message(STATUS "Looking for cblas -- ${CBLAS_hdrs_to_find} not found")
-          endif()
-        endif()
-      endif()
+      check_cblas_include()
 
     endif()
 
@@ -322,82 +315,7 @@ if (BLASEXT_FOUND)
 
       # Looking for include
       # -------------------
-
-      # Add system include paths to search include
-      # ------------------------------------------
-      unset(_inc_env)
-      set(ENV_CBLAS_DIR "$ENV{CBLAS_DIR}")
-      set(ENV_CBLAS_INCDIR "$ENV{CBLAS_INCDIR}")
-      if(ENV_CBLAS_INCDIR)
-        list(APPEND _inc_env "${ENV_CBLAS_INCDIR}")
-      elseif(ENV_CBLAS_DIR)
-        list(APPEND _inc_env "${ENV_CBLAS_DIR}")
-        list(APPEND _inc_env "${ENV_CBLAS_DIR}/include")
-        list(APPEND _inc_env "${ENV_CBLAS_DIR}/include/cblas")
-      else()
-        if(WIN32)
-          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-          list(APPEND _inc_env "${_path_env}")
-        else()
-          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-          list(APPEND _inc_env "${_path_env}")
-          string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-          list(APPEND _inc_env "${_path_env}")
-          string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-          list(APPEND _inc_env "${_path_env}")
-          string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-          list(APPEND _inc_env "${_path_env}")
-        endif()
-      endif()
-      list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-      list(REMOVE_DUPLICATES _inc_env)
-
-
-      # Try to find the cblas header in the given paths
-      # -------------------------------------------------
-
-      if (CBLAS_LIBRARIES MATCHES "libmkl")
-        set(CBLAS_hdrs_to_find "mkl.h")
-      else()
-        set(CBLAS_hdrs_to_find "cblas.h")
-      endif()
-
-      # call cmake macro to find the header path
-      if(CBLAS_INCDIR)
-        set(CBLAS_${CBLAS_hdrs_to_find}_DIRS "CBLAS_${CBLAS_hdrs_to_find}_DIRS-NOTFOUND")
-        find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
-          NAMES ${CBLAS_hdrs_to_find}
-          HINTS ${CBLAS_INCDIR}
-          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-      else()
-        if(CBLAS_DIR)
-          set(CBLAS_${CBLAS_hdrs_to_find}_DIRS "CBLAS_${CBLAS_hdrs_to_find}_DIRS-NOTFOUND")
-          find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
-            NAMES ${CBLAS_hdrs_to_find}
-            HINTS ${CBLAS_DIR}
-            PATH_SUFFIXES "include" "include/cblas"
-            NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
-        else()
-          set(CBLAS_${CBLAS_hdrs_to_find}_DIRS "CBLAS_${CBLAS_hdrs_to_find}_DIRS-NOTFOUND")
-          find_path(CBLAS_${CBLAS_hdrs_to_find}_DIRS
-            NAMES ${CBLAS_hdrs_to_find}
-            HINTS ${_inc_env}
-            PATH_SUFFIXES "cblas")
-        endif()
-      endif()
-      mark_as_advanced(CBLAS_${CBLAS_hdrs_to_find}_DIRS)
-
-      # If found, add path to cmake variable
-      # ------------------------------------
-      if (CBLAS_${CBLAS_hdrs_to_find}_DIRS)
-        set(CBLAS_INCLUDE_DIRS "${CBLAS_${CBLAS_hdrs_to_find}_DIRS}")
-      else ()
-        set(CBLAS_INCLUDE_DIRS "CBLAS_INCLUDE_DIRS-NOTFOUND")
-        if(NOT CBLAS_FIND_QUIETLY)
-          message(STATUS "Looking for cblas -- ${CBLAS_hdrs_to_find} not found")
-        endif()
-      endif()
-
+      check_cblas_include()
 
       # Looking for lib
       # ---------------
@@ -604,7 +522,7 @@ if (BLASEXT_FOUND)
 
   endif(CBLAS_LIBRARIES)
 
-else(BLAS_FOUND)
+else(BLASEXT_FOUND)
 
   if (NOT CBLAS_FIND_QUIETLY)
     message(STATUS "CBLAS requires BLAS but BLAS has not been found."
@@ -623,6 +541,18 @@ else()
   if (CBLAS_LIBRARIES MATCHES "libmkl" AND BLAS_SEQ_LIBRARIES)
     set(CBLAS_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
   endif()
+endif()
+
+# Enable variables to defined advanced complex gemm
+# -------------------------------------------------
+if ( CBLAS_ZGEMM3M_FOUND )
+  set( CBLAS_HAS_ZGEMM3M ON )
+  mark_as_advanced( CBLAS_HAS_ZGEMM3M )
+endif()
+
+if ( CBLAS_CGEMM3M_FOUND )
+  set( CBLAS_HAS_CGEMM3M ON )
+  mark_as_advanced( CBLAS_HAS_CGEMM3M )
 endif()
 
 # check that CBLAS has been found

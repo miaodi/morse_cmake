@@ -47,91 +47,69 @@ else()
   find_package(LAPACK QUIET)
 endif()
 
+set(BLA_VENDOR_COPY ${BLA_VENDOR})
+
+macro(lapackext_set_library VERSION)
+  if (LAPACK_FOUND)
+    set(LAPACK_${VERSION}_FOUND ${LAPACK_FOUND})
+    if(NOT TARGET LAPACK::LAPACK_${VERSION})
+      add_library(LAPACK::LAPACK_${VERSION} INTERFACE IMPORTED)
+    endif()
+    if (LAPACK_LINKER_FLAGS)
+      set(LAPACK_${VERSION}_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
+      set_target_properties(LAPACK::LAPACK_${VERSION} PROPERTIES
+        INTERFACE_LINK_OPTIONS "${LAPACK_LINKER_FLAGS}"
+        )
+    endif()
+    if (LAPACK_LIBRARIES)
+      if(NOT LAPACKEXT_FIND_QUIETLY)
+        message(STATUS "FindLAPACKEXT: Found LAPACK ${BLA_VENDOR}")
+        message(STATUS "FindLAPACKEXT: Store following libraries in LAPACK_${VERSION}_LIBRARIES and target LAPACK::LAPACK_${VERSION} ${LAPACK_LIBRARIES}")
+      endif()
+      set(LAPACK_${VERSION}_LIBRARIES ${LAPACK_LIBRARIES})
+      set_target_properties(LAPACK::LAPACK_${VERSION} PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${LAPACK_LIBRARIES}"
+        )
+    endif()
+  endif()
+endmacro()
+
 if (LAPACK_FOUND)
 
   if(LAPACK_LIBRARIES MATCHES "libmkl")
-
     if(NOT LAPACKEXT_FIND_QUIETLY)
       message(STATUS "FindLAPACKEXT: LAPACK_LIBRARIES matches mkl")
     endif()
+
+    # Look for the sequential MKL
+    # ---------------------------
     set(BLA_VENDOR "Intel10_64lp_seq")
     unset(LAPACK_FOUND)
     unset(LAPACK_LINKER_FLAGS)
     unset(LAPACK_LIBRARIES)
     find_package(LAPACK QUIET)
-    if (LAPACK_FOUND)
-      set(LAPACK_SEQ_FOUND ${LAPACK_FOUND})
-      if(NOT TARGET LAPACK::LAPACK_SEQ)
-        add_library(LAPACK::LAPACK_SEQ INTERFACE IMPORTED)
-      endif()
-      if (LAPACK_LINKER_FLAGS)
-        set(LAPACK_SEQ_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
-        set_target_properties(LAPACK::LAPACK_SEQ PROPERTIES
-          INTERFACE_LINK_OPTIONS "${LAPACK_LINKER_FLAGS}"
-        )
-      endif()
-      if (LAPACK_LIBRARIES)
-        if(NOT LAPACKEXT_FIND_QUIETLY)
-        message(STATUS "FindLAPACKEXT: Found LAPACK ${BLA_VENDOR}")
-          message(STATUS "FindLAPACKEXT: Store following libraries in LAPACK_SEQ_LIBRARIES and target LAPACK::LAPACK_SEQ ${LAPACK_LIBRARIES}")
-        endif()
-        set(LAPACK_SEQ_LIBRARIES ${LAPACK_LIBRARIES})
-        set_target_properties(LAPACK::LAPACK_SEQ PROPERTIES
-          INTERFACE_LINK_LIBRARIES "${LAPACK_LIBRARIES}"
-        )
-      endif()
-    endif()
+    lapackext_set_library( SEQ )
 
+    # Look for the multi-threaded MKL
+    # -------------------------------
     set(BLA_VENDOR "Intel10_64lp")
     unset(LAPACK_FOUND)
     unset(LAPACK_LINKER_FLAGS)
     unset(LAPACK_LIBRARIES)
     find_package(LAPACK QUIET)
-    if (LAPACK_FOUND)
-      set(LAPACK_MT_FOUND ${LAPACK_FOUND})
-      if(NOT TARGET LAPACK::LAPACK_MT)
-        add_library(LAPACK::LAPACK_MT INTERFACE IMPORTED)
-      endif()
-      if (LAPACK_LINKER_FLAGS)
-        set(LAPACK_MT_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
-        set_target_properties(LAPACK::LAPACK_MT PROPERTIES
-          INTERFACE_LINK_OPTIONS "${LAPACK_LINKER_FLAGS}"
-        )
-      endif()
-      if (LAPACK_LIBRARIES)
-        if(NOT LAPACKEXT_FIND_QUIETLY)
-        message(STATUS "FindLAPACKEXT: Found LAPACK ${BLA_VENDOR}")
-          message(STATUS "FindLAPACKEXT: Store following libraries in LAPACK_MT_LIBRARIES and target LAPACK::LAPACK_MT ${LAPACK_LIBRARIES}")
-        endif()
-        set(LAPACK_MT_LIBRARIES ${LAPACK_LIBRARIES})
-        set_target_properties(LAPACK::LAPACK_MT PROPERTIES
-          INTERFACE_LINK_LIBRARIES "${LAPACK_LIBRARIES}"
-        )
-      endif()
-    endif()
+    lapackext_set_library( MT )
+
+    # Restore the original library to make sure LAPACK_LIBRARIES is set
+    # -----------------------------------------------------------------
+    set(BLA_VENDOR ${BLA_VENDOR_COPY})
+    unset(LAPACK_FOUND)
+    unset(LAPACK_LINKER_FLAGS)
+    unset(LAPACK_LIBRARIES)
+    find_package(LAPACK QUIET)
 
   else(LAPACK_LIBRARIES MATCHES "libmkl")
 
-    set(LAPACK_SEQ_FOUND ${LAPACK_FOUND})
-    if(NOT TARGET LAPACK::LAPACK_SEQ)
-      add_library(LAPACK::LAPACK_SEQ INTERFACE IMPORTED)
-    endif()
-    if (LAPACK_LINKER_FLAGS)
-      set(LAPACK_SEQ_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
-      set_target_properties(LAPACK::LAPACK_SEQ PROPERTIES
-        INTERFACE_LINK_OPTIONS "${LAPACK_LINKER_FLAGS}"
-      )
-    endif()
-    if (LAPACK_LIBRARIES)
-      if(NOT LAPACKEXT_FIND_QUIETLY)
-        message(STATUS "FindLAPACKEXT: Found LAPACK ${BLA_VENDOR}")
-        message(STATUS "FindLAPACKEXT: Store following libraries in LAPACK_SEQ_LIBRARIES and target LAPACK::LAPACK_SEQ ${LAPACK_LIBRARIES}")
-      endif()
-      set(LAPACK_SEQ_LIBRARIES ${LAPACK_LIBRARIES})
-      set_target_properties(LAPACK::LAPACK_SEQ PROPERTIES
-        INTERFACE_LINK_LIBRARIES "${LAPACK_LIBRARIES}"
-      )
-    endif()
+    lapackext_set_library( SEQ )
 
   endif(LAPACK_LIBRARIES MATCHES "libmkl")
 
@@ -141,8 +119,10 @@ else(LAPACK_FOUND)
   endif()
 endif(LAPACK_FOUND)
 
+set(BLA_VENDOR ${BLA_VENDOR_COPY})
+
 # check that LAPACKEXT has been found
 # -----------------------------------
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LAPACKEXT DEFAULT_MSG
-  LAPACK_SEQ_LIBRARIES)
+  LAPACK_LIBRARIES)

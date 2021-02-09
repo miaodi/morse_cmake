@@ -40,98 +40,76 @@ if(NOT BLASEXT_FIND_QUIETLY)
   message(STATUS "FindBLASEXT: Try to find BLAS")
 endif()
 
-# BLASEXT first search BLAS available
+# BLASEXT first search for the main BLAS library available
 if(BLASEXT_FIND_REQUIRED)
   find_package(BLAS QUIET REQUIRED)
 else()
   find_package(BLAS QUIET)
 endif()
 
+set(BLA_VENDOR_COPY ${BLA_VENDOR})
+
+macro(blasext_set_library VERSION)
+  if (BLAS_FOUND)
+    set(BLAS_${VERSION}_FOUND ${BLAS_FOUND})
+    if(NOT TARGET BLAS::BLAS_${VERSION})
+      add_library(BLAS::BLAS_${VERSION} INTERFACE IMPORTED)
+    endif()
+    if (BLAS_LINKER_FLAGS)
+      set(BLAS_${VERSION}_LINKER_FLAGS ${BLAS_LINKER_FLAGS})
+      set_target_properties(BLAS::BLAS_${VERSION} PROPERTIES
+        INTERFACE_LINK_OPTIONS "${BLAS_LINKER_FLAGS}"
+        )
+    endif()
+    if (BLAS_LIBRARIES)
+      if(NOT BLASEXT_FIND_QUIETLY)
+        message(STATUS "FindBLASEXT: Found BLAS ${BLA_VENDOR}")
+        message(STATUS "FindBLASEXT: Store following libraries in BLAS_${VERSION}_LIBRARIES and target BLAS::BLAS_${VERSION} ${BLAS_LIBRARIES}")
+      endif()
+      set(BLAS_${VERSION}_LIBRARIES ${BLAS_LIBRARIES})
+      set_target_properties(BLAS::BLAS_${VERSION} PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${BLAS_LIBRARIES}"
+        )
+    endif()
+  endif()
+endmacro()
+
 if (BLAS_FOUND)
 
   if(BLAS_LIBRARIES MATCHES "libmkl")
-
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "FindBLASEXT: BLAS_LIBRARIES matches mkl")
     endif()
+
+    # Look for the sequential MKL
+    # ---------------------------
     set(BLA_VENDOR "Intel10_64lp_seq")
     unset(BLAS_FOUND)
     unset(BLAS_LINKER_FLAGS)
     unset(BLAS_LIBRARIES)
     find_package(BLAS QUIET)
-    if (BLAS_FOUND)
-      set(BLAS_SEQ_FOUND ${BLAS_FOUND})
-      if(NOT TARGET BLAS::BLAS_SEQ)
-        add_library(BLAS::BLAS_SEQ INTERFACE IMPORTED)
-      endif()
-      if (BLAS_LINKER_FLAGS)
-        set(BLAS_SEQ_LINKER_FLAGS ${BLAS_LINKER_FLAGS})
-        set_target_properties(BLAS::BLAS_SEQ PROPERTIES
-          INTERFACE_LINK_OPTIONS "${BLAS_LINKER_FLAGS}"
-        )
-      endif()
-      if (BLAS_LIBRARIES)
-        if(NOT BLASEXT_FIND_QUIETLY)
-        message(STATUS "FindBLASEXT: Found BLAS ${BLA_VENDOR}")
-          message(STATUS "FindBLASEXT: Store following libraries in BLAS_SEQ_LIBRARIES and target BLAS::BLAS_SEQ ${BLAS_LIBRARIES}")
-        endif()
-        set(BLAS_SEQ_LIBRARIES ${BLAS_LIBRARIES})
-        set_target_properties(BLAS::BLAS_SEQ PROPERTIES
-          INTERFACE_LINK_LIBRARIES "${BLAS_LIBRARIES}"
-        )
-      endif()
-    endif()
+    blasext_set_library( SEQ )
 
+    # Look for the multi-threaded MKL
+    # -------------------------------
     set(BLA_VENDOR "Intel10_64lp")
     unset(BLAS_FOUND)
     unset(BLAS_LINKER_FLAGS)
     unset(BLAS_LIBRARIES)
     find_package(BLAS QUIET)
-    if (BLAS_FOUND)
-      set(BLAS_MT_FOUND ${BLAS_FOUND})
-      if(NOT TARGET BLAS::BLAS_MT)
-        add_library(BLAS::BLAS_MT INTERFACE IMPORTED)
-      endif()
-      if (BLAS_LINKER_FLAGS)
-        set(BLAS_MT_LINKER_FLAGS ${BLAS_LINKER_FLAGS})
-        set_target_properties(BLAS::BLAS_MT PROPERTIES
-          INTERFACE_LINK_OPTIONS "${BLAS_LINKER_FLAGS}"
-        )
-      endif()
-      if (BLAS_LIBRARIES)
-        if(NOT BLASEXT_FIND_QUIETLY)
-        message(STATUS "FindBLASEXT: Found BLAS ${BLA_VENDOR}")
-          message(STATUS "FindBLASEXT: Store following libraries in BLAS_MT_LIBRARIES and target BLAS::BLAS_MT ${BLAS_LIBRARIES}")
-        endif()
-        set(BLAS_MT_LIBRARIES ${BLAS_LIBRARIES})
-        set_target_properties(BLAS::BLAS_MT PROPERTIES
-          INTERFACE_LINK_LIBRARIES "${BLAS_LIBRARIES}"
-        )
-      endif()
-    endif()
+    blasext_set_library( MT )
+
+    # Restore the original library to make sure BLAS_LIBRARIES is set
+    # ---------------------------------------------------------------
+    set(BLA_VENDOR ${BLA_VENDOR_COPY})
+    unset(BLAS_FOUND)
+    unset(BLAS_LINKER_FLAGS)
+    unset(BLAS_LIBRARIES)
+    find_package(BLAS QUIET)
 
   else(BLAS_LIBRARIES MATCHES "libmkl")
 
-    set(BLAS_SEQ_FOUND ${BLAS_FOUND})
-    if(NOT TARGET BLAS::BLAS_SEQ)
-      add_library(BLAS::BLAS_SEQ INTERFACE IMPORTED)
-    endif()
-    if (BLAS_LINKER_FLAGS)
-      set(BLAS_SEQ_LINKER_FLAGS ${BLAS_LINKER_FLAGS})
-      set_target_properties(BLAS::BLAS_SEQ PROPERTIES
-        INTERFACE_LINK_OPTIONS "${BLAS_LINKER_FLAGS}"
-      )
-    endif()
-    if (BLAS_LIBRARIES)
-      if(NOT BLASEXT_FIND_QUIETLY)
-        message(STATUS "FindBLASEXT: Found BLAS ${BLA_VENDOR}")
-        message(STATUS "FindBLASEXT: Store following libraries in BLAS_SEQ_LIBRARIES and target BLAS::BLAS_SEQ ${BLAS_LIBRARIES}")
-      endif()
-      set(BLAS_SEQ_LIBRARIES ${BLAS_LIBRARIES})
-      set_target_properties(BLAS::BLAS_SEQ PROPERTIES
-        INTERFACE_LINK_LIBRARIES "${BLAS_LIBRARIES}"
-      )
-    endif()
+    blasext_set_library( SEQ )
 
   endif(BLAS_LIBRARIES MATCHES "libmkl")
 
@@ -141,8 +119,10 @@ else(BLAS_FOUND)
   endif()
 endif(BLAS_FOUND)
 
+set(BLA_VENDOR ${BLA_VENDOR_COPY})
+
 # check that BLASEXT has been found
 # ---------------------------------
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(BLASEXT DEFAULT_MSG
-  BLAS_SEQ_LIBRARIES)
+  BLAS_LIBRARIES)

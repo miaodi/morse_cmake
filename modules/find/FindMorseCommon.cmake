@@ -253,6 +253,192 @@ macro(morse_install_finds mods dest )
   endforeach()
 endmacro()
 
+macro(morse_find_package_get_envdir _package)
+  # This macro checks for the existence of environment variables
+  # that would help to find packages.  For each variable
+  # ${_package}_DIR, ${_package}_INCDIR, and ${_package}_LIBDIR is the
+  # environment variable exists and the cmake cache one is not
+  # defined, then it defines the cmake variable to the environment
+  # one.
+
+  if(NOT ${_package}_DIR AND DEFINED ENV{${_package}_DIR})
+    set(${_package}_DIR "$ENV{${_package}_DIR}"
+      CACHE PATH "Installation directory of the ${_package} package given by the user")
+    mark_as_advanced(${_package}_DIR)
+  endif()
+
+  if(NOT ${_package}_INCDIR AND DEFINED ENV{${_package}_INCDIR})
+    set(${_package}_INCDIR "$ENV{${_package}_INCDIR}"
+      CACHE PATH "Header installation directory the ${_package} package given by the user")
+    mark_as_advanced(${_package}_INCDIR)
+  endif()
+
+  if(NOT ${_package}_LIBDIR AND DEFINED ENV{${_package}_LIBDIR})
+    set(${_package}_LIBDIR "$ENV{${_package}_LIBDIR}"
+      CACHE PATH "Libraries installation directory the ${_package} package given by the user")
+    mark_as_advanced(${_package}_LIBDIR)
+  endif()
+
+  if(NOT ${_package}_BINDIR AND DEFINED ENV{${_package}_BINDIR})
+    set(${_package}_BINDIR "$ENV{${_package}_BINDIR}"
+      CACHE PATH "Binaries installation directory the ${_package} package given by the user")
+    mark_as_advanced(${_package}_BINDIR)
+  endif()
+endmacro()
+
+macro(morse_find_path _package )
+  # This macro is an extension of the find_path function to search
+  # explictly for files in the user defined directory first before
+  # looking for it in system directories.
+  parse_arguments(mfp "HEADERS;SUFFIXES;HINTS" "OPTIONAL" ${ARGN})
+
+  message( DEBUG "[MFP/${_package}] HEADERS  : ${mfp_HEADERS}"  )
+  message( DEBUG "[MFP/${_package}] SUFFIXES : ${mfp_SUFFIXES}" )
+  message( DEBUG "[MFP/${_package}] HINTS    : ${mfp_HINTS}"    )
+  message( DEBUG "[MFP/${_package}] OPTIONAL : ${mfp_OPTIONAL}" )
+
+  # Adjust verbosity
+  # ----------------
+  if(${_package}_FIND_QUIETLY)
+    set(_outlvl VERBOSE)
+  else()
+    set(_outlvl STATUS)
+  endif()
+
+  # Prepare the package variables to fill
+  # -------------------------------------
+  set(${_package}_INCLUDE_DIRS)
+
+  # Call cmake macro to find all the headers path
+  # ---------------------------------------------
+  foreach(_hdrfile ${mfp_HEADERS})
+    set(${_package}_${_hdrfile}_DIRS "${_package}_${_hdrfile}_DIRS-NOTFOUND")
+
+    if(${_package}_INCDIR)
+      find_path(${_package}_${_hdrfile}_DIRS
+        NAMES ${_hdrfile}
+        HINTS ${${_package}_INCDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+    else()
+      if(${_package}_DIR)
+        find_path(${_package}_${_hdrfile}_DIRS
+          NAMES ${_hdrfile}
+          HINTS ${${_package}_DIR}
+          PATH_SUFFIXES ${mfp_SUFFIXES}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+      else()
+        find_path(${_package}_${_hdrfile}_DIRS
+          NAMES ${_hdrfile}
+          HINTS ${mfp_HINTS})
+      endif()
+    endif()
+    mark_as_advanced(${_package}_${_hdrfile}_DIRS)
+
+    if( ${_package}_${_hdrfile}_DIRS )
+      list(APPEND ${_package}_INCLUDE_DIRS ${${_package}_${_hdrfile}_DIRS} )
+      message( VERBOSE    "[MFP/${_package}] Found ${_hdrfile} in ${${_package}_${_hdrfile}_DIRS}" )
+    else()
+      if ( NOT ${mfp_OPTIONAL} )
+        set( ${_package}_INCLUDE_DIRS "${_package}_INCLUDE_DIRS-NOTFOUND" )
+        break()
+      endif()
+      message( ${_outlvl} "[MFP/${_package}] ${_hdrfile} not found" )
+    endif()
+  endforeach()
+
+  list(REMOVE_DUPLICATES ${_package}_INCLUDE_DIRS)
+endmacro()
+
+macro(morse_find_library _package )
+  # This macro is an extension of the find_library function to search
+  # explicitly for files in the user defined directory first before
+  # looking for it in system directories.
+  parse_arguments(mfl "LIBRARIES;SUFFIXES;HINTS" "OPTIONAL" ${ARGN})
+
+  message( DEBUG "[MFL/${_package}] LIBRARIES : ${mfl_LIBRARIES}" )
+  message( DEBUG "[MFL/${_package}] SUFFIXES  : ${mfl_SUFFIXES}"  )
+  message( DEBUG "[MFL/${_package}] HINTS     : ${mfl_HINTS}"     )
+  message( DEBUG "[MFL/${_package}] OPTIONAL  : ${mfl_OPTIONAL}"  )
+
+  # Adjust verbosity
+  # ----------------
+  if(${_package}_FIND_QUIETLY)
+    set(_outlvl VERBOSE)
+  else()
+    set(_outlvl STATUS)
+  endif()
+
+  # Set the suffixes for static libraries
+  # -------------------------------------
+  set (CMAKE_FIND_LIBRARY_SUFFIXES_COPY ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  if (${_package}_STATIC)
+    if (WIN32)
+      set(CMAKE_FIND_LIBRARY_SUFFIXES .lib ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    endif ( WIN32 )
+    if (APPLE)
+      set(CMAKE_FIND_LIBRARY_SUFFIXES .lib ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    endif()
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  else()
+    # for ubuntu's libblas3gf and libscalapack3gf packages
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} .so.3gf)
+  endif()
+
+  # Prepare the package variables to fill
+  # -------------------------------------
+  set(${_package}_LIBRARIES)
+  set(${_package}_LIBRARY_DIRS)
+
+  # Call cmake macro to find each library
+  # -------------------------------------
+  foreach(_library ${mfl_LIBRARIES})
+    set(${_package}_${_library}_LIBRARY "${_package}_${_library}_LIBRARY-NOTFOUND")
+
+    if(${_package}_LIBDIR)
+      find_library(${_package}_${_library}_LIBRARY
+        NAMES ${_library}
+        HINTS ${${_package}_LIBDIR}
+        NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+    else()
+      if(${_package}_DIR)
+        find_library(${_package}_${_library}_LIBRARY
+          NAMES ${_library}
+          HINTS ${${_package}_DIR}
+          PATH_SUFFIXES ${mfl_SUFFIXES}
+          NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
+      else()
+        find_library(${_package}_${_library}_LIBRARY
+          NAMES ${_library}
+          HINTS ${mfl_HINTS})
+      endif()
+    endif()
+    mark_as_advanced(${_package}_${_library}_LIBRARY)
+
+    if( ${_package}_${_library}_LIBRARY )
+      # Register the found library to the list
+      # --------------------------------------
+      list(APPEND ${_package}_LIBRARIES ${${_package}_${_library}_LIBRARY})
+
+      get_filename_component(_path ${${_package}_${_library}_LIBRARY} PATH)
+      list(APPEND ${_package}_LIBRARY_DIRS ${_path})
+
+      message( VERBOSE    "[MFL/${_package}] Found ${_library} - ${${_package}_${_library}_LIBRARY}" )
+    else()
+      message( ${_outlvl} "[MFL/${_package}] ${_library} not found" )
+      if ( NOT ${mfl_OPTIONAL} )
+        set( ${_package}_LIBRARIES    "${_package}_LIBRARIES-NOTFOUND"    )
+        set( ${_package}_LIBRARY_DIRS "${_package}_LIBRARY_DIRS-NOTFOUND" )
+        break()
+      endif()
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES ${_package}_LIBRARY_DIRS)
+
+  # Restore suffixes
+  # ----------------
+  set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_COPY})
+endmacro()
+
 ##
 ## @end file FindMorseCommon
 ##

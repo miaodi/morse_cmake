@@ -28,6 +28,9 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Factorize some piece of code
+include(ParseArguments)
+
+# Factorize some piece of code
 include(FindMorseCommon)
 
 # To find headers and libs

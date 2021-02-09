@@ -21,6 +21,33 @@
 ###
 cmake_minimum_required(VERSION 3.3)
 
+# Macro to cleanup packages variables and avoid duplications
+# ----------------------------------------------------------
+macro(morse_cleanup_variables _prefix)
+  #  <PREFIX>_LIBRARIES      ... only the libraries (w/o the '-l')
+  #  <PREFIX>_LIBRARY_DIRS   ... the paths of the libraries (w/o the '-L')
+  #  <PREFIX>_LDFLAGS_OTHER  ... all other linker flags
+  #  <PREFIX>_INCLUDE_DIRS   ... the '-I' preprocessor flags (w/o the '-I')
+  #  <PREFIX>_CFLAGS_OTHER   ... the other compiler flags
+  if (${_prefix}_LIBRARIES)
+    list(REVERSE ${_prefix}_LIBRARIES)
+    list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
+    list(REVERSE ${_prefix}_LIBRARIES)
+  endif()
+  if (${_prefix}_LIBRARY_DIRS)
+    list(REMOVE_DUPLICATES ${_prefix}_LIBRARY_DIRS)
+  endif()
+  if (${_prefix}_LDFLAGS_OTHER)
+    list(REMOVE_DUPLICATES ${_prefix}_LDFLAGS_OTHER)
+  endif()
+  if (${_prefix}_INCLUDE_DIRS)
+    list(REMOVE_DUPLICATES ${_prefix}_INCLUDE_DIRS)
+  endif()
+  if (${_prefix}_CFLAGS_OTHER)
+    list(REMOVE_DUPLICATES ${_prefix}_CFLAGS_OTHER)
+  endif()
+endmacro()
+
 # clean these variables before using them in CMAKE_REQUIRED_* variables in
 # check_function_exists
 macro(morse_finds_remove_duplicates)
@@ -149,7 +176,8 @@ macro(morse_create_imported_target name)
 
 endmacro()
 
-# set required libraries for link test
+# Set the CMAKE_REQUIRED_... porperties to check libraries
+# --------------------------------------------------------
 macro(morse_set_required_test_lib_link name)
   set(CMAKE_REQUIRED_INCLUDES "${${name}${STATIC}_INCLUDE_DIRS}")
   if (${name}${STATIC}_CFLAGS_OTHER)
@@ -176,6 +204,41 @@ macro(morse_set_required_test_lib_link name)
   endif()
   list(APPEND CMAKE_REQUIRED_LIBRARIES "${${name}${STATIC}_LIBRARIES}")
   string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+endmacro()
+
+# Set the CMAKE_REQUIRED_... porperties to check libraries
+# --------------------------------------------------------
+macro(morse_cmake_required_set prefix)
+  if (${prefix}_CFLAGS_OTHER)
+    set(REQUIRED_FLAGS_COPY "${${prefix}_CFLAGS_OTHER}")
+    set(REQUIRED_FLAGS)
+    set(REQUIRED_DEFINITIONS)
+    foreach(_flag ${REQUIRED_FLAGS_COPY})
+      if (_flag MATCHES "^-D")
+       list(APPEND REQUIRED_DEFINITIONS "${_flag}")
+      endif()
+      string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
+      list(APPEND REQUIRED_FLAGS "${_flag}")
+    endforeach()
+  endif()
+  set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
+  set(CMAKE_REQUIRED_FLAGS       "${REQUIRED_FLAGS}")
+  set(CMAKE_REQUIRED_INCLUDES    "${${prefix}_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_LIBRARIES   "${${prefix}_LDFLAGS_OTHER}")
+  foreach(_dir ${${prefix}_LIBRARY_DIRS})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${_dir}")
+  endforeach()
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "${${prefix}_LIBRARIES}")
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+endmacro()
+
+# Unset the CMAKE_REQUIRED_... properties
+# ---------------------------------------
+macro(morse_cmake_required_unset)
+  set(CMAKE_REQUIRED_DEFINITIONS)
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_LIBRARIES)
 endmacro()
 
 # Transform relative path into absolute path for libraries found with the

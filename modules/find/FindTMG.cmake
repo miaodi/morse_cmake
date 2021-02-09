@@ -36,7 +36,9 @@
 #  TMG_LIBRARIES         - tmglib libraries to be linked (absolute path)
 #
 # Set TMG_STATIC to 1 to force using static libraries if exist.
-# Set TMG_MT to 1 to force using multi-threaded blas/lapack libraries if exist (Intel MKL).
+# Set TMG_MT to TRUE  to force using multi-threaded lapack libraries if exists (Intel MKL).
+# Set TMG_MT to FALSE to force using sequential lapack libraries if exists (Intel MKL).
+# If TMG_MT is undefined, then TMG is linked to the default LAPACK.
 #
 # This module defines the following :prop_tgt:`IMPORTED` target:
 #
@@ -44,13 +46,13 @@
 #   The headers and libraries to use for TMG, if found.
 #
 # The user can give specific paths where to find the libraries adding cmake
-# options at configure (ex: cmake path/to/project -DTMG=path/to/tmg):
+# options at configure (ex: cmake path/to/project -DTMG_DIR=path/to/tmg):
 #  TMG_DIR              - Where to find the base directory of tmg
 #  TMG_INCDIR           - Where to find the header files
 #  TMG_LIBDIR           - Where to find the library files
 # The module can also look for the following environment variables if paths
 # are not given as cmake variable: TMG_DIR, TMG_INCDIR, TMG_LIBDIR
-
+#
 #=============================================================================
 
 # Common macros to use in finds
@@ -68,6 +70,86 @@ else (NOT _LANGUAGES_ MATCHES Fortran)
   include(CheckFortranFunctionExists)
 endif (NOT _LANGUAGES_ MATCHES Fortran)
 
+# Duplicate lapack informations into tmg
+# --------------------------------------
+macro(tmg_init_variables LAPACK)
+  # This macro can be called for initialization and/or
+  # extension of tmg discovery
+
+  if (${LAPACK}_LIBRARIES)
+    set(TMG_LAPACK ${LAPACK})
+    list(APPEND TMG_LIBRARIES "${${LAPACK}_LIBRARIES}")
+  else()
+    set(TMG_LAPACK "TMG_LAPACK-NOTFOUND")
+    set(TMG_LIBRARIES "TMG_LIBRARIES-NOTFOUND")
+  endif()
+  if (${LAPACK}_LINKER_FLAGS)
+    list(APPEND TMG_LIBRARIES "${${LAPACK}_LINKER_FLAGS}")
+  endif()
+  if (${LAPACK}_INCLUDE_DIRS)
+    list(APPEND TMG_INCLUDE_DIRS "${${LAPACK}_INCLUDE_DIRS}")
+  endif()
+  if (${LAPACK}_LIBRARY_DIRS)
+    list(APPEND TMG_LIBRARY_DIRS "${${LAPACK}_LIBRARY_DIRS}")
+  endif()
+  if (${LAPACK}_CFLAGS_OTHER)
+    list(APPEND TMG_CFLAGS_OTHER "${${LAPACK}_CFLAGS_OTHER}")
+  endif()
+  if (${LAPACK}_LDFLAGS_OTHER)
+    list(APPEND TMG_LDFLAGS_OTHER "${${LAPACK}_LDFLAGS_OTHER}")
+  endif()
+
+  morse_cleanup_variables(TMG)
+
+  message( DEBUG "[TMG] TMG_LAPACK: ${TMG_LAPACK}")
+  message( DEBUG "[TMG] TMG_LIBRARIES: ${TMG_LIBRARIES}")
+  message( DEBUG "[TMG] TMG_LIBRARY_DIRS: ${TMG_LIBRARY_DIRS}")
+  message( DEBUG "[TMG] TMG_INCLUDE_DIRS: ${TMG_INCLUDE_DIRS}")
+  message( DEBUG "[TMG] TMG_CFLAGS_OTHER: ${TMG_CFLAGS_OTHER}")
+  message( DEBUG "[TMG] TMG_LDFLAGS_OTHER: ${TMG_LDFLAGS_OTHER}")
+
+endmacro()
+
+# Check if tmg functions exist in the lib
+# ---------------------------------------
+macro(tmg_check_library _verbose)
+  morse_cmake_required_set(TMG)
+
+  unset(TMG_WORKS CACHE)
+  unset(TMG_dlarnv_WORKS CACHE)
+  unset(TMG_dlagsy_WORKS CACHE)
+
+  if (NOT _LANGUAGES_ MATCHES Fortran)
+    check_function_exists(dlarnv TMG_dlarnv_WORKS)
+  else (NOT _LANGUAGES_ MATCHES Fortran)
+    check_fortran_function_exists(dlarnv TMG_dlarnv_WORKS)
+  endif (NOT _LANGUAGES_ MATCHES Fortran)
+
+  if (NOT _LANGUAGES_ MATCHES Fortran)
+    check_function_exists(dlagsy TMG_dlagsy_WORKS)
+  else (NOT _LANGUAGES_ MATCHES Fortran)
+    check_fortran_function_exists(dlagsy TMG_dlagsy_WORKS)
+  endif (NOT _LANGUAGES_ MATCHES Fortran)
+
+  if ( TMG_dlarnv_WORKS AND TMG_dlagsy_WORKS )
+    set(TMG_WORKS TRUE)
+    mark_as_advanced(TMG_WORKS)
+  endif()
+
+  if(${_verbose})
+    if((NOT TMG_WORKS) AND (NOT TMG_FIND_QUIETLY))
+      message(STATUS "Looking for tmg: test of dlarnv and dlagsy with tmg and lapack libraries fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
+      message(STATUS "CMAKE_REQUIRED_DEFINITIONS: ${CMAKE_REQUIRED_DEFINITIONS}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+
+  morse_cmake_required_unset()
+endmacro()
+
 # TMG depends on LAPACK anyway, try to find it
 if(TMG_FIND_REQUIRED)
   find_package(LAPACKEXT QUIET REQUIRED)
@@ -75,50 +157,31 @@ else()
   find_package(LAPACKEXT QUIET)
 endif()
 
-# TMG depends on LAPACK
-if (LAPACK_FOUND)
+message( DEBUG "LAPACK_LIBRARIES: ${LAPACK_LIBRARIES}" )
+message( DEBUG "LAPACK_SEQ_LIBRARIES: ${LAPACK_SEQ_LIBRARIES}" )
+message( DEBUG "LAPACK_MT_LIBRARIES: ${LAPACK_MT_LIBRARIES}" )
 
-  # check if a tmg function exists in the LAPACK lib
-  if (LAPACK_LIBRARIES)
-    set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LIBRARIES}")
+if(DEFINED TMG_MT)
+  if (TMG_MT)
+    tmg_init_variables("LAPACK_MT")
+  else()
+    tmg_init_variables("LAPACK_SEQ")
   endif()
-  if (LAPACK_LDFLAGS_OTHER)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER}")
-  endif()
-  if (LAPACK_LINKER_FLAGS)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${LAPACK_LINKER_FLAGS}")
-  endif()
-  if (LAPACK_CFLAGS_OTHER)
-    set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
-  endif()
-  if (LAPACK_INCLUDE_DIRS)
-    set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
-  endif()
-  include(CheckFunctionExists)
-  include(CheckFortranFunctionExists)
-  unset(TMG_WORKS CACHE)
-  if (NOT _LANGUAGES_ MATCHES Fortran)
-    check_function_exists(dlarnv TMG_WORKS)
-  else (NOT _LANGUAGES_ MATCHES Fortran)
-    check_fortran_function_exists(dlarnv TMG_WORKS)
-  endif (NOT _LANGUAGES_ MATCHES Fortran)
-  if (TMG_WORKS)
-    unset(TMG_WORKS CACHE)
-    if (NOT _LANGUAGES_ MATCHES Fortran)
-      check_function_exists(dlagsy TMG_WORKS)
-    else (NOT _LANGUAGES_ MATCHES Fortran)
-      check_fortran_function_exists(dlagsy TMG_WORKS)
-    endif (NOT _LANGUAGES_ MATCHES Fortran)
-    mark_as_advanced(TMG_WORKS)
-  endif()
+else()
+  tmg_init_variables("LAPACK")
+endif()
+
+# TMG depends on LAPACK
+if (TMG_LAPACK)
+
+  # Test link with lapack only
+  tmg_check_library(FALSE)
 
   if(TMG_WORKS)
 
     if(NOT TMG_FIND_QUIETLY)
       message(STATUS "Looking for tmg: test with lapack succeeds")
     endif()
-    # test succeeds: TMG is in LAPACK
-    set(TMG_LIBRARIES "${LAPACK_LIBRARIES}")
 
   else()
 
@@ -126,7 +189,14 @@ if (LAPACK_FOUND)
       message(STATUS "Looking for tmg : test with lapack fails")
       message(STATUS "Looking for tmg : try to find it elsewhere")
     endif()
-    # test fails: try to find TMG lib exterior to LAPACK
+
+    # Make sure TMG is invalidated
+    unset(TMG_WORKS CACHE)
+    unset(TMG_LIBRARIES)
+    unset(TMG_INCLUDE_DIRS)
+    unset(TMG_LIBRARY_DIRS)
+    unset(TMG_CFLAGS_OTHER)
+    unset(TMG_LDFLAGS_OTHER)
 
     # No include, let's set the the include_dir
     set(TMG_INCLUDE_DIRS "")
@@ -148,114 +218,27 @@ if (LAPACK_FOUND)
       endif()
     endif ()
 
-  endif(TMG_WORKS)
+    # We found a tmg library, let's check
+    # -----------------------------------
+    if(TMG_LIBRARIES)
 
-  # check a function to validate the find
-  if(TMG_LIBRARIES)
-
-    # check if static or dynamic lib
-    morse_check_static_or_dynamic(TMG TMG_LIBRARIES)
-    if(TMG_STATIC)
-      set(STATIC "_STATIC")
-    endif()
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_LDFLAGS)
-
-    # TMG
-    if (TMG_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${TMG_INCLUDE_DIRS}")
-    endif()
-    if (TMG_CFLAGS_OTHER)
-      list(APPEND REQUIRED_FLAGS "${TMG_CFLAGS_OTHER}")
-    endif()
-    if (TMG_LDFLAGS_OTHER)
-      list(APPEND REQUIRED_LDFLAGS "${TMG_LDFLAGS_OTHER}")
-    endif()
-    if (TMG_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${TMG_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${TMG_LIBRARIES}")
-    # LAPACK
-    if (LAPACK_INCLUDE_DIRS)
-      list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
-    endif()
-    if (LAPACK_CFLAGS_OTHER)
-      list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
-    endif()
-    if (LAPACK_LDFLAGS_OTHER)
-      list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER}")
-    endif()
-    if (LAPACK_LIBRARY_DIRS)
-      list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
-    endif()
-    list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    if (REQUIRED_FLAGS)
-      set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
-      set(REQUIRED_FLAGS)
-      set(REQUIRED_DEFINITIONS)
-      foreach(_flag ${REQUIRED_FLAGS_COPY})
-        if (_flag MATCHES "^-D")
-         list(APPEND REQUIRED_DEFINITIONS "${_flag}")
-        endif()
-        string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
-        list(APPEND REQUIRED_FLAGS "${_flag}")
-      endforeach()
-    endif()
-    morse_finds_remove_duplicates()
-    set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
-    set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(TMG_WORKS CACHE)
-    include(CheckFunctionExists)
-    include(CheckFortranFunctionExists)
-    if (NOT _LANGUAGES_ MATCHES Fortran)
-      check_function_exists(dlarnv TMG_WORKS)
-    else (NOT _LANGUAGES_ MATCHES Fortran)
-      check_fortran_function_exists(dlarnv TMG_WORKS)
-    endif (NOT _LANGUAGES_ MATCHES Fortran)
-    if (TMG_WORKS)
-      unset(TMG_WORKS CACHE)
-      if (NOT _LANGUAGES_ MATCHES Fortran)
-        check_function_exists(dlagsy TMG_WORKS)
-      else (NOT _LANGUAGES_ MATCHES Fortran)
-        check_fortran_function_exists(dlagsy TMG_WORKS)
-      endif (NOT _LANGUAGES_ MATCHES Fortran)
-      mark_as_advanced(TMG_WORKS)
-    endif()
-
-    if(TMG_WORKS)
-      set(TMG_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
-      set(TMG_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
-      set(TMG_CFLAGS_OTHER "${REQUIRED_FLAGS}")
-      set(TMG_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
-      if (TMG_STATIC OR BLA_STATIC)
-        # save link with dependencies
-        set(TMG_LIBRARIES "${REQUIRED_LIBS}")
+      # check if static or dynamic lib
+      morse_check_static_or_dynamic(TMG TMG_LIBRARIES)
+      if(TMG_STATIC)
+        set(STATIC "_STATIC")
       endif()
-    else()
-      if(NOT TMG_FIND_QUIETLY)
-        message(STATUS "Looking for tmg: test of dlarnv and dlagsy with tmg and lapack libraries fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
+
+      # Extend the tmg variables with the lapack ones
+      tmg_init_variables(${TMG_LAPACK})
+
+      # test link
+      tmg_check_library(TRUE)
     endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
+  endif()
+
+  # Additional settings for all cases (in or out lapack lib)
+  # --------------------------------------------------------
+  if ( TMG_LIBRARIES )
 
     list(GET TMG_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
@@ -268,7 +251,6 @@ if (LAPACK_FOUND)
     else()
       set(TMG_PREFIX "${first_lib_path}" CACHE PATH "Installation directory of TMG library" FORCE)
     endif()
-    mark_as_advanced(TMG_DIR)
     mark_as_advanced(TMG_PREFIX)
 
   endif(TMG_LIBRARIES)
@@ -276,22 +258,10 @@ if (LAPACK_FOUND)
 else()
 
   if(NOT TMG_FIND_QUIETLY)
-    message(STATUS "TMG requires LAPACK but LAPACK has not been found."
-      "Please look for LAPACK first.")
+    message(STATUS "TMG requires LAPACK but LAPACK has not been found. "
+      "Please look for LAPACK first or change the MT support required (TMG_MT=${TMG_MT}).")
   endif()
 
-endif()
-
-if(TMG_MT)
-  if (TMG_LIBRARIES MATCHES "libmkl" AND LAPACK_MT_LIBRARIES)
-    set(TMG_LIBRARIES "${LAPACK_MT_LIBRARIES}")
-  else()
-    set(TMG_LIBRARIES "LAPACKE_LIBRARIES-NOTFOUND")
-  endif()
-else()
-  if (TMG_LIBRARIES MATCHES "libmkl" AND LAPACK_SEQ_LIBRARIES)
-    set(TMG_LIBRARIES "${LAPACK_SEQ_LIBRARIES}")
-  endif()
 endif()
 
 # check that TMG has been found

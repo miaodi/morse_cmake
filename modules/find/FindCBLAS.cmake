@@ -47,7 +47,9 @@
 #  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # Set CBLAS_STATIC to 1 to force using static libraries if exist.
-# Set CBLAS_MT to 1 to force using multi-threaded blas libraries if exist (Intel MKL).
+# Set CBLAS_MT to TRUE  to force using multi-threaded blas libraries if exists (Intel MKL).
+# Set CBLAS_MT to FALSE to force using sequential blas libraries if exists (Intel MKL).
+# If CBLAS_MT is undefined, then CBLAS is linked to the default BLAS.
 #
 # This module defines the following :prop_tgt:`IMPORTED` target:
 #
@@ -84,40 +86,80 @@ include(FindMorseInit)
 # ----------------------------------------
 morse_find_package_get_envdir(CBLAS)
 
+# Duplicate blas informations into cblas
+# --------------------------------------
+macro(cblas_init_variables BLAS)
+  # This macro can be called for initialization and/or
+  # extension of cblas discovery
+
+  if (${BLAS}_LIBRARIES)
+    set(CBLAS_BLAS ${BLAS})
+    list(APPEND CBLAS_LIBRARIES "${${BLAS}_LIBRARIES}")
+  else()
+    set(CBLAS_BLAS "CBLAS_BLAS-NOTFOUND")
+    set(CBLAS_LIBRARIES "CBLAS_LIBRARIES-NOTFOUND")
+  endif()
+  if (${BLAS}_LINKER_FLAGS)
+    list(APPEND CBLAS_LIBRARIES "${${BLAS}_LINKER_FLAGS}")
+  endif()
+  if (${BLAS}_INCLUDE_DIRS)
+    list(APPEND CBLAS_INCLUDE_DIRS "${${BLAS}_INCLUDE_DIRS}")
+  endif()
+  if (${BLAS}_LIBRARY_DIRS)
+    list(APPEND CBLAS_LIBRARY_DIRS "${${BLAS}_LIBRARY_DIRS}")
+  endif()
+  if (${BLAS}_CFLAGS_OTHER)
+    list(APPEND CBLAS_CFLAGS_OTHER "${${BLAS}_CFLAGS_OTHER}")
+  endif()
+  if (${BLAS}_LDFLAGS_OTHER)
+    list(APPEND CBLAS_LDFLAGS_OTHER "${${BLAS}_LDFLAGS_OTHER}")
+  endif()
+
+  morse_cleanup_variables(CBLAS)
+
+  message( DEBUG "[CBLAS] CBLAS_LAPACK: ${CBLAS_LAPACK}")
+  message( DEBUG "[CBLAS] CBLAS_LIBRARIES: ${CBLAS_LIBRARIES}")
+  message( DEBUG "[CBLAS] CBLAS_LIBRARY_DIRS: ${CBLAS_LIBRARY_DIRS}")
+  message( DEBUG "[CBLAS] CBLAS_INCLUDE_DIRS: ${CBLAS_INCLUDE_DIRS}")
+  message( DEBUG "[CBLAS] CBLAS_CFLAGS_OTHER: ${CBLAS_CFLAGS_OTHER}")
+  message( DEBUG "[CBLAS] CBLAS_LDFLAGS_OTHER: ${CBLAS_LDFLAGS_OTHER}")
+
+endmacro()
+
 # Check if a cblas function exists in the lib, and check if the
 # advanced complex gemm functions are available
 # -------------------------------------------------------------
-#
-# _prefix helps to check on BLAS or CBLAS variables
-#
-macro(check_cblas_library _prefix)
-  set(CMAKE_REQUIRED_LIBRARIES)
-  if (${_prefix}_LIBRARIES)
-    set(CMAKE_REQUIRED_LIBRARIES "${${_prefix}_LIBRARIES}")
-  endif()
-  if (${_prefix}_LDFLAGS_OTHER)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${${_prefix}_LDFLAGS_OTHER}")
-  endif()
-  if (${_prefix}_LINKER_FLAGS)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${${_prefix}_LINKER_FLAGS}")
-  endif()
-  if (${_prefix}_CFLAGS_OTHER)
-    set(CMAKE_REQUIRED_FLAGS "${${_prefix}_CFLAGS_OTHER}")
-  endif()
-  if (${_prefix}_INCLUDE_DIRS)
-    set(CMAKE_REQUIRED_INCLUDES "${C${_prefix}_INCLUDE_DIRS}")
-  endif()
+macro(cblas_check_library _verbose)
+  morse_cmake_required_set(CBLAS)
+
   unset(CBLAS_WORKS CACHE)
-  check_function_exists(cblas_dscal   CBLAS_WORKS)
-  check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
-  check_function_exists(cblas_cgemm3m CBLAS_CGEMM3M_FOUND)
+  unset(CBLAS_ZGEMM3M_FOUND CACHE)
+  unset(CBLAS_CGEMM3M_FOUND CACHE)
+
+  check_function_exists(cblas_dscal CBLAS_WORKS)
+  if (CBLAS_WORKS)
+    check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
+    check_function_exists(cblas_cgemm3m CBLAS_CGEMM3M_FOUND)
+  endif()
   mark_as_advanced(CBLAS_WORKS)
-  set(CMAKE_REQUIRED_LIBRARIES)
+
+  if(${_verbose})
+    if((NOT CBLAS_WORKS) AND (NOT CBLAS_FIND_QUIETLY))
+      message(STATUS "Looking for cblas : test of cblas_dscal with cblas and blas libraries fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
+      message(STATUS "CMAKE_REQUIRED_DEFINITIONS: ${CMAKE_REQUIRED_DEFINITIONS}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+
+  morse_cmake_required_unset()
 endmacro()
 
 # Look  for the cblas header files
 # ---------------------------------
-macro(check_cblas_include)
+macro(cblas_check_include)
   if ( CBLAS_INCLUDE_DIRS )
     return()
   endif()
@@ -145,43 +187,28 @@ else()
   find_package(BLASEXT QUIET)
 endif()
 
+if(DEFINED CBLAS_MT)
+  if (CBLAS_MT)
+    cblas_init_variables("BLAS_MT")
+  else()
+    cblas_init_variables("BLAS_SEQ")
+  endif()
+else()
+  cblas_init_variables("BLAS")
+endif()
+
 # find CBLAS
-if (BLASEXT_FOUND)
+if (CBLAS_BLAS)
 
   if (NOT CBLAS_STANDALONE)
+
     # Check if the blas library includes cblas
-    check_cblas_library(BLAS)
+    cblas_check_library("FALSE")
 
     # Blas lib includes cblas
     if(CBLAS_WORKS)
-
-      # # Check for faster complex GEMM routine
-      # # (only C/Z, no S/D version)
-      # if ( CBLAS_ZGEMM3M_FOUND )
-      #   add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
-      # endif()
-
       if(NOT CBLAS_FIND_QUIETLY)
-        message(STATUS "Looking for cblas: test with blas succeeds")
-      endif()
-      # test succeeds: CBLAS is in BLAS
-      if (BLAS_LIBRARIES)
-        set(CBLAS_LIBRARIES "${BLAS_LIBRARIES}")
-      endif()
-      if (BLAS_LINKER_FLAGS)
-        list(APPEND CBLAS_LIBRARIES "${BLAS_LINKER_FLAGS}")
-      endif()
-      if (BLAS_INCLUDE_DIRS)
-        set(CBLAS_INCLUDE_DIRS "${BLAS_INCLUDE_DIRS}")
-      endif()
-      if (BLAS_LIBRARY_DIRS)
-        set(CBLAS_LIBRARY_DIRS "${BLAS_LIBRARY_DIRS}")
-      endif()
-      if (BLAS_CFLAGS_OTHER)
-        set(CBLAS_CFLAGS_OTHER "${BLAS_CFLAGS_OTHER}")
-      endif()
-      if (BLAS_LDFLAGS_OTHER)
-        set(CBLAS_LDFLAGS_OTHER "${BLAS_LDFLAGS_OTHER}")
+        message(STATUS "Looking for cblas: test with blas succeeded")
       endif()
 
       # Set the mkl library dirs for compatibility with former version
@@ -191,28 +218,38 @@ if (BLASEXT_FOUND)
         set(CBLAS_LIBRARY_DIRS "${CBLAS_PREFIX}/lib/intel64")
       endif()
 
-      check_cblas_include()
+      cblas_check_include()
 
     endif()
 
   endif (NOT CBLAS_STANDALONE)
 
   # test fails with blas: try to find CBLAS lib exterior to BLAS
-  if (CBLAS_STANDALONE OR NOT CBLAS_WORKS)
+  if (CBLAS_STANDALONE OR (NOT CBLAS_WORKS))
 
-    if(NOT CBLAS_WORKS AND NOT CBLAS_FIND_QUIETLY)
-      message(STATUS "Looking for cblas : test with blas fails or CBLAS_STANDALONE enabled")
+    if((NOT CBLAS_WORKS) AND (NOT CBLAS_FIND_QUIETLY))
+      message(STATUS "Looking for cblas : test with blas failed or CBLAS_STANDALONE enabled")
     endif()
+
+    # Make sure CBLAS is invalidated
+    unset(CBLAS_WORKS CACHE)
+    unset(CBLAS_LIBRARIES)
+    unset(CBLAS_INCLUDE_DIRS)
+    unset(CBLAS_LIBRARY_DIRS)
+    unset(CBLAS_CFLAGS_OTHER)
+    unset(CBLAS_LDFLAGS_OTHER)
 
     # try with pkg-config
     set(ENV_MKLROOT "$ENV{MKLROOT}")
-    set(CBLAS_GIVEN_BY_USER "FALSE")
+    set(CBLAS_GIVEN_BY_USER FALSE)
     if ( CBLAS_DIR OR ( CBLAS_INCDIR AND CBLAS_LIBDIR ) OR ( ENV_MKLROOT ) )
-      set(CBLAS_GIVEN_BY_USER "TRUE")
+      set(CBLAS_GIVEN_BY_USER TRUE)
     endif()
 
+    # Search for cblas with pkg-config
+    # --------------------------------
     find_package(PkgConfig QUIET)
-    if( PKG_CONFIG_EXECUTABLE AND (NOT (CBLAS_GIVEN_BY_USER)))
+    if( PKG_CONFIG_EXECUTABLE AND (NOT CBLAS_GIVEN_BY_USER) )
 
       if (BLA_STATIC)
         set(MKL_STR_BLA_STATIC "static")
@@ -252,24 +289,23 @@ if (BLASEXT_FOUND)
       endif()
 
       if (CBLAS_STATIC AND CBLAS_STATIC_LIBRARIES)
-        set (CBLAS_DEPENDENCIES ${CBLAS_STATIC_LIBRARIES})
-        list (REMOVE_ITEM CBLAS_DEPENDENCIES "cblas")
-        list (APPEND CBLAS_LIBRARIES ${CBLAS_DEPENDENCIES})
+        set(CBLAS_DEPENDENCIES ${CBLAS_STATIC_LIBRARIES})
+        list(REMOVE_ITEM CBLAS_DEPENDENCIES "cblas")
+        list(APPEND CBLAS_LIBRARIES ${CBLAS_DEPENDENCIES})
         set(CBLAS_CFLAGS_OTHER ${CBLAS_STATIC_CFLAGS_OTHER})
         set(CBLAS_LDFLAGS_OTHER ${CBLAS_STATIC_LDFLAGS_OTHER})
-            if (NOT CBLAS_FIND_QUIETLY)
+        if (NOT CBLAS_FIND_QUIETLY)
           message(STATUS "CBLAS_STATIC set to 1 by user, CBLAS_LIBRARIES: ${CBLAS_LIBRARIES}.")
         endif()
       endif()
     endif()
 
+    # Search for cblas the classical way
+    # ----------------------------------
     if (NOT CBLAS_FOUND_WITH_PKGCONFIG OR CBLAS_GIVEN_BY_USER)
-      # Try to find CBLAS lib
-      #######################
-
       # Looking for include
       # -------------------
-      check_cblas_include()
+      cblas_check_include()
 
       # Looking for lib
       # ---------------
@@ -278,110 +314,32 @@ if (BLASEXT_FOUND)
         SUFFIXES lib lib32 lib64)
 
     endif (NOT CBLAS_FOUND_WITH_PKGCONFIG OR CBLAS_GIVEN_BY_USER)
+  endif (CBLAS_STANDALONE OR (NOT CBLAS_WORKS))
 
-  endif (CBLAS_STANDALONE OR NOT CBLAS_WORKS)
+  # Check if static or dynamic lib
+  morse_check_static_or_dynamic(CBLAS CBLAS_LIBRARIES)
+  if(CBLAS_STATIC)
+    set(STATIC "_STATIC")
+  endif()
 
-  # check a function to validate the find
-  if(CBLAS_LIBRARIES)
+  # We found a cblas library with pkg-config or manually
+  # ----------------------------------------------------
+  if((NOT CBLAS_WORKS) AND CBLAS_LIBRARIES)
 
-    # check if static or dynamic lib
-    morse_check_static_or_dynamic(CBLAS CBLAS_LIBRARIES)
-    if(CBLAS_STATIC)
-      set(STATIC "_STATIC")
-    endif()
-
-    set(REQUIRED_INCDIRS)
-    set(REQUIRED_LIBDIRS)
-    set(REQUIRED_LIBS)
-    set(REQUIRED_FLAGS)
-    set(REQUIRED_LDFLAGS)
-
-    # CBLAS
-    if (CBLAS_INCLUDE_DIRS)
-      set(REQUIRED_INCDIRS "${CBLAS_INCLUDE_DIRS}")
-    endif()
-    if (CBLAS_CFLAGS_OTHER)
-      set(REQUIRED_FLAGS "${CBLAS_CFLAGS_OTHER}")
-    endif()
-    if (CBLAS_LDFLAGS_OTHER)
-      set(REQUIRED_LDFLAGS "${CBLAS_LDFLAGS_OTHER}")
-    endif()
-    if (CBLAS_LIBRARY_DIRS)
-      set(REQUIRED_LIBDIRS "${CBLAS_LIBRARY_DIRS}")
-    endif()
-    set(REQUIRED_LIBS "${CBLAS_LIBRARIES}")
-    # BLAS
-    if (BLAS_INCLUDE_DIRS)
-      list(APPEND REQUIRED_INCDIRS "${BLAS_INCLUDE_DIRS}")
-    endif()
-    if (BLAS_CFLAGS_OTHER)
-      list(APPEND REQUIRED_FLAGS "${BLAS_CFLAGS_OTHER}")
-    endif()
-    if (BLAS_LDFLAGS_OTHER)
-      list(APPEND REQUIRED_LDFLAGS "${BLAS_LDFLAGS_OTHER}")
-    endif()
-    if (BLAS_LIBRARY_DIRS)
-      list(APPEND REQUIRED_LIBDIRS "${BLAS_LIBRARY_DIRS}")
-    endif()
-    list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
-
-    # set required libraries for link
-    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-    if (REQUIRED_FLAGS)
-      set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
-      set(REQUIRED_FLAGS)
-      set(REQUIRED_DEFINITIONS)
-      foreach(_flag ${REQUIRED_FLAGS_COPY})
-        if (_flag MATCHES "^-D")
-          list(APPEND REQUIRED_DEFINITIONS "${_flag}")
-        endif()
-        string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
-        list(APPEND REQUIRED_FLAGS "${_flag}")
-      endforeach()
-    endif()
-    morse_finds_remove_duplicates()
-    set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
-    set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
-    set(CMAKE_REQUIRED_LIBRARIES)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-    # test link
-    unset(CBLAS_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(cblas_dscal CBLAS_WORKS)
-    mark_as_advanced(CBLAS_WORKS)
-
-    if(CBLAS_WORKS)
-
-      # Check for faster complex GEMM routine
-      # (only C/Z, no S/D version)
-      check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
-      if ( CBLAS_ZGEMM3M_FOUND )
-        add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
-      endif()
-
-      set(CBLAS_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
-      set(CBLAS_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
-      set(CBLAS_CFLAGS_OTHER "${REQUIRED_FLAGS}")
-      set(CBLAS_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
+    # Need to add dependencies if not found with pkg-config
+    # -----------------------------------------------------
+    if (NOT CBLAS_FOUND_WITH_PKGCONFIG)
+      # Extend the discovered with lapack
+      cblas_init_variables(${CBLAS_LAPACK})
+    else()
       if (CBLAS_STATIC OR BLA_STATIC)
         # save link with dependencies
-        set(CBLAS_LIBRARIES "${REQUIRED_LIBS}")
-      endif()
-    else()
-      if(NOT CBLAS_FIND_QUIETLY)
-        message(STATUS "Looking for cblas : test of cblas_dscal with cblas and blas libraries fails")
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        set(CBLAS_LIBRARIES "${CBLAS_STATIC_LIBRARIES}")
       endif()
     endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
+
+    # Test link
+    cblas_check_library(TRUE)
 
     list(GET CBLAS_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
@@ -401,31 +359,18 @@ if (BLASEXT_FOUND)
         set(CBLAS_INCLUDE_DIRS "${CBLAS_PREFIX}/include")
       endif()
     endif()
-    mark_as_advanced(CBLAS_DIR)
     mark_as_advanced(CBLAS_PREFIX)
 
-  endif(CBLAS_LIBRARIES)
+  endif()
 
-else(BLASEXT_FOUND)
+else(CBLAS_BLAS)
 
   if (NOT CBLAS_FIND_QUIETLY)
-    message(STATUS "CBLAS requires BLAS but BLAS has not been found."
-      "Please look for BLAS first.")
+    message(STATUS "CBLAS requires BLAS but BLAS has not been found. "
+      "Please look for BLAS first or change the MT support required (CBLAS_MT=${CBLAS_MT}).")
   endif()
 
-endif(BLASEXT_FOUND)
-
-if(CBLAS_MT)
-  if (CBLAS_LIBRARIES MATCHES "libmkl" AND BLAS_MT_LIBRARIES)
-    set(CBLAS_LIBRARIES "${BLAS_MT_LIBRARIES}")
-  else()
-    set(CBLAS_LIBRARIES "CBLAS_LIBRARIES-NOTFOUND")
-  endif()
-else()
-  if (CBLAS_LIBRARIES MATCHES "libmkl" AND BLAS_SEQ_LIBRARIES)
-    set(CBLAS_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
-  endif()
-endif()
+endif(CBLAS_BLAS)
 
 # Enable variables to defined advanced complex gemm
 # -------------------------------------------------

@@ -77,7 +77,7 @@ CMake by providing the cmake config file installed in
   #+END_EXAMPLE
 * Internal mechanism: what a "find" mainly do, what are the paths scanned?
   We try to enforce using pkg-config file if provided (update your
-  PKG_CONFIG_PATH environment variable).
+  PKG_CONFIG_PATH environment variable to define the correct search paths).
 
   List of packages relying only on pkg-config file: EZTRACE, FXT, GTG,
   HWLOC, PAPI, SIMGRID, PARSEC, STARPU.
@@ -96,7 +96,7 @@ CMake by providing the cmake config file installed in
      ~LIBNAME_LIBDIR~ are set
   2) The environment variable ~LIBNAME_DIR~ is set or both ~LIBNAME_INCDIR~ and
      ~LIBNAME_LIBDIR~
-  3) A pkg-config .pc file (hwloc.pc) of the library is available in the
+  3) A pkg-config ~.pc~ file (hwloc.pc) of the library is available in the
      environment (cf. PKG_CONFIG_PATH environment variable) and is used
   4) Look into the following paths
      a) for headers:
@@ -181,10 +181,13 @@ CMake by providing the cmake config file installed in
   and FindLAPACKEXT which define additionnal targets BLAS::BLAS_SEQ
   and BLAS::BLAS_MT (idem for LAPACK) to be able to use the two sets
   of libraries in the same project.
-* To choose between BLAS/LAPACK sequential or multi-threaded for CBLAS, LAPACKE and TMG
-  CBLAS, LAPACKE, TMG which depend on BLAS and LAPACK will provide the
-  sequential libraries by default. To get multi-threaded ones, use the
-  CMake variable CBLAS_MT=1, (idem LAPACKE_MT, TMG_MT).
+* To choose between BLAS/LAPACK sequential or multi-threaded for
+  CBLAS, LAPACKE and TMG CBLAS, LAPACKE, TMG which depend on BLAS and
+  LAPACK. By default they will use the BLAS/LAPACK libries found by
+  the standard find_package from cmake. To enfore the use of
+  sequential or multi-threaded BLAS/LAPACK libraries, one can set the
+  CMake variable CBLAS_MT, (respectively LAPACKE_MT, TMG_MT) to `TRUE`
+  for a multi-threaded library, or `FALSE` for a sequential one.
 * To prefer static libraries if both static and dynamic are available
   Set "PACKAGE"_STATIC=1 at cmake configure. For BLAS/LAPACK/SCALAPACK
   use *BLA_STATIC=1*.

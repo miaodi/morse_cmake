@@ -106,6 +106,7 @@ if (ENABLE_CTEST)
   set(CTEST_PACKAGES_LIST
       # AL4SAN # not installed in the common image hpclib/hiepacs, see hpclib/al4san to get it
       BLAS
+      BLASEXT
       CBLAS
       CPPCHECK
       # EZTRACE # not installed yet, we should do it
@@ -116,6 +117,7 @@ if (ENABLE_CTEST)
       HWLOC
       HYPRE
       LAPACK
+      LAPACKEXT
       LAPACKE
       M
       METIS

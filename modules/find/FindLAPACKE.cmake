@@ -50,7 +50,9 @@
 #  <XPREFIX>_CFLAGS_OTHER   ... the other compiler flags
 #
 # Set LAPACKE_STATIC to 1 to force using static libraries if exist.
-# Set LAPACKE_MT to 1 to force using multi-threaded lapack libraries if exist (Intel MKL).
+# Set LAPACKE_MT to TRUE  to force using multi-threaded lapack libraries if exists (Intel MKL).
+# Set LAPACKE_MT to FALSE to force using sequential lapack libraries if exists (Intel MKL).
+# If LAPACKE_MT is undefined, then LAPACKE is linked to the default LAPACK.
 #
 # This module defines the following :prop_tgt:`IMPORTED` target:
 #
@@ -79,6 +81,112 @@ include(FindMorseInit)
 # ----------------------------------------
 morse_find_package_get_envdir(LAPACKE)
 
+# Duplicate lapack informations into lapacke
+# ------------------------------------------
+macro(lapacke_init_variables LAPACK)
+  # This macro can be called for initialization and/or
+  # extension of lapacke discovery
+
+  if (${LAPACK}_LIBRARIES)
+    set(LAPACKE_LAPACK ${LAPACK})
+    list(APPEND LAPACKE_LIBRARIES "${${LAPACK}_LIBRARIES}")
+  else()
+    set(LAPACKE_LAPACK "LAPACKE_LAPACK-NOTFOUND")
+    set(LAPACKE_LIBRARIES "LAPACKE_LIBRARIES-NOTFOUND")
+  endif()
+  if (${LAPACK}_LINKER_FLAGS)
+    list(APPEND LAPACKE_LIBRARIES "${${LAPACK}_LINKER_FLAGS}")
+  endif()
+  if (${LAPACK}_INCLUDE_DIRS)
+    list(APPEND LAPACKE_INCLUDE_DIRS "${${LAPACK}_INCLUDE_DIRS}")
+  endif()
+  if (${LAPACK}_LIBRARY_DIRS)
+    list(APPEND LAPACKE_LIBRARY_DIRS "${${LAPACK}_LIBRARY_DIRS}")
+  endif()
+  if (${LAPACK}_CFLAGS_OTHER)
+    list(APPEND LAPACKE_CFLAGS_OTHER "${${LAPACK}_CFLAGS_OTHER}")
+  endif()
+  if (${LAPACK}_LDFLAGS_OTHER)
+    list(APPEND LAPACKE_LDFLAGS_OTHER "${${LAPACK}_LDFLAGS_OTHER}")
+  endif()
+
+  morse_cleanup_variables(LAPACKE)
+
+  message( DEBUG "[LAPACKE] LAPACKE_LAPACK: ${LAPACKE_LAPACK}")
+  message( DEBUG "[LAPACKE] LAPACKE_LIBRARIES: ${LAPACKE_LIBRARIES}")
+  message( DEBUG "[LAPACKE] LAPACKE_LIBRARY_DIRS: ${LAPACKE_LIBRARY_DIRS}")
+  message( DEBUG "[LAPACKE] LAPACKE_INCLUDE_DIRS: ${LAPACKE_INCLUDE_DIRS}")
+  message( DEBUG "[LAPACKE] LAPACKE_CFLAGS_OTHER: ${LAPACKE_CFLAGS_OTHER}")
+  message( DEBUG "[LAPACKE] LAPACKE_LDFLAGS_OTHER: ${LAPACKE_LDFLAGS_OTHER}")
+
+endmacro()
+
+# Check if a lapacke function exists in the lib, and check if the
+# advanced complex gemm functions are available
+# -------------------------------------------------------------
+macro(lapacke_check_library _verbose)
+  morse_cmake_required_set(LAPACKE)
+
+  unset(LAPACKE_WORKS CACHE)
+  unset(LAPACKE_WITH_LASCL CACHE)
+  unset(LAPACKE_dlatms_WORKS CACHE)
+
+  check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
+  mark_as_advanced(LAPACKE_WORKS)
+
+  if (LAPACKE_WORKS)
+    check_function_exists(LAPACKE_dlascl_work LAPACKE_WITH_LASCL)
+    mark_as_advanced(LAPACKE_WITH_LASCL)
+
+    if (LAPACKE_WITH_TMG)
+      check_function_exists(LAPACKE_dlatms_work LAPACKE_dlatms_WORKS)
+      mark_as_advanced(LAPACKE_dlatms_WORKS)
+      if(NOT LAPACKE_dlatms_WORKS)
+        if (NOT LAPACKE_FIND_QUIETLY)
+          message(STATUS "Looking for lapacke tmg interface : test of LAPACKE_dlatms_work with lapacke and lapack libraries fails")
+        endif()
+        unset(LAPACKE_WORKS CACHE)
+      endif()
+    endif()
+  endif()
+
+  if(${_verbose})
+    if((NOT LAPACKE_WORKS) AND (NOT LAPACKE_FIND_QUIETLY))
+      message(STATUS "Looking for lapacke : test of lapacke_dscal with lapacke and lapack libraries fails")
+      message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+      message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+      message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
+      message(STATUS "CMAKE_REQUIRED_DEFINITIONS: ${CMAKE_REQUIRED_DEFINITIONS}")
+      message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+    endif()
+  endif()
+
+  morse_cmake_required_unset()
+endmacro()
+
+# Look  for the lapacke header files
+# ---------------------------------
+macro(lapacke_check_include)
+  if ( LAPACKE_INCLUDE_DIRS )
+    return()
+  endif()
+
+  # Try to find the lapacke header in the given paths
+  # -------------------------------------------------
+  if (LAPACKE_LIBRARIES MATCHES "libmkl")
+    set(LAPACKE_hdrs_to_find "mkl.h")
+  else()
+    set(LAPACKE_hdrs_to_find "lapacke.h")
+  endif()
+
+  # call cmake macro to find the header path
+  # ----------------------------------------
+  morse_find_path(LAPACKE
+    HEADERS  ${LAPACKE_hdrs_to_find}
+    SUFFIXES "include" "include/lapacke" "include/mkl")
+
+endmacro()
+
 # to check LAPACKE components
 set(LAPACKE_WITH_TMG OFF)
 if( LAPACKE_FIND_COMPONENTS )
@@ -89,116 +197,93 @@ if( LAPACKE_FIND_COMPONENTS )
   endforeach()
 endif()
 
-# LAPACKE may depend on TMG, try to find it
+# LAPACKE may depend on TMG (which depends on lapack), try to find it
 if (LAPACKE_WITH_TMG)
+  if (DEFINED LAPACKE_MT)
+    set(TMG_MT ${LAPACKE_MT})
+  endif()
   if(LAPACKE_FIND_REQUIRED)
     find_package(TMG REQUIRED)
   else()
     find_package(TMG)
   endif()
+
+  set( LAPACKE_dep TMG )
+else()
+
+  # LAPACKE depends on LAPACK, try to find it
+  if(LAPACKE_FIND_REQUIRED)
+    find_package(LAPACKEXT QUIET REQUIRED)
+  else()
+    find_package(LAPACKEXT QUIET)
+  endif()
+
+  set( LAPACKE_dep LAPACK )
 endif()
 
-# LAPACKE depends on LAPACK, try to find it
-if(LAPACKE_FIND_REQUIRED)
-  find_package(LAPACKEXT QUIET REQUIRED)
+if(DEFINED LAPACKE_MT)
+  if (LAPACKE_MT)
+    lapacke_init_variables("${LAPACKE_dep}_MT")
+  else()
+    lapacke_init_variables("${LAPACKE_dep}_SEQ")
+  endif()
 else()
-  find_package(LAPACKEXT QUIET)
+  lapacke_init_variables("${LAPACKE_dep}")
 endif()
 
 # LAPACKE depends on LAPACK
-if (LAPACKEXT_FOUND)
+if (LAPACKE_LAPACK)
 
   if (NOT LAPACKE_STANDALONE)
-    # check if a lapacke function exists in the LAPACK lib
-    include(CheckFunctionExists)
-    if (LAPACK_LIBRARIES)
-      set(CMAKE_REQUIRED_LIBRARIES "${LAPACK_LIBRARIES}")
-    endif()
-    if (LAPACK_LDFLAGS_OTHER)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${LAPACK_LDFLAGS_OTHER}")
-    endif()
-    if (LAPACK_LINKER_FLAGS)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${LAPACK_LINKER_FLAGS}")
-    endif()
-    if (LAPACK_CFLAGS_OTHER)
-      set(CMAKE_REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
-    endif()
-    if (LAPACK_INCLUDE_DIRS)
-      set(CMAKE_REQUIRED_INCLUDES "${LAPACK_INCLUDE_DIRS}")
-    endif()
-    unset(LAPACKE_WORKS CACHE)
-    check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
-    mark_as_advanced(LAPACKE_WORKS)
-    unset(LAPACKE_WITH_LASCL CACHE)
-    check_function_exists(LAPACKE_dlascl_work LAPACKE_WITH_LASCL)
-    mark_as_advanced(LAPACKE_WITH_LASCL)
-    set(CMAKE_REQUIRED_LIBRARIES)
 
+    # Check if the lapack library includes cblas
+    lapacke_check_library(FALSE)
+
+    # Lapack lib includes lapacke
     if(LAPACKE_WORKS)
       if(NOT LAPACKE_FIND_QUIETLY)
-        message(STATUS "Looking for lapacke: test with lapack succeeds")
-      endif()
-      # test succeeds: LAPACKE is in LAPACK
-      if (LAPACK_LIBRARIES)
-        set(LAPACKE_LIBRARIES "${LAPACK_LIBRARIES}")
-      endif()
-      if (LAPACK_LINKER_FLAGS)
-        list(APPEND LAPACKE_LIBRARIES "${LAPACK_LINKER_FLAGS}")
-      endif()
-      if (LAPACK_INCLUDE_DIRS)
-        set(LAPACKE_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
-      endif()
-      if (LAPACK_LIBRARY_DIRS)
-        set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
-      endif()
-      if (LAPACK_CFLAGS_OTHER)
-        set(LAPACKE_CFLAGS_OTHER "${LAPACK_CFLAGS_OTHER}")
-      endif()
-      if (LAPACK_LDFLAGS_OTHER)
-        set(LAPACKE_LDFLAGS_OTHER "${LAPACK_LDFLAGS_OTHER}")
+        message(STATUS "Looking for lapacke: test with lapack succeeded")
       endif()
 
+      # Set the mkl library dirs for compatibility with former version
+      # --------------------------------------------------------------
       if (LAPACKE_LIBRARIES MATCHES "libmkl" AND DEFINED ENV{MKLROOT})
         set(LAPACKE_PREFIX "$ENV{MKLROOT}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
-        set(LAPACKE_INCLUDE_DIRS "${LAPACKE_PREFIX}/include")
         set(LAPACKE_LIBRARY_DIRS "${LAPACKE_PREFIX}/lib/intel64")
       endif()
 
-      if (NOT LAPACKE_INCLUDE_DIRS)
-        # Looking for include
-        # -------------------
+      lapacke_check_include()
 
-        # Try to find the lapacke header in the given paths
-        # -------------------------------------------------
-        if (LAPACKE_LIBRARIES MATCHES "libmkl")
-          set(LAPACKE_hdrs_to_find "mkl.h")
-        else()
-          set(LAPACKE_hdrs_to_find "lapacke.h")
-        endif()
-
-        morse_find_path(LAPACKE
-          HEADERS ${LAPACKE_hdrs_to_find}
-          SUFFIXES "include" "include/lapacke" "include/mkl" )
-
-      endif()
     endif()
+
   endif (NOT LAPACKE_STANDALONE)
 
   # test fails with lapack: try to find LAPACKE lib exterior to LAPACK
-  if (LAPACKE_STANDALONE OR NOT LAPACKE_WORKS)
+  if (LAPACKE_STANDALONE OR (NOT LAPACKE_WORKS))
 
-    if(NOT LAPACKE_WORKS AND NOT LAPACKE_FIND_QUIETLY)
+    if((NOT LAPACKE_WORKS) AND (NOT LAPACKE_FIND_QUIETLY))
       message(STATUS "Looking for lapacke : test with lapack fails")
     endif()
 
+    # Make sure LAPACKE is invalidated
+    unset(LAPACKE_WORKS CACHE)
+    unset(LAPACKE_LIBRARIES)
+    unset(LAPACKE_INCLUDE_DIRS)
+    unset(LAPACKE_LIBRARY_DIRS)
+    unset(LAPACKE_CFLAGS_OTHER)
+    unset(LAPACKE_LDFLAGS_OTHER)
+
     # try with pkg-config
     set(ENV_MKLROOT "$ENV{MKLROOT}")
-    set(LAPACKE_GIVEN_BY_USER "FALSE")
-    if ( LAPACKE_DIR OR ( LAPACKE_INCDIR AND LAPACKE_LIBDIR ) OR (ENV_MKLROOT) )
-      set(LAPACKE_GIVEN_BY_USER "TRUE")
+    set(LAPACKE_GIVEN_BY_USER FALSE)
+    if ( LAPACKE_DIR OR ( LAPACKE_INCDIR AND LAPACKE_LIBDIR ) OR ( ENV_MKLROOT ) )
+      set(LAPACKE_GIVEN_BY_USER TRUE)
     endif()
 
-    if( PKG_CONFIG_EXECUTABLE AND (NOT (LAPACKE_GIVEN_BY_USER)))
+    # Search for lapacke with pkg-config
+    # --------------------------------
+    find_package(PkgConfig QUIET)
+    if( PKG_CONFIG_EXECUTABLE AND (NOT LAPACKE_GIVEN_BY_USER))
 
       if (BLA_STATIC)
         set(MKL_STR_BLA_STATIC "static")
@@ -238,37 +323,23 @@ if (LAPACKEXT_FOUND)
       endif()
 
       if (LAPACKE_STATIC AND LAPACKE_STATIC_LIBRARIES)
-        set (LAPACKE_DEPENDENCIES ${LAPACKE_STATIC_LIBRARIES})
-        list (REMOVE_ITEM LAPACKE_DEPENDENCIES "lapacke")
-        list (APPEND LAPACKE_LIBRARIES ${LAPACKE_DEPENDENCIES})
+        set(LAPACKE_DEPENDENCIES ${LAPACKE_STATIC_LIBRARIES})
+        list(REMOVE_ITEM LAPACKE_DEPENDENCIES "lapacke")
+        list(APPEND LAPACKE_LIBRARIES ${LAPACKE_DEPENDENCIES})
         set(LAPACKE_CFLAGS_OTHER ${LAPACKE_STATIC_CFLAGS_OTHER})
         set(LAPACKE_LDFLAGS_OTHER ${LAPACKE_STATIC_LDFLAGS_OTHER})
         if (NOT LAPACKE_FIND_QUIETLY)
           message(STATUS "LAPACKE_STATIC set to 1 by user, LAPACKE_LIBRARIES: ${LAPACKE_LIBRARIES}.")
         endif()
       endif()
-
     endif()
 
+    # Search for lapacke the classical way
+    # ------------------------------------
     if (NOT LAPACKE_FOUND_WITH_PKGCONFIG OR LAPACKE_GIVEN_BY_USER)
-
-      # Try to find LAPACKE lib
-      #######################
-
       # Looking for include
       # -------------------
-
-      # Try to find the lapacke header in the given paths
-      # -------------------------------------------------
-      if (LAPACKE_LIBRARIES MATCHES "libmkl")
-        set(LAPACKE_hdrs_to_find "mkl.h")
-      else()
-        set(LAPACKE_hdrs_to_find "lapacke.h")
-      endif()
-
-      morse_find_path(LAPACKE
-        HEADERS ${LAPACKE_hdrs_to_find}
-        SUFFIXES "include" "include/lapacke" "include/mkl" )
+      lapacke_check_include()
 
       # Looking for lib
       # ---------------
@@ -277,147 +348,32 @@ if (LAPACKEXT_FOUND)
         SUFFIXES  lib lib32 lib64)
 
     endif (NOT LAPACKE_FOUND_WITH_PKGCONFIG OR LAPACKE_GIVEN_BY_USER)
+  endif (LAPACKE_STANDALONE OR (NOT LAPACKE_WORKS))
 
-  endif (LAPACKE_STANDALONE OR NOT LAPACKE_WORKS)
+  # check if static or dynamic lib
+  morse_check_static_or_dynamic(LAPACKE LAPACKE_LIBRARIES)
+  if(LAPACKE_STATIC)
+    set(STATIC "_STATIC")
+  endif()
 
-  # check a function to validate the find
-  if(LAPACKE_LIBRARIES)
+  # We found a lapacke library with pkg-config or manually
+  # ------------------------------------------------------
+  if((NOT LAPACKE_WORKS) AND LAPACKE_LIBRARIES)
 
-    # check if static or dynamic lib
-    morse_check_static_or_dynamic(LAPACKE LAPACKE_LIBRARIES)
-    if(LAPACKE_STATIC)
-      set(STATIC "_STATIC")
-    endif()
-
-    if (LAPACKE_FOUND_WITH_PKGCONFIG)
-      # set required libraries for link
-      morse_set_required_test_lib_link(LAPACKE)
+    # Need to add dependencies if not found with pkg-config
+    # -----------------------------------------------------
+    if (NOT LAPACKE_FOUND_WITH_PKGCONFIG)
+      # Extend the discovered with lapack
+      lapacke_init_variables(${LAPACKE_LAPACK})
     else()
-      set(REQUIRED_INCDIRS)
-      set(REQUIRED_LIBDIRS)
-      set(REQUIRED_LIBS)
-      set(REQUIRED_FLAGS)
-      set(REQUIRED_LDFLAGS)
-
-      # LAPACKE
-      if (LAPACKE_INCLUDE_DIRS)
-        set(REQUIRED_INCDIRS "${LAPACKE_INCLUDE_DIRS}")
+      if (LAPACKE_STATIC OR CBLAS_STATIC OR BLA_STATIC)
+        # save link with dependencies
+        set(LAPACKE_LIBRARIES "${LAPACKE_STATIC_LIBRARIES}")
       endif()
-      if (LAPACKE_CFLAGS_OTHER)
-        list(APPEND REQUIRED_FLAGS "${LAPACKE_CFLAGS_OTHER}")
-      endif()
-      if (LAPACKE_LDFLAGS_OTHER)
-        list(APPEND REQUIRED_LDFLAGS "${LAPACKE_LDFLAGS_OTHER}")
-      endif()
-      if (LAPACKE_LIBRARY_DIRS)
-        set(REQUIRED_LIBDIRS "${LAPACKE_LIBRARY_DIRS}")
-      endif()
-      set(REQUIRED_LIBS "${LAPACKE_LIBRARIES}")
-      # TMG
-      if (LAPACKE_WITH_TMG)
-        if (TMG_INCLUDE_DIRS)
-          list(APPEND REQUIRED_INCDIRS "${TMG_INCLUDE_DIRS}")
-        endif()
-        if (TMG_CFLAGS_OTHER)
-          list(APPEND REQUIRED_FLAGS "${TMG_CFLAGS_OTHER}")
-        endif()
-        if (TMG_LDFLAGS_OTHER)
-          list(APPEND REQUIRED_LDFLAGS "${TMG_LDFLAGS_OTHER}")
-        endif()
-        if (TMG_LIBRARY_DIRS)
-          list(APPEND REQUIRED_LIBDIRS "${TMG_LIBRARY_DIRS}")
-        endif()
-        list(APPEND REQUIRED_LIBS "${TMG_LIBRARIES}")
-      endif()
-      # LAPACK
-      if (LAPACK_INCLUDE_DIRS)
-        list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
-      endif()
-      if (LAPACK_CFLAGS_OTHER)
-        list(APPEND REQUIRED_FLAGS "${LAPACK_CFLAGS_OTHER}")
-      endif()
-      if (LAPACK_LDFLAGS_OTHER)
-        list(APPEND REQUIRED_LDFLAGS "${LAPACK_LDFLAGS_OTHER}")
-      endif()
-      if (LAPACK_LIBRARY_DIRS)
-        list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
-      endif()
-      list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
-      # m
-      find_library(M_LIBRARY NAMES m HINTS ${_lib_env})
-      mark_as_advanced(M_LIBRARY)
-      if(M_LIBRARY)
-        list(APPEND REQUIRED_LIBS "${M_LIBRARY}")
-      endif()
-      # set required libraries for link
-      set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-      if (REQUIRED_FLAGS)
-        set(REQUIRED_FLAGS_COPY "${REQUIRED_FLAGS}")
-        set(REQUIRED_FLAGS)
-        set(REQUIRED_DEFINITIONS)
-        foreach(_flag ${REQUIRED_FLAGS_COPY})
-          if (_flag MATCHES "^-D")
-            list(APPEND REQUIRED_DEFINITIONS "${_flag}")
-          endif()
-          string(REGEX REPLACE "^-D.*" "" _flag "${_flag}")
-          list(APPEND REQUIRED_FLAGS "${_flag}")
-        endforeach()
-      endif()
-      morse_finds_remove_duplicates()
-      set(CMAKE_REQUIRED_DEFINITIONS "${REQUIRED_DEFINITIONS}")
-      set(CMAKE_REQUIRED_FLAGS "${REQUIRED_FLAGS}")
-      set(CMAKE_REQUIRED_LIBRARIES)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
-      list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-      string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
     endif()
 
-    # test link
-    unset(LAPACKE_WORKS CACHE)
-    include(CheckFunctionExists)
-    check_function_exists(LAPACKE_dgeqrf LAPACKE_WORKS)
-    if(NOT LAPACKE_WORKS AND NOT LAPACKE_FIND_QUIETLY)
-      message(STATUS "Looking for lapacke: test of LAPACKE_dgeqrf with lapacke and lapack libraries fails")
-    endif()
-    if (LAPACKE_WORKS AND LAPACKE_WITH_TMG)
-      unset(LAPACKE_WORKS CACHE)
-      check_function_exists(LAPACKE_dlatms_work LAPACKE_WORKS)
-      if(NOT LAPACKE_WORKS AND NOT LAPACKE_FIND_QUIETLY)
-        message(STATUS "Looking for lapacke tmg interface : test of LAPACKE_dlatms_work with lapacke and lapack libraries fails")
-      endif()
-    endif()
-    mark_as_advanced(LAPACKE_WORKS)
-    unset(LAPACKE_WITH_LASCL CACHE)
-    check_function_exists(LAPACKE_dlascl_work LAPACKE_WITH_LASCL)
-    mark_as_advanced(LAPACKE_WITH_LASCL)
-
-    if(LAPACKE_WORKS)
-      if (LAPACKE_FOUND_WITH_PKGCONFIG)
-        if (LAPACKE_STATIC OR CBLAS_STATIC OR BLA_STATIC)
-          # save link with dependencies
-          set(LAPACKE_LIBRARIES "${LAPACKE_STATIC_LIBRARIES}")
-        endif()
-      else()
-        set(LAPACKE_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
-        set(LAPACKE_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
-        set(LAPACKE_CFLAGS_OTHER "${REQUIRED_FLAGS}")
-        set(LAPACKE_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
-        if (LAPACKE_STATIC OR CBLAS_STATIC OR BLA_STATIC)
-          # save link with dependencies
-          set(LAPACKE_LIBRARIES "${REQUIRED_LIBS}")
-        endif()
-      endif()
-    else()
-      if(NOT LAPACKE_FIND_QUIETLY)
-        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-        message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
-        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-      endif()
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_LIBRARIES)
+    # Test link
+    lapacke_check_library(TRUE)
 
     list(GET LAPACKE_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
@@ -437,31 +393,18 @@ if (LAPACKEXT_FOUND)
         set(LAPACKE_INCLUDE_DIRS "${LAPACKE_PREFIX}/include")
       endif()
     endif()
-    mark_as_advanced(LAPACKE_DIR)
     mark_as_advanced(LAPACKE_PREFIX)
 
-  endif(LAPACKE_LIBRARIES)
+  endif()
 
-else(LAPACKEXT_FOUND)
+else(LAPACKE_LAPACK)
 
   if (NOT LAPACKE_FIND_QUIETLY)
-    message(STATUS "LAPACKE requires LAPACK but LAPACK has not been found."
-      "Please look for LAPACK first.")
+    message(STATUS "LAPACKE requires LAPACK but LAPACK has not been found. "
+      "Please look for LAPACK first or change the MT support required (LAPACKE_MT=${LAPACKE_MT}).")
   endif()
 
-endif(LAPACKEXT_FOUND)
-
-if(LAPACKE_MT)
-  if (LAPACKE_LIBRARIES MATCHES "libmkl" AND LAPACK_MT_LIBRARIES)
-    set(LAPACKE_LIBRARIES "${LAPACK_MT_LIBRARIES}")
-  else()
-    set(LAPACKE_LIBRARIES "LAPACKE_LIBRARIES-NOTFOUND")
-  endif()
-else()
-  if (LAPACKE_LIBRARIES MATCHES "libmkl" AND LAPACK_SEQ_LIBRARIES)
-    set(LAPACKE_LIBRARIES "${LAPACK_SEQ_LIBRARIES}")
-  endif()
-endif()
+endif(LAPACKE_LAPACK)
 
 # check that LAPACKE has been found
 # ---------------------------------

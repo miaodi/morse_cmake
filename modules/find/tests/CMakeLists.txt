@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.3)
 project(TEST_MORSE_CMAKE_MODULES_FIND Fortran C CXX)
 cmake_policy(SET CMP0074 NEW)
 
@@ -93,6 +93,13 @@ foreach(_library ${PACKAGES})
       endif()
   else()
     message(FATAL_ERROR "${_library} NOT FOUND !!")
+  endif()
+
+  set( ORDERINGS SCOTCH PTSCOTCH METIS PAMPA )
+  if ( ${_library} IN_LIST ORDERINGS )
+    if ( ${_library}_INTSIZE EQUAL -1 )
+      message(FATAL_ERROR "${_library} could not find integer size !!")
+    endif()
   endif()
 
 endforeach()

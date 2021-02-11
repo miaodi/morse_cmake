@@ -377,10 +377,12 @@ macro(morse_find_path _package )
   foreach(_hdrfile ${mfp_HEADERS})
     set(${_package}_${_hdrfile}_DIRS "${_package}_${_hdrfile}_DIRS-NOTFOUND")
 
+    string(REGEX REPLACE "include/" "" _suffixes "${mfp_SUFFIXES}")
     if(${_package}_INCDIR)
       find_path(${_package}_${_hdrfile}_DIRS
         NAMES ${_hdrfile}
         HINTS ${${_package}_INCDIR}
+        PATH_SUFFIXES ${_suffixes}
         NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     else()
       if(${_package}_DIR)
@@ -392,7 +394,8 @@ macro(morse_find_path _package )
       else()
         find_path(${_package}_${_hdrfile}_DIRS
           NAMES ${_hdrfile}
-          HINTS ${mfp_HINTS})
+          HINTS ${mfp_HINTS}
+          PATH_SUFFIXES ${_suffixes})
       endif()
     endif()
     mark_as_advanced(${_package}_${_hdrfile}_DIRS)

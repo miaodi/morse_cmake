@@ -92,6 +92,12 @@ macro(cblas_init_variables BLAS)
   # This macro can be called for initialization and/or
   # extension of cblas discovery
 
+  message( DEBUG "[CBLAS] ${BLAS}_LIBRARIES: ${${BLAS}_LIBRARIES}")
+  message( DEBUG "[CBLAS] ${BLAS}_LIBRARY_DIRS: ${${BLAS}_LIBRARY_DIRS}")
+  message( DEBUG "[CBLAS] ${BLAS}_INCLUDE_DIRS: ${${BLAS}_INCLUDE_DIRS}")
+  message( DEBUG "[CBLAS] ${BLAS}_CFLAGS_OTHER: ${${BLAS}_CFLAGS_OTHER}")
+  message( DEBUG "[CBLAS] ${BLAS}_LDFLAGS_OTHER: ${${BLAS}_LDFLAGS_OTHER}")
+
   if (${BLAS}_LIBRARIES)
     set(CBLAS_BLAS ${BLAS})
     list(APPEND CBLAS_LIBRARIES "${${BLAS}_LIBRARIES}")
@@ -117,7 +123,7 @@ macro(cblas_init_variables BLAS)
 
   morse_cleanup_variables(CBLAS)
 
-  message( DEBUG "[CBLAS] CBLAS_LAPACK: ${CBLAS_LAPACK}")
+  message( DEBUG "[CBLAS] CBLAS_BLAS: ${CBLAS_BLAS}")
   message( DEBUG "[CBLAS] CBLAS_LIBRARIES: ${CBLAS_LIBRARIES}")
   message( DEBUG "[CBLAS] CBLAS_LIBRARY_DIRS: ${CBLAS_LIBRARY_DIRS}")
   message( DEBUG "[CBLAS] CBLAS_INCLUDE_DIRS: ${CBLAS_INCLUDE_DIRS}")
@@ -328,11 +334,11 @@ if (CBLAS_BLAS)
 
     # Need to add dependencies if not found with pkg-config
     # -----------------------------------------------------
-    if (NOT CBLAS_FOUND_WITH_PKGCONFIG)
-      # Extend the discovered with lapack
-      cblas_init_variables(${CBLAS_LAPACK})
-    else()
-      if (CBLAS_STATIC OR BLA_STATIC)
+    if (CBLAS_STATIC OR BLA_STATIC)
+      if (NOT CBLAS_FOUND_WITH_PKGCONFIG)
+        # Extend the discovered library with the blas ones
+        cblas_init_variables(${CBLAS_BLAS})
+      else()
         # save link with dependencies
         set(CBLAS_LIBRARIES "${CBLAS_STATIC_LIBRARIES}")
       endif()

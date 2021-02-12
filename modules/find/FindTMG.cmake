@@ -76,6 +76,12 @@ macro(tmg_init_variables LAPACK)
   # This macro can be called for initialization and/or
   # extension of tmg discovery
 
+  message( DEBUG "[TMG] ${LAPACK}_LIBRARIES: ${${LAPACK}_LIBRARIES}")
+  message( DEBUG "[TMG] ${LAPACK}_LIBRARY_DIRS: ${${LAPACK}_LIBRARY_DIRS}")
+  message( DEBUG "[TMG] ${LAPACK}_INCLUDE_DIRS: ${${LAPACK}_INCLUDE_DIRS}")
+  message( DEBUG "[TMG] ${LAPACK}_CFLAGS_OTHER: ${${LAPACK}_CFLAGS_OTHER}")
+  message( DEBUG "[TMG] ${LAPACK}_LDFLAGS_OTHER: ${${LAPACK}_LDFLAGS_OTHER}")
+
   if (${LAPACK}_LIBRARIES)
     set(TMG_LAPACK ${LAPACK})
     list(APPEND TMG_LIBRARIES "${${LAPACK}_LIBRARIES}")
@@ -116,13 +122,13 @@ macro(tmg_check_library _verbose)
   morse_cmake_required_set(TMG)
 
   unset(TMG_WORKS CACHE)
-  unset(TMG_dlarnv_WORKS CACHE)
+  unset(TMG_dlatms_WORKS CACHE)
   unset(TMG_dlagsy_WORKS CACHE)
 
   if (NOT _LANGUAGES_ MATCHES Fortran)
-    check_function_exists(dlarnv TMG_dlarnv_WORKS)
+    check_function_exists(dlatms TMG_dlatms_WORKS)
   else (NOT _LANGUAGES_ MATCHES Fortran)
-    check_fortran_function_exists(dlarnv TMG_dlarnv_WORKS)
+    check_fortran_function_exists(dlatms TMG_dlatms_WORKS)
   endif (NOT _LANGUAGES_ MATCHES Fortran)
 
   if (NOT _LANGUAGES_ MATCHES Fortran)
@@ -131,14 +137,14 @@ macro(tmg_check_library _verbose)
     check_fortran_function_exists(dlagsy TMG_dlagsy_WORKS)
   endif (NOT _LANGUAGES_ MATCHES Fortran)
 
-  if ( TMG_dlarnv_WORKS AND TMG_dlagsy_WORKS )
+  if ( TMG_dlatms_WORKS AND TMG_dlagsy_WORKS )
     set(TMG_WORKS TRUE)
     mark_as_advanced(TMG_WORKS)
   endif()
 
   if(${_verbose})
     if((NOT TMG_WORKS) AND (NOT TMG_FIND_QUIETLY))
-      message(STATUS "Looking for tmg: test of dlarnv and dlagsy with tmg and lapack libraries fails")
+      message(STATUS "Looking for tmg: test of dlatms and dlagsy with tmg and lapack libraries fails")
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
       message(STATUS "CMAKE_REQUIRED_FLAGS: ${CMAKE_REQUIRED_FLAGS}")
@@ -156,10 +162,6 @@ if(TMG_FIND_REQUIRED)
 else()
   find_package(LAPACKEXT QUIET)
 endif()
-
-message( DEBUG "LAPACK_LIBRARIES: ${LAPACK_LIBRARIES}" )
-message( DEBUG "LAPACK_SEQ_LIBRARIES: ${LAPACK_SEQ_LIBRARIES}" )
-message( DEBUG "LAPACK_MT_LIBRARIES: ${LAPACK_MT_LIBRARIES}" )
 
 if(DEFINED TMG_MT)
   if (TMG_MT)
@@ -229,7 +231,9 @@ if (TMG_LAPACK)
       endif()
 
       # Extend the tmg variables with the lapack ones
-      tmg_init_variables(${TMG_LAPACK})
+      if (LAPACKE_STATIC OR CBLAS_STATIC OR BLA_STATIC)
+        tmg_init_variables(${TMG_LAPACK})
+      endif()
 
       # test link
       tmg_check_library(TRUE)

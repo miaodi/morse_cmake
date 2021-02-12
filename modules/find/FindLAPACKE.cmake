@@ -87,6 +87,12 @@ macro(lapacke_init_variables LAPACK)
   # This macro can be called for initialization and/or
   # extension of lapacke discovery
 
+  message( DEBUG "[LAPACKE] ${LAPACK}_LIBRARIES: ${${LAPACK}_LIBRARIES}")
+  message( DEBUG "[LAPACKE] ${LAPACK}_LIBRARY_DIRS: ${${LAPACK}_LIBRARY_DIRS}")
+  message( DEBUG "[LAPACKE] ${LAPACK}_INCLUDE_DIRS: ${${LAPACK}_INCLUDE_DIRS}")
+  message( DEBUG "[LAPACKE] ${LAPACK}_CFLAGS_OTHER: ${${LAPACK}_CFLAGS_OTHER}")
+  message( DEBUG "[LAPACKE] ${LAPACK}_LDFLAGS_OTHER: ${${LAPACK}_LDFLAGS_OTHER}")
+
   if (${LAPACK}_LIBRARIES)
     set(LAPACKE_LAPACK ${LAPACK})
     list(APPEND LAPACKE_LIBRARIES "${${LAPACK}_LIBRARIES}")
@@ -208,7 +214,10 @@ if (LAPACKE_WITH_TMG)
     find_package(TMG)
   endif()
 
+  # Lapacke depends only on TMG, which itself depends on the correct
+  # lapack. No need to look for the MT/SEQ one anymore
   set( LAPACKE_dep TMG )
+  unset(LAPACKE_MT)
 else()
 
   # LAPACKE depends on LAPACK, try to find it
@@ -362,11 +371,11 @@ if (LAPACKE_LAPACK)
 
     # Need to add dependencies if not found with pkg-config
     # -----------------------------------------------------
-    if (NOT LAPACKE_FOUND_WITH_PKGCONFIG)
-      # Extend the discovered with lapack
-      lapacke_init_variables(${LAPACKE_LAPACK})
-    else()
-      if (LAPACKE_STATIC OR CBLAS_STATIC OR BLA_STATIC)
+    if (LAPACKE_STATIC OR CBLAS_STATIC OR BLA_STATIC)
+      if (NOT LAPACKE_FOUND_WITH_PKGCONFIG)
+        # Extend the discovered library with the lapack ones
+        lapacke_init_variables(${LAPACKE_LAPACK})
+      else()
         # save link with dependencies
         set(LAPACKE_LIBRARIES "${LAPACKE_STATIC_LIBRARIES}")
       endif()

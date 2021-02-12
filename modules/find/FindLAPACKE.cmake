@@ -203,6 +203,10 @@ if( LAPACKE_FIND_COMPONENTS )
   endforeach()
 endif()
 
+if (DEFINED LAPACKE_MT )
+  set( LAPACKE_MT_internal ${LAPACKE_MT} )
+endif()
+
 # LAPACKE may depend on TMG (which depends on lapack), try to find it
 if (LAPACKE_WITH_TMG)
   if (DEFINED LAPACKE_MT)
@@ -217,7 +221,7 @@ if (LAPACKE_WITH_TMG)
   # Lapacke depends only on TMG, which itself depends on the correct
   # lapack. No need to look for the MT/SEQ one anymore
   set( LAPACKE_dep TMG )
-  unset(LAPACKE_MT)
+  unset( LAPACKE_MT_internal )
 else()
 
   # LAPACKE depends on LAPACK, try to find it
@@ -230,8 +234,8 @@ else()
   set( LAPACKE_dep LAPACK )
 endif()
 
-if(DEFINED LAPACKE_MT)
-  if (LAPACKE_MT)
+if(DEFINED LAPACKE_MT_internal)
+  if (LAPACKE_MT_internal)
     lapacke_init_variables("${LAPACKE_dep}_MT")
   else()
     lapacke_init_variables("${LAPACKE_dep}_SEQ")

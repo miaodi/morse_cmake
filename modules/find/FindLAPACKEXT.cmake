@@ -83,6 +83,7 @@ if (LAPACK_FOUND)
 
     # Look for the sequential MKL
     # ---------------------------
+    message( DEBUG "FindLAPACKEXT: Search for sequential MKL")
     set(BLA_VENDOR "Intel10_64lp_seq")
     unset(LAPACK_FOUND)
     unset(LAPACK_LINKER_FLAGS)
@@ -92,6 +93,7 @@ if (LAPACK_FOUND)
 
     # Look for the multi-threaded MKL
     # -------------------------------
+    message( DEBUG "FindLAPACKEXT: Search for parallel MKL")
     set(BLA_VENDOR "Intel10_64lp")
     unset(LAPACK_FOUND)
     unset(LAPACK_LINKER_FLAGS)
@@ -101,6 +103,7 @@ if (LAPACK_FOUND)
 
     # Restore the original library to make sure LAPACK_LIBRARIES is set
     # -----------------------------------------------------------------
+    message( DEBUG "FindLAPACKEXT: Reset to default search")
     set(BLA_VENDOR ${BLA_VENDOR_COPY})
     unset(LAPACK_FOUND)
     unset(LAPACK_LINKER_FLAGS)

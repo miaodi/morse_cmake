@@ -75,15 +75,20 @@ endmacro()
 macro(morse_check_static_or_dynamic package libraries)
   list(GET ${libraries} 0 _first_lib)
   get_filename_component(_suffix ${_first_lib} EXT)
-  #message(STATUS "package ${package}")
-  #message(STATUS "libraries ${libraries} ${${libraries}}")
-  #message(STATUS "_suffix ${_suffix} ${_first_lib}")
+
+  message( DEBUG "[mcstod] package ${package}")
+  message( DEBUG "[mcstod] libraries ${libraries} ${${libraries}}")
+  message( DEBUG "[mcstod] _suffix ${_suffix} ${_first_lib}")
+
   if (NOT _suffix)
     unset (_lib_path CACHE)
     find_library(_lib_path ${_first_lib} HINTS ${${package}_LIBDIR} ${${package}_LIBRARY_DIRS} NO_DEFAULT_PATH)
-    #message(STATUS "_first_lib ${_first_lib}")
-    #message(STATUS "${${package}_LIBRARY_DIRS}")
-    #message(STATUS "_lib_path ${_lib_path}")
+
+    message( DEBUG "[mcstod] Could not find suffix, try to find the library again" )
+    message( DEBUG "[mcstod] _first_lib ${_first_lib}"   )
+    message( DEBUG "[mcstod] ${${package}_LIBRARY_DIRS}" )
+    message( DEBUG "[mcstod] _lib_path ${_lib_path}"     )
+
     get_filename_component(_suffix ${_lib_path} EXT)
   endif()
   if (_suffix)
@@ -499,6 +504,9 @@ macro(morse_find_library _package )
     endif()
   endforeach()
   list(REMOVE_DUPLICATES ${_package}_LIBRARY_DIRS)
+
+  mark_as_advanced(${_package}_LIBRARIES)
+  mark_as_advanced(${_package}_LIBRARY_DIRS)
 
   # Restore suffixes
   # ----------------

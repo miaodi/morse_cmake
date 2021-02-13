@@ -172,7 +172,7 @@ endmacro()
 
 # Look  for the lapacke header files
 # ---------------------------------
-macro(lapacke_check_include)
+function(lapacke_check_include)
   if ( LAPACKE_INCLUDE_DIRS )
     return()
   endif()
@@ -191,7 +191,7 @@ macro(lapacke_check_include)
     HEADERS  ${LAPACKE_hdrs_to_find}
     SUFFIXES "include" "include/lapacke" "include/mkl")
 
-endmacro()
+endfunction()
 
 # to check LAPACKE components
 set(LAPACKE_WITH_TMG OFF)

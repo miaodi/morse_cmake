@@ -165,7 +165,7 @@ endmacro()
 
 # Look  for the cblas header files
 # ---------------------------------
-macro(cblas_check_include)
+function(cblas_check_include)
   if ( CBLAS_INCLUDE_DIRS )
     return()
   endif()
@@ -184,7 +184,7 @@ macro(cblas_check_include)
     HEADERS  ${CBLAS_hdrs_to_find}
     SUFFIXES "include" "include/cblas")
 
-endmacro()
+endfunction()
 
 # CBLAS depends on BLAS anyway, try to find it
 if(CBLAS_FIND_REQUIRED)

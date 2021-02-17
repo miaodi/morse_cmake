@@ -174,7 +174,7 @@ if(SCOTCH_LIBRARIES)
     set(SCOTCH_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
     set(SCOTCH_CFLAGS_OTHER "${REQUIRED_FLAGS}")
     set(SCOTCH_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
-    # scotch is not giving its dependencie even in shared library mode ...
+    # scotch is not giving its dependencies even in shared library mode ...
     #if (SCOTCH_STATIC)
       # save link with dependencies
       set(SCOTCH_LIBRARIES "${REQUIRED_LIBS}")

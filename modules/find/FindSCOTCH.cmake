@@ -174,10 +174,11 @@ if(SCOTCH_LIBRARIES)
     set(SCOTCH_INCLUDE_DIRS "${REQUIRED_INCDIRS}")
     set(SCOTCH_CFLAGS_OTHER "${REQUIRED_FLAGS}")
     set(SCOTCH_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
-    if (SCOTCH_STATIC)
+    # scotch is not giving its dependencie even in shared library mode ...
+    #if (SCOTCH_STATIC)
       # save link with dependencies
       set(SCOTCH_LIBRARIES "${REQUIRED_LIBS}")
-    endif()
+    #endif()
   else()
     if(NOT SCOTCH_FIND_QUIETLY)
       message(STATUS "Looking for SCOTCH : test of SCOTCH_graphInit with SCOTCH library fails")

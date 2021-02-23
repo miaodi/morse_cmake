@@ -213,10 +213,11 @@ if(PTSCOTCH_LIBRARIES)
     set(PTSCOTCH_LIBRARY_DIRS "${REQUIRED_LIBDIRS}")
     set(PTSCOTCH_CFLAGS_OTHER "${REQUIRED_FLAGS}")
     set(PTSCOTCH_LDFLAGS_OTHER "${REQUIRED_LDFLAGS}")
-    if (PTSCOTCH_STATIC)
+    # scotch is not giving its dependencies even in shared library mode ...
+    #if (PTSCOTCH_STATIC)
       # save link with dependencies
       set(PTSCOTCH_LIBRARIES "${REQUIRED_LIBS}")
-    endif()
+    #endif()
   else()
     if(NOT PTSCOTCH_FIND_QUIETLY)
       message(STATUS "Looking for PTSCOTCH : test of SCOTCH_dgraphInit with PTSCOTCH library fails")

@@ -314,7 +314,7 @@ macro(morse_install_finds mods dest )
   endforeach()
 
   # install other necessary morse files containing macros
-  set(morse_find_core "FindHeadersAndLibs.cmake;FindMorseCommon.cmake;FindMorseInit.cmake;LibrariesAbsolutePath.cmake;PrintFindStatus.cmake;MORSE-Copyright.txt")
+  set(morse_find_core "../ParseArguments.cmake;FindHeadersAndLibs.cmake;FindMorseCommon.cmake;FindMorseInit.cmake;LibrariesAbsolutePath.cmake;PrintFindStatus.cmake;MORSE-Copyright.txt")
   foreach(_file ${morse_find_core})
      install(FILES ${MORSE_CMAKE_MODULE_PATH}/find/${_file}
            DESTINATION ${dest})

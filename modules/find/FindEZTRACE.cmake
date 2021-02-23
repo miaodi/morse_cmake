@@ -23,7 +23,8 @@
 # - Find EZTRACE include dirs and libraries
 # Use this module by invoking find_package with the form:
 #  find_package(EZTRACE
-#               [REQUIRED]) # Fail with error if eztrace is not found
+#               [REQUIRED] # Fail with error if eztrace is not found
+#               [COMPONENTS <comp1> <comp2> ...]) # dependencies
 #
 #  EZTRACE depends on the following libraries:
 #   - threads (e.g. pthreads)
@@ -31,6 +32,9 @@
 #   - cuda (optional)
 #   - iberty (optional)
 #   - mpi (optional)
+#
+#  COMPONENTS can be some of the following:
+#   - MPI:  to detect the MPI version of EZTRACE
 #
 # This module finds headers and eztrace library using pkg-config file.
 #  if found with pkg-config the following variables are set
@@ -64,6 +68,18 @@ if (NOT EZTRACE_FIND_QUIETLY)
   message(STATUS "FindEZTRACE needs pkg-config program and PKG_CONFIG_PATH set with eztrace.pc file path.")
 endif()
 
+# Set the version to find
+set(EZTRACE_LOOK_FOR_MPI  OFF)
+
+if( EZTRACE_FIND_COMPONENTS )
+  foreach( component ${EZTRACE_FIND_COMPONENTS} )
+    if (${component} STREQUAL "MPI")
+      # means we look for eztrace-mpi library
+      set(EZTRACE_LOOK_FOR_MPI ON)
+    endif()
+  endforeach()
+endif()
+
 # Use pkg-config to detect include/library dirs
 # ---------------------------------------------
 if (PKG_CONFIG_EXECUTABLE)
@@ -79,7 +95,23 @@ if (PKG_CONFIG_EXECUTABLE)
         "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
+
   if (EZTRACE_FOUND AND EZTRACE_LIBRARIES)
+
+    # We have found EZTrace, now we look for the components.
+    if(EZTRACE_LOOK_FOR_MPI)
+      morse_find_library(EZTRACE_MPI
+        LIBRARIES eztrace-mpi
+        SUFFIXES  lib lib32 lib64)
+      if (EZTRACE_MPI_LIBRARIES)
+        message(STATUS "Looking for EZTRACE-MPI - found")
+      else()
+        message(STATUS "${Magenta}Looking for EZTRACE-MPI - not found.${ColourReset}")
+      endif()
+      list(APPEND EZTRACE_LIBRARIES "${EZTRACE_MPI_LIBRARIES}")
+    endif(EZTRACE_LOOK_FOR_MPI)
+
+    # Set include dirs and libraries absolute path.
     if (NOT EZTRACE_INCLUDE_DIRS)
       pkg_get_variable(EZTRACE_INCLUDE_DIRS eztrace includedir)
     endif()

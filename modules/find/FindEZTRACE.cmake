@@ -98,23 +98,31 @@ if (PKG_CONFIG_EXECUTABLE)
 
   if (EZTRACE_FOUND AND EZTRACE_LIBRARIES)
 
+    # Set include dirs and libraries absolute path.
+    if (NOT EZTRACE_INCLUDE_DIRS)
+      pkg_get_variable(EZTRACE_INCLUDE_DIRS eztrace includedir)
+    endif()
+
     # We have found EZTrace, now we look for the components.
     if(EZTRACE_LOOK_FOR_MPI)
       morse_find_library(EZTRACE_MPI
-        LIBRARIES eztrace-mpi
-        SUFFIXES  lib lib32 lib64)
+          LIBRARIES eztrace-mpi
+          SUFFIXES  lib lib32 lib64)
       if (EZTRACE_MPI_LIBRARIES)
         message(STATUS "Looking for EZTRACE-MPI - found")
       else()
         message(STATUS "${Magenta}Looking for EZTRACE-MPI - not found.${ColourReset}")
       endif()
-      list(APPEND EZTRACE_LIBRARIES "${EZTRACE_MPI_LIBRARIES}")
+
+      list(APPEND EZTRACE_LIBRARIES ${EZTRACE_MPI_LIBRARIES})
+      if (MPI_FOUND)
+        if (MPI_C_INCLUDE_PATH)
+          list(APPEND EZTRACE_INCLUDE_DIRS ${MPI_C_INCLUDE_PATH})
+        endif()
+        list(APPEND EZTRACE_LIBRARIES ${MPI_C_LIBRARIES})
+      endif()
     endif(EZTRACE_LOOK_FOR_MPI)
 
-    # Set include dirs and libraries absolute path.
-    if (NOT EZTRACE_INCLUDE_DIRS)
-      pkg_get_variable(EZTRACE_INCLUDE_DIRS eztrace includedir)
-    endif()
     set(EZTRACE_FOUND_WITH_PKGCONFIG "TRUE")
     morse_find_pkgconfig_libraries_absolute_path(EZTRACE)
   else()

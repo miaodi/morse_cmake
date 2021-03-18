@@ -34,6 +34,8 @@
 #
 #=============================================================================
 
+include(FindPackageHandleStandardArgs)
+
 # check that we can call math directly with the compiler
 include(CheckCSourceCompiles)
 set(LIBM_TEST_SOURCE "#include<math.h>\nfloat f; int main(){sqrt(f);return
@@ -50,6 +52,8 @@ if(HAVE_MATH)
     add_library(MORSE::M INTERFACE IMPORTED)
   endif()
 
+  find_package_handle_standard_args(M DEFAULT_MSG)
+
 else()
 
   # look for header math.h to get the path to headers
@@ -64,7 +68,6 @@ else()
   unset(CMAKE_REQUIRED_LIBRARIES)
 
   # check and set M_FOUND
-  include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(M DEFAULT_MSG M_LIBRARIES M_INCLUDE_DIRS LIBM_MATH_WORKS)
   mark_as_advanced(M_INCLUDE_DIRS M_LIBRARIES LIBM_MATH_WORKS)
 

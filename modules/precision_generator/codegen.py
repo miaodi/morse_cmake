@@ -56,20 +56,24 @@ class SourceFile( object ):
     generated_re  = re.compile( r"@generated" )
 
     # --------------------
-    def __init__( self, subs, filename, filepath=None, precisions=None ):
+    def __init__( self, subs, filename, srcpath=None, dstpath=None, precisions=None ):
         '''Creates a single file.
         Determines whether it can do precision generation and if so,
         its substitution table, source and destination precisions.
         '''
         self._subs = subs
         self._filename = filename
-        if filepath:
-          self._filepath = filepath
+        if srcpath:
+          self._srcpath = srcpath
         else:
-          self._filepath = ''
+          self._srcpath = ''
+        if dstpath:
+          self._dstpath = dstpath
+        else:
+          self._dstpath = ''
 
-        self._fullname = path.realpath( path.join(self._filepath, filename) )
-        fd = open( self._fullname, 'r' )
+        self._srcfullname = path.realpath( path.join(self._srcpath, filename) )
+        fd = open( self._srcfullname, 'r' )
         self._text = fd.read()
         fd.close()
         m = self.precisions_re.search( self._text )
@@ -105,12 +109,12 @@ class SourceFile( object ):
             basename= list(path.split(outname))[1]
             outname = path.join( output_path, basename );
 
-        # Get the relative path to the output
-        outname = path.relpath(outname);
+        outname = path.join( self._dstpath, outname );
 
         # If full pathnames are identical, no file is generated
-        if path.realpath(outname) != self._fullname:
-            return outname
+        if path.realpath(outname) != self._srcfullname:
+            # Get the relative path to the output
+            return path.relpath(outname,self._dstpath);
         return None
 
     # --------------------
@@ -228,11 +232,12 @@ def main():
   """Create the options parser for detecting options on the command line."""
   parser = OptionParser(usage="Usage: %prog [options]",version='%prog '+str(__version__));
   group = OptionGroup(parser,"Main Options","Only one of these two options is valid");
-  group.add_option("-c", "--cmake",    help='Print the list of dependenencies for the RulesPrecision.cmake package', action='store_true', dest='cmake',    default=False);
-  group.add_option("-g", "--genfiles", help='Generate the converted files.',                                         action='store_true', dest='genfiles', default=False);
+  group.add_option("-c", "--cmake",    help='Print the list of dependencies for the RulesPrecision.cmake package', action='store_true', dest='cmake',    default=False);
+  group.add_option("-g", "--genfiles", help='Generate the converted files.',                                       action='store_true', dest='genfiles', default=False);
   parser.add_option_group(group);
   group = OptionGroup(parser,"Settings","These options specify how the work should be done.");
   group.add_option("-s", "--srcdir",      help='The input source directory.',                                 action='store', dest='srcdir',                     default=None);
+  group.add_option("-b", "--blddir",      help='The input build directory.',                                  action='store', dest='blddir',                     default=None);
   group.add_option("-P", "--prefix",      help='The output directory if different from the input directory.', action='store', dest='prefix',                     default=None);
   group.add_option("-f", "--file",        help='Specify a file(s) on which to operate.',                      action='store', dest='fileslst',    type='string', default="");
   group.add_option("-p", "--prec",        help='Specify a precision(s) on which to operate.',                 action='store', dest='precslst',    type='string', default="");
@@ -254,7 +259,7 @@ def main():
     """For each valid conversion file found."""
     try:
       """Try creating and executing a converter."""
-      srcfile = SourceFile( subs, file, filepath=options.srcdir );
+      srcfile = SourceFile( subs, file, srcpath=options.srcdir, dstpath=options.blddir );
       if options.genfiles:
         srcfile.generate_files( precisions=options.precslst.split(),
                                 output_path=options.prefix )

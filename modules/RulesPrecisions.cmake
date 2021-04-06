@@ -191,6 +191,10 @@ MACRO(precisions_rules_py)
     set(PRECISIONPP_prefix "${PREC_RULE_TARGETDIR}")
   endif()
 
+  message( DEBUG "[RP] PRECISIONPP_arg      ${PRECISIONPP_arg}")
+  message( DEBUG "[RP] PRECISIONPP_prefix   ${PRECISIONPP_prefix}")
+  message( DEBUG "[RP] PREC_RULE_PRECISIONS ${PREC_RULE_PRECISIONS}")
+
   set(options_list "")
   foreach(prec_rules_PREC ${PREC_RULE_PRECISIONS})
     set(options_list "${options_list} ${prec_rules_PREC}")
@@ -201,12 +205,14 @@ MACRO(precisions_rules_py)
     set(sources_list "${sources_list} ${_src}")
   endforeach()
 
-  set( gencmd ${PYTHON_EXECUTABLE} ${RP_CODEGEN} -c -f "${sources_list}" -p "${options_list}" -s "${CMAKE_CURRENT_SOURCE_DIR}" ${PRECISIONPP_arg} ${PRECISIONPP_prefix} )
+  set( gencmd ${PYTHON_EXECUTABLE} ${RP_CODEGEN} -c -f "${sources_list}" -p "${options_list}" -s "${CMAKE_CURRENT_SOURCE_DIR}" -b "${CMAKE_CURRENT_BINARY_DIR}" ${PRECISIONPP_arg} ${PRECISIONPP_prefix} )
   if( DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
     set( gencmd ${gencmd} -D "${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}" )
   endif()
 
-  EXECUTE_PROCESS(COMMAND ${gencmd} OUTPUT_VARIABLE dependencies_list)
+  message( DEBUG "[RP] gen command ${gencmd}")
+  execute_process(COMMAND ${gencmd} OUTPUT_VARIABLE dependencies_list)
+  message( DEBUG "[RP] dependencies_list ${dependencies_list}")
 
   foreach(_dependency ${dependencies_list})
 
@@ -218,7 +224,7 @@ MACRO(precisions_rules_py)
       set(_dependency_PREC   "${CMAKE_MATCH_2}")
       set(_dependency_OUTPUT "${CMAKE_MATCH_3}")
 
-      set(pythoncmd ${PYTHON_EXECUTABLE} ${RP_CODEGEN} -g -f ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} -p ${_dependency_PREC} ${PRECISIONPP_arg} ${PRECISIONPP_prefix})
+      set(pythoncmd ${PYTHON_EXECUTABLE} ${RP_CODEGEN} -g -f ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} -b "${CMAKE_CURRENT_BINARY_DIR}" -p ${_dependency_PREC} ${PRECISIONPP_arg} ${PRECISIONPP_prefix})
       if( DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
         set( pythoncmd ${pythoncmd} -D "${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}" )
       endif()
@@ -258,6 +264,7 @@ MACRO(precisions_rules_py)
     endif()
   endforeach()
 
+  message( DEBUG "[RP] OUTPUTLIST ${OUTPUTLIST}")
   message(STATUS "Generate precision dependencies in ${CMAKE_CURRENT_SOURCE_DIR} - Done")
 
 ENDMACRO(precisions_rules_py)

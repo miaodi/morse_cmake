@@ -192,10 +192,10 @@ if (FFTW_LOOK_FOR_MKL)
   endif()
   if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
     find_package(Threads REQUIRED)
-    find_package(BLAS REQUIRED)
+    find_package(BLASEXT REQUIRED)
   else()
     find_package(Threads)
-    find_package(BLAS)
+    find_package(BLASEXT)
   endif()
 endif()
 
@@ -398,7 +398,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
   # Add system include paths to search include
   # ------------------------------------------
   set(PATH_TO_LOOK_FOR)
-  if (DEFINED $ENV{MKLROOT})
+  if (DEFINED ENV{MKLROOT})
     list(APPEND PATH_TO_LOOK_FOR "$ENV{MKLROOT}/include/fftw")
   endif()
 
@@ -410,7 +410,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
 
   morse_find_path(FFTW
     HEADERS  ${FFTW3_HEADER_TO_FIND}
-    SUFFIXES "include" "include/fftw"
+    SUFFIXES "include" "include/fftw" "fftw"
     HINTS    ${PATH_TO_LOOK_FOR})
 
   # Looking for lib
@@ -479,8 +479,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     # FFTW relies on blas libs
     if (FFTW_LOOK_FOR_THREADS)
       if (FFTW_LOOK_FOR_MKL)
-        if (BLAS_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${BLAS_LIBRARIES}")
+          if (BLAS_MT_LIBRARIES)
+            list(APPEND FFTW_LIBRARIES "${BLAS_MT_LIBRARIES}")
           if (NOT FFTW_FIND_QUIETLY)
             message(STATUS "Multithreaded FFTW has been found: ${FFTW_LIBRARIES}")
           endif()
@@ -492,7 +492,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
               message(STATUS "Multithreaded FFTW not found.")
             endif()
           endif()
-        endif(BLAS_LIBRARIES)
+      endif(BLAS_MT_LIBRARIES)
       elseif (FFTW_LOOK_FOR_ESSL)
         if (FFTW_LIBRARIES AND BLAS_LIBRARIES)
           list(APPEND FFTW_LIBRARIES "${BLAS_LIBRARIES}")
@@ -511,8 +511,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
       endif()
     else(FFTW_LOOK_FOR_THREADS)
       if (FFTW_LOOK_FOR_MKL)
-        if (BLAS_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${BLAS_LIBRARIES}")
+          if (BLAS_SEQ_LIBRARIES)
+          list(APPEND FFTW_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
           if (NOT FFTW_FIND_QUIETLY)
             message(STATUS "FFTW has been found: ${FFTW_LIBRARIES}")
           endif()
@@ -524,7 +524,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
               message(STATUS "FFTW not found.")
             endif()
           endif()
-        endif(BLAS_LIBRARIES)
+      endif(BLAS_SEQ_LIBRARIES)
       elseif (FFTW_LOOK_FOR_ESSL)
         if (FFTW_LIBRARIES AND BLAS_LIBRARIES)
           list(APPEND FFTW_LIBRARIES "${BLAS_LIBRARIES}")

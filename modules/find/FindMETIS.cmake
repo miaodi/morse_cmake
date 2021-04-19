@@ -74,16 +74,14 @@ morse_find_library(METIS
 # check a function to validate the find
 if(METIS_LIBRARIES)
 
-  # check if static or dynamic lib
-  morse_check_static_or_dynamic(METIS METIS_LIBRARIES)
-  if(METIS_STATIC)
-    set(STATIC "_STATIC")
-  else()
-    set(STATIC "")
+  # Metis may depend on the M library and the static compilation does
+  # not include the dependency, so we enforce it
+  find_package(M QUIET)
+  if ( M_FOUND )
+    set( METIS_LIBRARIES "${METIS_LIBRARIES};${M_LIBRARIES}" )
   endif()
 
-  # set required libraries for link
-  morse_set_required_test_lib_link(METIS)
+  morse_cmake_required_set(METIS)
 
   # test link
   unset(METIS_WORKS CACHE)
@@ -100,9 +98,7 @@ if(METIS_LIBRARIES)
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
     endif()
   endif()
-  set(CMAKE_REQUIRED_INCLUDES)
-  set(CMAKE_REQUIRED_FLAGS)
-  set(CMAKE_REQUIRED_LIBRARIES)
+  morse_cmake_required_unset()
 
   list(GET METIS_LIBRARIES 0 first_lib)
   get_filename_component(first_lib_path "${first_lib}" DIRECTORY)
@@ -120,13 +116,15 @@ if(METIS_LIBRARIES)
 
 endif(METIS_LIBRARIES)
 
-# Check the size of METIS_Idx
-# ---------------------------------
-set(CMAKE_REQUIRED_INCLUDES ${METIS_INCLUDE_DIRS})
 
-include(CheckCSourceRuns)
-#stdio.h and stdint.h should be included by metis.h directly
-set(METIS_C_TEST_METIS_Idx_4 "
+if (METIS_WORKS)
+  morse_cmake_required_set(METIS)
+
+  # Check the size of METIS_Idx
+  # ---------------------------------
+  include(CheckCSourceRuns)
+  #stdio.h and stdint.h should be included by metis.h directly
+  set(METIS_C_TEST_METIS_Idx_4 "
 #include <stdio.h>
 #include <stdint.h>
 #include <metis.h>
@@ -138,7 +136,7 @@ int main(int argc, char **argv) {
 }
 ")
 
-set(METIS_C_TEST_METIS_Idx_8 "
+  set(METIS_C_TEST_METIS_Idx_8 "
 #include <stdio.h>
 #include <stdint.h>
 #include <metis.h>
@@ -149,20 +147,22 @@ int main(int argc, char **argv) {
     return 1;
 }
 ")
-unset(METIS_Idx_4 CACHE)
-unset(METIS_Idx_8 CACHE)
-check_c_source_runs("${METIS_C_TEST_METIS_Idx_4}" METIS_Idx_4)
-check_c_source_runs("${METIS_C_TEST_METIS_Idx_8}" METIS_Idx_8)
-if(NOT METIS_Idx_4)
-  if(NOT METIS_Idx_8)
-    set(METIS_INTSIZE -1)
+  unset(METIS_Idx_4 CACHE)
+  unset(METIS_Idx_8 CACHE)
+  check_c_source_runs("${METIS_C_TEST_METIS_Idx_4}" METIS_Idx_4)
+  check_c_source_runs("${METIS_C_TEST_METIS_Idx_8}" METIS_Idx_8)
+  if(NOT METIS_Idx_4)
+    if(NOT METIS_Idx_8)
+      set(METIS_INTSIZE -1)
+    else()
+      set(METIS_INTSIZE 8)
+    endif()
   else()
-    set(METIS_INTSIZE 8)
+    set(METIS_INTSIZE 4)
   endif()
-else()
-  set(METIS_INTSIZE 4)
+
+  morse_cmake_required_unset()
 endif()
-set(CMAKE_REQUIRED_INCLUDES "")
 
 # check that METIS has been found
 # ---------------------------------

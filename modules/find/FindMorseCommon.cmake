@@ -90,8 +90,15 @@ macro(morse_check_static_or_dynamic package libraries)
     message( DEBUG "[mcstod] _lib_path ${_lib_path}"     )
 
     get_filename_component(_suffix ${_lib_path} EXT)
+
+    message( DEBUG "[mcstod] _suffix ${_suffix}")
   endif()
   if (_suffix)
+    # some libraries provide the version number so that the suffix becomes
+    # something like .3.so for example. Thus only keep .so
+    if (_suffix MATCHES "\\.so$" OR _suffix MATCHES "\\.so\\.")
+      set(_suffix ".so")
+    endif()
     set(${package}_STATIC 0)
     if (WIN32)
       if(${_suffix} MATCHES "\\.lib$")

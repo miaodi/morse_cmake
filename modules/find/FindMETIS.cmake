@@ -128,7 +128,7 @@ if (METIS_WORKS)
 #include <stdio.h>
 #include <stdint.h>
 #include <metis.h>
-int main(int argc, char **argv) {
+int main() {
   if (sizeof(idx_t) == 4)
     return 0;
   else
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 #include <stdio.h>
 #include <stdint.h>
 #include <metis.h>
-int main(int argc, char **argv) {
+int main() {
   if (sizeof(idx_t) == 8)
     return 0;
   else

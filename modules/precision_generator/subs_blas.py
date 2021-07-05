@@ -223,6 +223,7 @@ lapack = [
     ('', 'slartg',               'dlartg',               'clartg',               'zlartg'              ),
     ('', 'slascl',               'dlascl',               'clascl',               'zlascl'              ),
     ('', 'slaset',               'dlaset',               'claset',               'zlaset'              ),
+    ('', 'slapmr',               'dlapmr',               'clapmr',               'zlapmr'              ),
     ('', 'slasrt',               'dlasrt',               'slasrt',               'dlasrt'              ),
     ('', 'slassq',               'dlassq',               'classq',               'zlassq'              ),
     ('', 'slaswp',               'dlaswp',               'claswp',               'zlaswp'              ),

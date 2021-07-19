@@ -128,7 +128,7 @@ if (ENABLE_CTEST)
       FXT
       GTG
       HWLOC
-      HYPRE
+      # HYPRE # not installed cf. https://gitlab.inria.fr/solverstack/docker/-/blob/master/dockerfile-distrib
       LAPACK
       LAPACKEXT
       LAPACKE

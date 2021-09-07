@@ -89,7 +89,7 @@ if(PKG_CONFIG_EXECUTABLE)
   # call cmake macro to find parsec bin programs
   if (PARSEC_PREFIX)
     # create list of binaries to find
-    set(PARSEC_bins_to_find "parsec_ptgpp")
+    set(PARSEC_bins_to_find "parsec-ptgpp;parsec_ptgpp")
     foreach(parsec_bin ${PARSEC_bins_to_find})
       set(PARSEC_${parsec_bin} "PARSEC_${parsec_bin}-NOTFOUND")
       find_program(PARSEC_${parsec_bin}
@@ -98,6 +98,10 @@ if(PKG_CONFIG_EXECUTABLE)
         PATH_SUFFIXES "bin"
         NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH)
     endforeach()
+
+    if ( NOT PARSEC_parsec_ptgpp )
+      set( PARSEC_parsec_ptgpp ${PARSEC_parsec-ptgpp} )
+    endif()
   else()
     if (PARSEC_FIND_REQUIRED)
       message(FATAL_ERROR "PARSEC_PREFIX not defined by pkg_search_module")

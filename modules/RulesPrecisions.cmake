@@ -26,7 +26,7 @@
 #  @date 13-07-2012
 #
 ###
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.12)
 include(CMakeDependentOption)
 
 set(RP_CODEGEN ${MORSE_CMAKE_MODULE_PATH}/precision_generator/codegen.py)
@@ -159,9 +159,8 @@ endif()
 include(ParseArguments)
 
 # Add a hint to help Cmake to find the correct python version:
-# (see https://cmake.org/cmake/help/v3.0/module/FindPythonInterp.html)
-set(Python_ADDITIONAL_VERSIONS 2)
-find_package(PythonInterp REQUIRED)
+# (see https://cmake.org/cmake/help/latest/module/FindPythonInterp.html)
+find_package(Python3 COMPONENTS Interpreter QUIET)
 
 MACRO(precisions_rules_py)
   PARSE_ARGUMENTS(PREC_RULE "TARGETDIR;PRECISIONS" "" ${ARGN})

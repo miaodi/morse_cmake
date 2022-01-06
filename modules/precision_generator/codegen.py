@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """@package Tools
 
  @copyright (c) 2009-2018 The University of Tennessee and The

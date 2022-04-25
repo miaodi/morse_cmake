@@ -8,4 +8,4 @@ cd build
 
 cmake $CI_PROJECT_DIR/modules/find/tests -DENABLE_CTEST=ON -DLAPACKE_COMPONENTS="TMG" -DQUARK_COMPONENTS="HWLOC" -DCMAKE_PREFIX_PATH="$PARSEC_DIR"
 
-ctest -D Experimental
+ctest --no-compress-output -T Test -V

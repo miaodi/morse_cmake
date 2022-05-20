@@ -172,26 +172,27 @@ endmacro()
 
 # Look  for the lapacke header files
 # ---------------------------------
-function(lapacke_check_include)
-  if ( LAPACKE_INCLUDE_DIRS )
-    return()
+macro(lapacke_check_include)
+
+  if ( NOT LAPACKE_INCLUDE_DIRS )
+
+    # Try to find the lapacke header in the given paths
+    # -------------------------------------------------
+    if (LAPACKE_LIBRARIES MATCHES "libmkl")
+      set(LAPACKE_hdrs_to_find "mkl.h")
+    else()
+      set(LAPACKE_hdrs_to_find "lapacke.h")
+    endif()
+
+    # call cmake macro to find the header path
+    # ----------------------------------------
+    morse_find_path(LAPACKE
+      HEADERS  ${LAPACKE_hdrs_to_find}
+      SUFFIXES "include" "include/lapacke" "include/mkl")
+
   endif()
 
-  # Try to find the lapacke header in the given paths
-  # -------------------------------------------------
-  if (LAPACKE_LIBRARIES MATCHES "libmkl")
-    set(LAPACKE_hdrs_to_find "mkl.h")
-  else()
-    set(LAPACKE_hdrs_to_find "lapacke.h")
-  endif()
-
-  # call cmake macro to find the header path
-  # ----------------------------------------
-  morse_find_path(LAPACKE
-    HEADERS  ${LAPACKE_hdrs_to_find}
-    SUFFIXES "include" "include/lapacke" "include/mkl")
-
-endfunction()
+endmacro()
 
 # to check LAPACKE components
 set(LAPACKE_WITH_TMG OFF)

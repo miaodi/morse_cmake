@@ -165,26 +165,27 @@ endmacro()
 
 # Look  for the cblas header files
 # ---------------------------------
-function(cblas_check_include)
-  if ( CBLAS_INCLUDE_DIRS )
-    return()
+macro(cblas_check_include)
+
+  if ( NOT CBLAS_INCLUDE_DIRS )
+
+    # Try to find the cblas header in the given paths
+    # -------------------------------------------------
+    if (CBLAS_LIBRARIES MATCHES "libmkl")
+      set(CBLAS_hdrs_to_find "mkl.h")
+    else()
+      set(CBLAS_hdrs_to_find "cblas.h")
+    endif()
+
+    # call cmake macro to find the header path
+    # ----------------------------------------
+    morse_find_path(CBLAS
+      HEADERS  ${CBLAS_hdrs_to_find}
+      SUFFIXES "include" "include/cblas")
+
   endif()
 
-  # Try to find the cblas header in the given paths
-  # -------------------------------------------------
-  if (CBLAS_LIBRARIES MATCHES "libmkl")
-    set(CBLAS_hdrs_to_find "mkl.h")
-  else()
-    set(CBLAS_hdrs_to_find "cblas.h")
-  endif()
-
-  # call cmake macro to find the header path
-  # ----------------------------------------
-  morse_find_path(CBLAS
-    HEADERS  ${CBLAS_hdrs_to_find}
-    SUFFIXES "include" "include/cblas")
-
-endfunction()
+endmacro()
 
 # CBLAS depends on BLAS anyway, try to find it
 if(CBLAS_FIND_REQUIRED)
@@ -204,6 +205,7 @@ else()
 endif()
 
 # find CBLAS
+message(STATUS "CBLAS_BLAS ${CBLAS_BLAS}")
 if (CBLAS_BLAS)
 
   if (NOT CBLAS_STANDALONE)
@@ -212,6 +214,7 @@ if (CBLAS_BLAS)
     cblas_check_library("FALSE")
 
     # Blas lib includes cblas
+    message(STATUS "CBLAS_WORKS ${CBLAS_WORKS}")
     if(CBLAS_WORKS)
       if(NOT CBLAS_FIND_QUIETLY)
         message(STATUS "Looking for cblas: test with blas succeeded")

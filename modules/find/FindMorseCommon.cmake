@@ -191,6 +191,36 @@ macro(morse_create_imported_target name)
 
 endmacro()
 
+# export existing imported target namespace1::namespace2 in cmake file
+# ${targetname}Targets.cmake and installed in lib/cmake/cmakesubdir/. To be used
+# by "PROJECT"Config.cmake file at installation
+macro(morse_export_imported_target namespace1 namespace2 targetname cmakesubdir)
+
+  if (TARGET ${namespace1}::${namespace2})
+    get_target_property(_INCLUDES  ${namespace1}::${namespace2} INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_LIBDIRS   ${namespace1}::${namespace2} INTERFACE_LINK_DIRECTORIES)
+    get_target_property(_LIBRARIES ${namespace1}::${namespace2} INTERFACE_LINK_LIBRARIES)
+    get_target_property(_CFLAGS    ${namespace1}::${namespace2} INTERFACE_COMPILE_OPTIONS)
+    get_target_property(_LDFLAGS   ${namespace1}::${namespace2} INTERFACE_LINK_OPTIONS)
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${targetname}Targets.cmake"
+"add_library(${namespace1}::${namespace2} INTERFACE IMPORTED)
+set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES \"${_INCLUDES}\")
+set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_LINK_DIRECTORIES    \"${_LIBDIRS}\")
+set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_LINK_LIBRARIES      \"${_LIBRARIES}\")
+set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_COMPILE_OPTIONS     \"${_CFLAGS}\")
+set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_LINK_OPTIONS        \"${_LDFLAGS}\")
+")
+
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${targetname}Targets.cmake"
+            DESTINATION "lib/cmake/${cmakesubdir}")
+  else()
+    message(WARNING "morse_export_imported_target: try to export target "
+      "${namespace1}::${namespace2} but it does not exist.")
+  endif()
+
+endmacro()
+
 # Set the CMAKE_REQUIRED_... porperties to check libraries
 # --------------------------------------------------------
 macro(morse_set_required_test_lib_link name)

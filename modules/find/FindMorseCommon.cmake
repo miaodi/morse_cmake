@@ -219,12 +219,14 @@ macro(morse_export_imported_target namespace1 namespace2 targetname cmakesubdir)
     endif()
 
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${targetname}Targets.cmake"
-"add_library(${namespace1}::${namespace2} INTERFACE IMPORTED)
+"if (NOT TARGET ${namespace1}::${namespace2})
+add_library(${namespace1}::${namespace2} INTERFACE IMPORTED)
 set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES \"${_INCLUDES}\")
 set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_LINK_DIRECTORIES    \"${_LIBDIRS}\")
 set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_LINK_LIBRARIES      \"${_LIBRARIES}\")
 set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_COMPILE_OPTIONS     \"${_CFLAGS}\")
 set_target_properties(${namespace1}::${namespace2} PROPERTIES INTERFACE_LINK_OPTIONS        \"${_LDFLAGS}\")
+endif()
 ")
 
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${targetname}Targets.cmake"

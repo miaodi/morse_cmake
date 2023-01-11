@@ -111,7 +111,7 @@ if(SIMGRID_FOUND AND SIMGRID_LIBRARIES)
   # test link
   unset(SIMGRID_WORKS CACHE)
   include(CheckFunctionExists)
-  check_function_exists(MSG_main SIMGRID_WORKS)
+  check_function_exists(simgrid_init SIMGRID_WORKS)
   mark_as_advanced(SIMGRID_WORKS)
 
   if(SIMGRID_WORKS)

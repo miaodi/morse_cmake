@@ -229,6 +229,8 @@ _subs = {
         (r'\bint',              r'\bfloat',             r'\bdouble',            r'\bcuFloatComplex',    r'\bcuDoubleComplex'   ),
         (r'\bint',              r'\breal',              r'\breal',              r'\bcomplex',           r'\bcomplex'           ),
         (r'\bint',              r'\bfloat',             r'\bdouble',            r'\bfloat2',            r'\bdouble2'           ),
+        # HIP
+        (r'\bint',              r'\bfloat',             r'\bdouble',            r'\bhipblasComplex',    r'\bhipblasDoubleComplex'),
 
         # ----- header files
         (r'_p\.h\b',            r'_s\.h\b',            r'_d\.h\b',             r'_c\.h\b',             r'_z\.h\b'             ),

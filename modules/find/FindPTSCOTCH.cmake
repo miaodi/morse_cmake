@@ -32,6 +32,7 @@
 #   - MPI
 #
 #  COMPONENTS can be some of the following:
+#   - ERREXIT: to choose libptscotcherrexit as error library instead of libptscotcherr (default)
 #   - ESMUMPS: to activate detection of PT-Scotch with the esmumps interface
 #
 # This module finds headers and ptscotch library.
@@ -70,10 +71,15 @@ include(FindMorseInit)
 morse_find_package_get_envdir(PTSCOTCH)
 
 # Set the version to find
+set(PTSCOTCH_LOOK_FOR_ERREXIT OFF)
 set(PTSCOTCH_LOOK_FOR_ESMUMPS OFF)
 
 if( PTSCOTCH_FIND_COMPONENTS )
   foreach( component ${PTSCOTCH_FIND_COMPONENTS} )
+    if (${component} STREQUAL "ERREXIT")
+      # means we look for ptscotcherrexit library
+      set(PTSCOTCH_LOOK_FOR_ERREXIT ON)
+    endif()
     if (${component} STREQUAL "ESMUMPS")
       # means we look for esmumps library
       set(PTSCOTCH_LOOK_FOR_ESMUMPS ON)
@@ -107,12 +113,15 @@ morse_find_path(PTSCOTCH
 
 # Looking for lib
 # ---------------
-set(PTSCOTCH_libs_to_find "ptscotch;ptscotcherr")
+if (PTSCOTCH_LOOK_FOR_ERREXIT)
+  list(APPEND PTSCOTCH_libs_to_find "ptscotch;ptscotcherrexit;scotch;scotcherrexit")
+else()
+  list(APPEND PTSCOTCH_libs_to_find "ptscotch;ptscotcherr;scotch;scotcherr")
+endif()
 if (PTSCOTCH_LOOK_FOR_ESMUMPS)
   list(INSERT PTSCOTCH_libs_to_find 0 "ptesmumps")
   list(APPEND PTSCOTCH_libs_to_find   "esmumps"  )
 endif()
-list(APPEND PTSCOTCH_libs_to_find "scotch;scotcherr")
 
 morse_find_library(PTSCOTCH
   LIBRARIES ${PTSCOTCH_libs_to_find}

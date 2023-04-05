@@ -28,6 +28,7 @@
 #              )
 #
 #  COMPONENTS can be some of the following:
+#   - ERREXIT: to choose libscotcherrexit as error library instead of libscotcherr (default)
 #   - ESMUMPS: to activate detection of Scotch with the esmumps interface
 #
 # This module finds headers and scotch library.
@@ -64,10 +65,15 @@ include(FindMorseInit)
 morse_find_package_get_envdir(SCOTCH)
 
 # Set the version to find
+set(SCOTCH_LOOK_FOR_ERREXIT OFF)
 set(SCOTCH_LOOK_FOR_ESMUMPS OFF)
 
 if( SCOTCH_FIND_COMPONENTS )
   foreach( component ${SCOTCH_FIND_COMPONENTS} )
+    if (${component} STREQUAL "ERREXIT")
+      # means we look for scotcherrexit library
+      set(SCOTCH_LOOK_FOR_ERREXIT ON)
+    endif()
     if (${component} STREQUAL "ESMUMPS")
       # means we look for esmumps library
       set(SCOTCH_LOOK_FOR_ESMUMPS ON)
@@ -94,7 +100,11 @@ morse_find_path(SCOTCH
 
 # Looking for lib
 # ---------------
-set(SCOTCH_libs_to_find "scotch;scotcherrexit")
+if (SCOTCH_LOOK_FOR_ERREXIT)
+  list(APPEND SCOTCH_libs_to_find "scotch;scotcherrexit")
+else()
+  list(APPEND SCOTCH_libs_to_find "scotch;scotcherr")
+endif()
 if (SCOTCH_LOOK_FOR_ESMUMPS)
   list(INSERT SCOTCH_libs_to_find 0 "esmumps")
 endif()
@@ -131,7 +141,9 @@ if(SCOTCH_LIBRARIES)
     list(APPEND REQUIRED_FLAGS "${CMAKE_THREAD_LIBS_INIT}")
     list(APPEND REQUIRED_LDFLAGS "${CMAKE_THREAD_LIBS_INIT}")
   else()
-    list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
+    if (CMAKE_THREAD_LIBS_INIT)
+      list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
+    endif()
   endif()
   set(Z_LIBRARY "Z_LIBRARY-NOTFOUND")
   find_library(Z_LIBRARY NAMES z)

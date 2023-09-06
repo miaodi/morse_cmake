@@ -38,7 +38,7 @@ include(FindPackageHandleStandardArgs)
 
 # check that we can call math directly with the compiler
 include(CheckCSourceCompiles)
-set(LIBM_TEST_SOURCE "#include<math.h>\nfloat f; int main(){float s=sqrt(f);return 0;}")
+set(LIBM_TEST_SOURCE "#include<math.h>\nint main(){float f=4.0;float s=sqrt(f);f=s;return 0;}")
 check_c_source_compiles("${LIBM_TEST_SOURCE}" HAVE_MATH)
 
 # if works with the compiler we do not need anything else, variables are empty

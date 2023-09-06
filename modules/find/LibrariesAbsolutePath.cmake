@@ -19,7 +19,7 @@
 #  @date 13-04-2018
 #
 ###
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.5)
 
 # Transform relative path into absolute path for libraries
 # lib_list (input/output): the name of the CMake variable containing libraries, e.g. BLAS_LIBRARIES

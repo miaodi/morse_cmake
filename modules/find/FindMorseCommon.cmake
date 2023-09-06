@@ -19,7 +19,7 @@
 #  @date 13-04-2018
 #
 ###
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.5)
 
 # Macro to cleanup packages variables and avoid duplications
 # ----------------------------------------------------------

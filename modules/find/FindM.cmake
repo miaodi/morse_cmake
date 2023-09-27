@@ -17,35 +17,32 @@
 #
 ###
 #
-# - Find M (Math library) include dirs and libraries
+# - Find M (Math library)
 # Use this module by invoking find_package with the form:
 #  find_package(M
 #               [REQUIRED]) # Fail with error if m is not found
 #
 # The following variables are set if found:
 #
-#   M_INCLUDE_DIRS gives the path to headers
-#   M_LIBRARIES gives the library m
+#   M_LIBRARY gives the path to the standard library "m"
 #
 # This module defines the following :prop_tgt:`IMPORTED` target:
 #
 # ``MORSE::M``
-#   The headers and libraries to use for M, if found.
+#   The library to use for M, if found.
 #
 #=============================================================================
 
 include(FindPackageHandleStandardArgs)
 
-# check that we can call math directly with the compiler
-include(CheckCSourceCompiles)
-set(LIBM_TEST_SOURCE "#include<math.h>\nint main(){float f=4.0;float s=sqrt(f);f=s;return 0;}")
-check_c_source_compiles("${LIBM_TEST_SOURCE}" HAVE_MATH)
+# check if we can call math directly without linking explicitly to libm
+include(CheckFunctionExists)
+check_function_exists(sqrt HAVE_MATH)
 
 # if works with the compiler we do not need anything else, variables are empty
 if(HAVE_MATH)
 
-  set(M_INCLUDE_DIRS)
-  set(M_LIBRARIES)
+  set(M_LIBRARY)
 
   if(NOT TARGET MORSE::M)
     add_library(MORSE::M INTERFACE IMPORTED)
@@ -55,28 +52,24 @@ if(HAVE_MATH)
 
 else()
 
-  # look for header math.h to get the path to headers
-  find_path(M_INCLUDE_DIRS NAMES math.h)
-
   # look for libm
-  find_library(M_LIBRARIES m)
+  find_library(M_LIBRARY m)
 
   # check call to math
-  set(CMAKE_REQUIRED_LIBRARIES ${M_LIBRARIES})
-  check_c_source_compiles("${LIBM_TEST_SOURCE}" LIBM_MATH_WORKS)
+  set(CMAKE_REQUIRED_LIBRARIES ${M_LIBRARY})
+  check_function_exists(sqrt LIBM_MATH_WORKS)
   unset(CMAKE_REQUIRED_LIBRARIES)
 
   # check and set M_FOUND
-  find_package_handle_standard_args(M DEFAULT_MSG M_LIBRARIES M_INCLUDE_DIRS LIBM_MATH_WORKS)
-  mark_as_advanced(M_INCLUDE_DIRS M_LIBRARIES LIBM_MATH_WORKS)
+  find_package_handle_standard_args(M DEFAULT_MSG M_LIBRARY LIBM_MATH_WORKS)
+  mark_as_advanced(M_LIBRARY LIBM_MATH_WORKS)
 
   # add imported target
   if(M_FOUND)
     if(NOT TARGET MORSE::M)
       add_library(MORSE::M INTERFACE IMPORTED)
       set_target_properties(MORSE::M PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${M_INCLUDE_DIRS}"
-        INTERFACE_LINK_LIBRARIES "${M_LIBRARIES}")
+        INTERFACE_LINK_LIBRARIES "${M_LIBRARY}")
     endif()
   endif()
 

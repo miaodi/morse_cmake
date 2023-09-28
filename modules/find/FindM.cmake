@@ -35,6 +35,11 @@
 
 include(FindPackageHandleStandardArgs)
 
+# tests used in this script is not compliant with -Werror
+# remove it temporarily from C flags
+set( CMAKE_C_FLAGS_COPY "${CMAKE_C_FLAGS}" CACHE STRING "" )
+string(REPLACE "-Werror" "" CMAKE_C_FLAGS ${CMAKE_C_FLAGS_COPY})
+
 # check if we can call math directly without linking explicitly to libm
 include(CheckFunctionExists)
 check_function_exists(sqrt HAVE_MATH)
@@ -74,3 +79,5 @@ else()
   endif()
 
 endif()
+
+set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS_COPY}" CACHE STRING "" FORCE)

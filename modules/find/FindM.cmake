@@ -35,10 +35,10 @@
 
 include(FindPackageHandleStandardArgs)
 
-# tests used in this script is not compliant with -Werror
+# tests used in this script is not compliant with -Werror or -Werror=...
 # remove it temporarily from C flags
 set(CMAKE_C_FLAGS_COPY "${CMAKE_C_FLAGS}" CACHE STRING "" FORCE)
-string(REPLACE "-Werror" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS_COPY}")
+string(REGEX REPLACE "-Werror[^ ]*" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
 # check if we can call math directly without linking explicitly to libm
 include(CheckFunctionExists)

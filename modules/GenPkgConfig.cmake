@@ -230,8 +230,16 @@ macro(generate_env_file)
 
   # installation
   # ------------
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/bin/${LONAME}_env.sh"
-    DESTINATION bin)
+  # Check if the PREFIX is in the PATH or not
+  # If yes, no need to install this file
+  string(REPLACE ":" ";" pathlist "$ENV{PATH}")
+  if ( "${CMAKE_INSTALL_PREFIX}/bin" IN_LIST pathlist )
+    message( STATUS "No installation of ${LONAME}_env.sh - already in the default environment" )
+  else ()
+    message( STATUS "Install ${LONAME}_env.sh in ${CMAKE_INSTALL_PREFIX}/bin" )
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/bin/${LONAME}_env.sh"
+      DESTINATION bin)
+  endif()
 
 endmacro(generate_env_file)
 

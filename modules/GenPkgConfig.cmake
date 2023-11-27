@@ -157,34 +157,35 @@ macro(generate_pkgconfig_files)
   set(_options )
   set(_oneValueArgs PROJECTNAME)
   set(_multiValueArgs LIBS LIBS_PRIVATE REQUIRED REQUIRED_PRIVATE)
-  cmake_parse_arguments(generate_pkgconfig_file
+  set(MN "generate_pkgconfig_files")
+  cmake_parse_arguments(${MN}
     "${_options}" "${_oneValueArgs}"
     "${_multiValueArgs}" ${ARGN} )
 
-  if ( NOT DEFINED PROJECTNAME )
-    set( PROJECTNAME ${CMAKE_PROJECT_NAME} )
+  if ( NOT DEFINED ${MN}_PROJECTNAME )
+    set( ${MN}_PROJECTNAME ${CMAKE_PROJECT_NAME} )
   endif()
 
-  set(ARGN ${generate_pkgconfig_file_UNPARSED_ARGUMENTS})
+  set(ARGN ${${MN}_UNPARSED_ARGUMENTS})
 
   # The link flags specific to this package and any required libraries
   # that don't support PkgConfig
-  list(APPEND ${PROJECTNAME}_PKGCONFIG_LIBS ${LIBS})
+  list(APPEND ${${MN}_PROJECTNAME}_PKGCONFIG_LIBS ${${MN}_LIBS})
 
   # The link flags for private libraries required by this package but not
   # exposed to applications
-  list(APPEND ${PROJECTNAME}_PKGCONFIG_LIBS_PRIVATE ${LIBS_PRIVATE})
+  list(APPEND ${${MN}_PROJECTNAME}_PKGCONFIG_LIBS_PRIVATE ${${MN}_LIBS_PRIVATE})
 
   # A list of packages required by this package
-  list(APPEND ${PROJECTNAME}_PKGCONFIG_REQUIRED ${REQUIRED})
+  list(APPEND ${${MN}_PROJECTNAME}_PKGCONFIG_REQUIRED ${${MN}_REQUIRED})
 
   # A list of private packages required by this package but not exposed to
   # applications
-  list(APPEND ${PROJECTNAME}_PKGCONFIG_REQUIRED_PRIVATE ${REQUIRED_PRIVATE})
+  list(APPEND ${${MN}_PROJECTNAME}_PKGCONFIG_REQUIRED_PRIVATE ${${MN}_REQUIRED_PRIVATE})
 
   # Define required package
   # -----------------------
-  gpc_clean_lib_list(${PROJECTNAME})
+  gpc_clean_lib_list(${${MN}_PROJECTNAME})
 
   foreach(f IN LISTS ARGN)
     get_filename_component(fname "${f}" NAME_WE)
@@ -215,16 +216,17 @@ macro(generate_env_file)
   set(_options )
   set(_oneValueArgs PROJECTNAME)
   set(_multiValueArgs )
+  set(MN "generate_env_file")
   cmake_parse_arguments(generate_env_file
     "${_options}" "${_oneValueArgs}"
     "${_multiValueArgs}" ${ARGN} )
 
-  if ( NOT DEFINED PROJECTNAME )
-    set( PROJECTNAME ${CMAKE_PROJECT_NAME} )
+  if ( NOT DEFINED ${MN}_PROJECTNAME )
+    set( ${MN}_PROJECTNAME ${CMAKE_PROJECT_NAME} )
   endif()
 
-  string(TOLOWER ${PROJECTNAME} LONAME)
-  string(TOUPPER ${PROJECTNAME} UPNAME)
+  string(TOLOWER ${${MN}_PROJECTNAME} LONAME)
+  string(TOUPPER ${${MN}_PROJECTNAME} UPNAME)
 
   # Create .sh file
   # ---------------

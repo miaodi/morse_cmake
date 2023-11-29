@@ -125,6 +125,11 @@ endmacro(gpc_convert_libstyle_to_pkgconfig)
 #
 ###
 macro(gpc_clean_lib_list _package)
+  if ( ${_package}_PKGCONFIG_CFLAGS )
+    list(REMOVE_DUPLICATES ${_package}_PKGCONFIG_CFLAGS)
+    gpc_convert_incstyle_to_pkgconfig(${_package}_PKGCONFIG_CFLAGS)
+    string(REPLACE ";" " " ${_package}_PKGCONFIG_CFLAGS "${${_package}_PKGCONFIG_CFLAGS}")
+  endif()
   if ( ${_package}_PKGCONFIG_INCS )
     list(REMOVE_DUPLICATES ${_package}_PKGCONFIG_INCS)
     gpc_convert_incstyle_to_pkgconfig(${_package}_PKGCONFIG_INCS)

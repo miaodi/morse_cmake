@@ -184,9 +184,11 @@ class SourceFile( object ):
         '''Apply substitutions to text for given precision.'''
         try:
             # Get substitution table based on self._table
-            subs_o = self._subs.subs[         self._table ]  # original
-            subs_s = self._subs.subs_search[  self._table ]  # compiled as search regexp
-            subs_r = self._subs.subs_replace[ self._table ]  # with regexp removed for replacement
+            subs_ef = self._subs.exceptfr
+            subs_et = self._subs.exceptto
+            subs_o  = self._subs.subs[         self._table ]  # original
+            subs_s  = self._subs.subs_search[  self._table ]  # compiled as search regexp
+            subs_r  = self._subs.subs_replace[ self._table ]  # with regexp removed for replacement
 
             # Get which column is from and to.
             header = subs_o[0]
@@ -195,6 +197,18 @@ class SourceFile( object ):
         except Exception as err:
             print( "Error: bad table or precision in '%s', @precisions %s %s -> %s:" %
                    (self._filename, self._table, self._src, self._dsts), file=sys.stderr )
+            traceback.print_exc()
+            exit(1)
+
+        # Apply protection
+        try:
+            line = 0
+            for ( search, replace ) in zip( subs_ef, subs_et ):
+                line += 1
+                text = re.sub( search, "RP"+replace+"RP", text )
+        except Exception as err:
+            print( "Error: in row %d of substitution exception '%s'" %
+                   (line, keyword), file=sys.stderr )
             traceback.print_exc()
             exit(1)
 
@@ -210,6 +224,18 @@ class SourceFile( object ):
         except Exception as err:
             print( "Error: in row %d of substitution table '%s': %s" %
                    (line, self._table, subs_o[line]), file=sys.stderr )
+            traceback.print_exc()
+            exit(1)
+
+        # Restore protected
+        try:
+            line = 0
+            for ( search, replace ) in zip( subs_ef, subs_et ):
+                line += 1
+                text = re.sub( "RP"+replace+"RP", replace, text )
+        except Exception as err:
+            print( "Error: in row %d of substitution exception '%s'" %
+                   (line, keyword), file=sys.stderr )
             traceback.print_exc()
             exit(1)
 

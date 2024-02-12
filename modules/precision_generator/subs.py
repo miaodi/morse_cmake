@@ -240,6 +240,9 @@ _subs = {
     ],  # end normal
 } #end _subs
 
+_fixedstrings = [
+]
+
 class Substitution( object ):
     def __init__( self, subsfiles=[] ):
         # Fill in subs_search with same structure as subs, but containing None values.
@@ -258,14 +261,27 @@ class Substitution( object ):
             if filepath not in sys.path:
                 sys.path.append( filepath )
                 remove = True
+
+            imported = False
+            try:
+                from local_subs import exceptfrom
+                for value in exceptfrom:
+                    _fixedstrings.append( value )
+                imported = True
+            except:
+                print( "Error: dictionnary does not include exception rules:", file, file=sys.stderr )
+
             try:
                 from local_subs import subs
                 for key in subs.keys():
                     _subs[key] = _subs[key] + subs[key]
+                imported = True
             except Exception as err:
                 print( "Error: in importing:", file, file=sys.stderr )
-                traceback.print_exc()
-                exit(1)
+                if not imported:
+                    traceback.print_exc()
+                    exit(1)
+
             if remove:
                 sys.path.remove( filepath )
 
@@ -302,3 +318,26 @@ class Substitution( object ):
         self.subs = subs
         self.subs_search  = subs_search
         self.subs_replace = subs_replace
+
+        # I don't get why I need the try, but seems to be the only way
+        try:
+            fixedstrings = _fixedstrings
+        except:
+            exit(1)
+
+        # Register a clean version of the rules for the desination"
+        exceptfr = fixedstrings
+        exceptto = []
+        for key in exceptfr:
+            keyto = key
+            keyto = keyto.replace( r'\b',  r''  )
+            keyto = keyto.replace( r'\*',  r'*' )
+            keyto = keyto.replace( r'\(',  r'(' )
+            keyto = keyto.replace( r'\)',  r')' )
+            keyto = keyto.replace( r'\.',  r'.' )
+            keyto = keyto.replace( r'\^',  r'^' )
+            exceptto.append( keyto );
+
+        self.exceptfr = exceptfr
+        self.exceptto = exceptto
+

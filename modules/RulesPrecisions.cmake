@@ -38,9 +38,13 @@ set(RP_DEFAULT_DICTIONNARY ${MORSE_CMAKE_MODULE_PATH}/precision_generator/subs.p
 # -----------
 if( NOT DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
   message( WARNING "RulesPrecisions included before RP_${CMAKE_PROJECT_NAME}_DICTIONNARY was defined (Only the default one is used)" )
+  set( RP_DICTIONNARIES ""
+    CACHE INTERNAL "List of Dictionnaries to use for precision generation" )
 else()
   set(RP_${CMAKE_PROJECT_NAME}_DICTIONNARY ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}
     CACHE INTERNAL "Dictionnary used for precision generation" )
+  set( RP_DICTIONNARIES ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}
+    CACHE INTERNAL "List of Dictionnaries to use for precision generation" )
 endif()
 
 # Default Precisions
@@ -193,6 +197,7 @@ MACRO(precisions_rules_py)
   message( DEBUG "[RP] PRECISIONPP_arg      ${PRECISIONPP_arg}")
   message( DEBUG "[RP] PRECISIONPP_prefix   ${PRECISIONPP_prefix}")
   message( DEBUG "[RP] PREC_RULE_PRECISIONS ${PREC_RULE_PRECISIONS}")
+  message( DEBUG "[RP] DICTIONNARIES        ${RP_DICTIONNARIES}")
 
   set(options_list "")
   foreach(prec_rules_PREC ${PREC_RULE_PRECISIONS})
@@ -205,8 +210,8 @@ MACRO(precisions_rules_py)
   endforeach()
 
   set( gencmd ${Python3_EXECUTABLE} ${RP_CODEGEN} -c -f "${sources_list}" -p "${options_list}" -s "${CMAKE_CURRENT_SOURCE_DIR}" -b "${CMAKE_CURRENT_BINARY_DIR}" ${PRECISIONPP_arg} ${PRECISIONPP_prefix} )
-  if( DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
-    set( gencmd ${gencmd} -D "${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}" )
+  if( DEFINED RP_DICTIONNARIES )
+    set( gencmd ${gencmd} -D "${RP_DICTIONNARIES}" )
   endif()
 
   message( DEBUG "[RP] gen command ${gencmd}")
@@ -224,8 +229,8 @@ MACRO(precisions_rules_py)
       set(_dependency_OUTPUT "${CMAKE_MATCH_3}")
 
       set(pythoncmd ${Python3_EXECUTABLE} ${RP_CODEGEN} -g -f ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} -b "${CMAKE_CURRENT_BINARY_DIR}" -p ${_dependency_PREC} ${PRECISIONPP_arg} ${PRECISIONPP_prefix})
-      if( DEFINED RP_${CMAKE_PROJECT_NAME}_DICTIONNARY )
-        set( pythoncmd ${pythoncmd} -D "${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY}" )
+      if( DEFINED RP_DICTIONNARIES )
+        set( pythoncmd ${pythoncmd} -D "${RP_DICTIONNARIES}" )
       endif()
 
       string(STRIP "${_dependency_OUTPUT}" _dependency_OUTPUT)
@@ -252,7 +257,7 @@ MACRO(precisions_rules_py)
 	  ADD_CUSTOM_COMMAND(
 	    OUTPUT ${_dependency_OUTPUT}
 	    COMMAND ${CMAKE_COMMAND} -E remove -f ${_dependency_OUTPUT} && ${pythoncmd} && chmod a-w ${_dependency_OUTPUT}
-	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY} ${RP_DEFAULT_DICTIONNARY} )
+	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_DICTIONNARIES} ${RP_DEFAULT_DICTIONNARY} )
           set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS ${_compile_flags} GENERATED 1 IS_IN_BINARY_DIR 1 )
 	else( generate_out )
           set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS ${_compile_flags} GENERATED 0 )

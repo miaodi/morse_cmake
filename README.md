@@ -1,3 +1,6 @@
+It is a 'fork' from https://gitlab.inria.fr/solverstack/morse_cmake.git. 
+* fixed issues in finding mumps static lib.
+
 MORSE CMake modules
 ====================
 
